@@ -10,6 +10,8 @@
 // @run-at       document-idle
 // ==/UserScript==
 
+// Initial GitHub Release - Hermes Macro System 2.9.7
+
 (function() {
     'use strict';
 
