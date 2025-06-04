@@ -136,8 +136,8 @@
                 "_comment_transparency": "Opacity of laser lines. Default: 0.3. Range: 0.1-1.0.",
                 "colors": ["rgba(255,0,0,{alpha})", "rgba(0,255,0,{alpha})", "rgba(0,0,255,{alpha})"],
                 "_comment_colors": "Array of colors for laser lines. Use RGBA format with '{alpha}' for transparency. Default: Red, Green, Blue. Example: ['rgba(255,0,0,{alpha})'].",
-                "numLines": 3,
-                "_comment_numLines": "Number of laser lines on screen. Default: 3. Range: 1-10 (more can impact performance)."
+                "numLines": 8,
+                "_comment_numLines": "Number of laser lines on screen. Default: 8. Range: 1-10 (more can impact performance)."
             },
             "_comment_snowflakes_v13": "Settings for the 'Snowflake' effect.",
             "snowflakesV13": {
@@ -147,8 +147,8 @@
                 "_comment_baseColor": "Base color for snowflakes. Use RGBA with '{alpha}'. Default: 'rgba(240, 240, 240, {alpha})'.",
                 "emoji": "❄️",
                 "_comment_emoji": "Emoji(s) to use for snowflakes. Default: '❄️'. Paste your preferred emoji or a list like ['❄️', '❅', '❆']. If using text/emoji, set baseColor alpha to 0 or use an emoji font that renders well.",
-                "useEmojiOrShape": "emoji",
-                "_comment_useEmojiOrShape": "Determines if snowflakes are rendered as 'emoji' or 'shape' (using baseColor). Default: 'emoji'.",
+                "useEmojiOrShape": "shape",
+                "_comment_useEmojiOrShape": "Determines if snowflakes are rendered as 'emoji' or 'shape' (using baseColor). Default: 'shape'.",
                 "minSize": 1,
                 "_comment_minSize": "Minimum size of snowflakes (pixels for shape, arbitrary unit for emoji). Default: 1. Range: 1-5.",
                 "maxSize": 3,
@@ -166,8 +166,8 @@
             },
             "_comment_lasers_v14": "Settings for the 'Simple Laser' (falling rain) effect.",
             "lasersV14": {
-                "density": 0.05,
-                "_comment_density": "Chance (0.0 to 1.0) to spawn a new laser each frame. Default: 0.05. Range: 0.01-0.2.",
+                "density": 0.09,
+                "_comment_density": "Chance (0.0 to 1.0) to spawn a new laser each frame. Default: 0.09. Range: 0.01-0.2.",
                 "maxLength": 70,
                 "_comment_maxLength": "Maximum length of a laser line. Default: 70. Range: 10-200.",
                 "minLength": 20,
@@ -1571,7 +1571,7 @@
         const settings = currentSettings.effects.lasersV14;
         effectsCtx.clearRect(0, 0, effectsCanvas.width, effectsCanvas.height);
 
-        if (lasersV14.length < 300 && Math.random() < (settings.density || 0.05)) {
+        if (lasersV14.length < 300 && Math.random() < (settings.density || 0.09)) {
             lasersV14.push({
                 x: Math.random() * effectsCanvas.width, y: 0,
                 speed: (settings.minSpeed || 5) + Math.random() * ((settings.maxSpeed || 15) - (settings.minSpeed || 5)),
