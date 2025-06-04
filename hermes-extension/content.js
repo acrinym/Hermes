@@ -207,6 +207,21 @@
     };
     let currentSettings = {}; // Will be populated by initial data load from background.js
 
+    // Deep merge utility for settings objects
+    function deepMerge(target, source) {
+        target = JSON.parse(JSON.stringify(target));
+        for (const key in source) {
+            if (Object.prototype.hasOwnProperty.call(source, key)) {
+                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key] && typeof target[key] === 'object') {
+                    target[key] = deepMerge(target[key], source[key]);
+                } else {
+                    target[key] = source[key];
+                }
+            }
+        }
+        return target;
+    }
+
     // Helper function to send data to background script for saving
     function saveDataToBackground(storageKey, data) {
         return new Promise((resolve, reject) => {
@@ -236,11 +251,21 @@
 
     async function saveSettings(settingsToSave) {
         try {
-            await saveDataToBackground(SETTINGS_KEY_EXT, settingsToSave);
-            currentSettings = settingsToSave; // Update local cache
-            console.log('Hermes CS: Settings sent to background for saving:', settingsToSave);
-            debugLogs.push({ timestamp: Date.now(), type: 'settings_save_cs', details: { settingsToSave } });
-            applyCurrentSettings(); // Apply them visually
+            if (settingsToSave.effects && settingsToSave.effects.lasersV13) {
+                settingsToSave.effects.lasersV13.numLines = Math.max(1, Math.min(settingsToSave.effects.lasersV13.numLines || 3, 20));
+                settingsToSave.effects.lasersV13.lineThickness = Math.max(1, Math.min(settingsToSave.effects.lasersV13.lineThickness || 2, 10));
+                settingsToSave.effects.lasersV13.transparency = Math.max(0.05, Math.min(settingsToSave.effects.lasersV13.transparency || 0.3, 1.0));
+            }
+            if (settingsToSave.effects && settingsToSave.effects.snowflakesV13) {
+                settingsToSave.effects.snowflakesV13.density = Math.max(5, Math.min(settingsToSave.effects.snowflakesV13.density || 50, 300));
+            }
+
+            const merged = deepMerge(defaultSettings, settingsToSave);
+            await saveDataToBackground(SETTINGS_KEY_EXT, merged);
+            currentSettings = merged; // Update local cache
+            console.log('Hermes CS: Settings sent to background for saving:', merged);
+            debugLogs.push({ timestamp: Date.now(), type: 'settings_save_cs', details: { settings: merged } });
+            applyCurrentSettings();
             return true;
         } catch (error) {
             console.error('Hermes CS: Error in saveSettings:', error);
@@ -396,11 +421,36 @@
     function setupDebugControls() {
         console.log('Hermes CS: Setting up debug controls (available in content script context via window.hermesDebugCS)');
         window.hermesDebugCS = {
-            toggleOverlay: async () => { /* ... */ },
-            toggleLearning: async () => { /* ... */ },
+            toggleOverlay: async () => {
+                showOverlays = !showOverlays;
+                await saveDataToBackground(OVERLAY_STATE_KEY_EXT, showOverlays);
+                if (overlayToggle) updateButtonAppearance(overlayToggle, 'overlayToggle', isBunched);
+                if (showOverlays) applyVisualOverlays();
+                else removeVisualOverlays();
+                console.log('Hermes CS: Overlays toggled:', showOverlays);
+            },
+            toggleLearning: async () => {
+                learningMode = !learningMode;
+                await saveDataToBackground(LEARNING_STATE_KEY_EXT, learningMode);
+                if (learningToggle) updateButtonAppearance(learningToggle, 'learningToggle', isBunched);
+                if (trainButton) trainButton.style.display = learningMode ? 'inline-flex' : 'none';
+                console.log('Hermes CS: Learning mode toggled:', learningMode);
+            },
             clearLogs: () => HermesDebug.clearLogs(),
             getLogs: () => HermesDebug.logs(),
-            printState: () => console.log("Hermes CS Current State:", { /* ... */ })
+            printState: () => console.log('Hermes CS Current State:', {
+                profileData,
+                macros,
+                customMappings,
+                theme,
+                isBunched,
+                effectsMode,
+                showOverlays,
+                learningMode,
+                debugMode,
+                position: state.position,
+                whitelist
+            })
         };
     }
 
@@ -2168,8 +2218,37 @@
         const dragHandle = uiContainer.querySelector('#hermes-drag-handle');
         if (!dragHandle) { console.warn("Hermes CS: Drag handle not found."); return; }
 
-        dragHandle.onmousedown = (e) => { /* ... */ };
-        document.addEventListener('mousemove', (e) => { /* ... */ });
+        dragHandle.onmousedown = (e) => {
+            if (e.target !== dragHandle && e.target.tagName === 'BUTTON') return;
+            e.preventDefault();
+
+            dragging = true;
+            justDragged = false;
+            const rect = uiContainer.getBoundingClientRect();
+            offset.x = e.clientX - rect.left;
+            offset.y = e.clientY - rect.top;
+            document.body.style.userSelect = 'none';
+            debugLogs.push({ timestamp: Date.now(), type: 'drag_start_cs', target: 'ui', details: { clientX: e.clientX, clientY: e.clientY } });
+        };
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            justDragged = true;
+            let newLeft = e.clientX - offset.x;
+            let newTop = e.clientY - offset.y;
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            const uiRect = uiContainer.getBoundingClientRect();
+            newLeft = Math.max(0, Math.min(newLeft, viewportWidth - uiRect.width));
+            newTop = Math.max(0, Math.min(newTop, viewportHeight - uiRect.height));
+            uiContainer.style.left = `${newLeft}px`;
+            uiContainer.style.top = `${newTop}px`;
+            if (minimizedContainer) {
+                minimizedContainer.style.left = `${newLeft}px`;
+                minimizedContainer.style.top = `${newTop}px`;
+            }
+            state.position.left = newLeft;
+            state.position.top = newTop;
+        });
         document.addEventListener('mouseup', async (e) => {
             if (dragging) {
                 dragging = false; document.body.style.userSelect = '';
@@ -2207,8 +2286,24 @@
         debugLogs.push({ timestamp: Date.now(), type: 'ui_minimize_cs', target: 'toggle', details: { isMinimized } });
     }
 
-    function closeAllSubmenus() { /* ... */ }
-    function closeOtherSubmenus(currentSubmenuToKeepOpen) { /* ... */ }
+    function closeAllSubmenus() {
+        if (shadowRoot) {
+            shadowRoot.querySelectorAll('.hermes-submenu').forEach(submenu => {
+                if (submenu.style.display !== 'none') {
+                    submenu.style.display = 'none';
+                }
+            });
+        }
+    }
+    function closeOtherSubmenus(currentSubmenuToKeepOpen) {
+        if (shadowRoot) {
+            shadowRoot.querySelectorAll('.hermes-submenu').forEach(submenu => {
+                if (submenu !== currentSubmenuToKeepOpen && submenu.style.display !== 'none') {
+                    submenu.style.display = 'none';
+                }
+            });
+        }
+    }
 
     function setupUI() {
         if (document.querySelector('#hermes-shadow-host')) {
@@ -2466,7 +2561,7 @@
                 macros = initialStateResponse.macros || {};
                 customMappings = initialStateResponse.mappings || {};
                 whitelist = initialStateResponse.whitelist || [];
-                currentSettings = initialStateResponse.settings || JSON.parse(JSON.stringify(defaultSettings));
+                currentSettings = deepMerge(defaultSettings, initialStateResponse.settings || {});
                 theme = initialStateResponse.theme || 'dark';
                 isBunched = initialStateResponse.isBunched || false;
                 effectsMode = initialStateResponse.effectsMode || 'none';
