@@ -396,11 +396,39 @@
     function setupDebugControls() {
         console.log('Hermes CS: Setting up debug controls (available in content script context via window.hermesDebugCS)');
         window.hermesDebugCS = {
-            toggleOverlay: async () => { /* ... */ },
-            toggleLearning: async () => { /* ... */ },
+            toggleOverlay: async () => {
+                const newVal = !showOverlays;
+                try {
+                    await saveDataToBackground(OVERLAY_STATE_KEY_EXT, newVal);
+                    showOverlays = newVal;
+                    updateButtonAppearance(overlayToggle, 'overlayToggle', isBunched);
+                    if (showOverlays) applyVisualOverlays();
+                    else removeVisualOverlays();
+                } catch (e) {
+                    console.error('Hermes CS: Debug toggleOverlay failed', e);
+                }
+            },
+            toggleLearning: async () => {
+                const newVal = !learningMode;
+                try {
+                    await saveDataToBackground(LEARNING_STATE_KEY_EXT, newVal);
+                    learningMode = newVal;
+                    updateButtonAppearance(learningToggle, 'learningToggle', isBunched);
+                } catch (e) {
+                    console.error('Hermes CS: Debug toggleLearning failed', e);
+                }
+            },
             clearLogs: () => HermesDebug.clearLogs(),
             getLogs: () => HermesDebug.logs(),
-            printState: () => console.log("Hermes CS Current State:", { /* ... */ })
+            printState: () => console.log('Hermes CS Current State:', {
+                profileData,
+                macros,
+                customMappings,
+                showOverlays,
+                learningMode,
+                debugMode,
+                state
+            })
         };
     }
 
@@ -779,13 +807,26 @@
         recordedEvents.push(eventDetails);
         debugLogs.push({ timestamp: Date.now(), type: 'record_cs', target: selector, details: eventDetails });
     }
+    function recordScrollEvent() {
+        if (!isRecording) return;
+        const eventDetails = {
+            type: 'scroll',
+            scrollX: window.scrollX,
+            scrollY: window.scrollY,
+            timestamp: Date.now()
+        };
+        recordedEvents.push(eventDetails);
+        debugLogs.push({ timestamp: Date.now(), type: 'record_scroll_cs', details: eventDetails });
+    }
     function startRecording() {
         isRecording = true; recordedEvents = [];
+        recordedEvents.push({ type: 'meta', url: location.href, timestamp: Date.now() });
         currentMacroName = prompt('Enter macro name:') || `macro_${Date.now()}`;
         if (!currentMacroName) { isRecording = false; return; }
         ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'dblclick', 'contextmenu'].forEach(type => {
             document.addEventListener(type, recordEvent, true);
         });
+        window.addEventListener('scroll', recordScrollEvent, true);
         if (statusIndicator) { statusIndicator.textContent = `Recording: ${currentMacroName}`; statusIndicator.style.color = 'var(--hermes-error-text)'; }
         if (recordButton) { recordButton.style.borderColor = 'var(--hermes-error-text)'; recordButton.style.color = 'var(--hermes-error-text)';}
         if (stopSaveButton) { stopSaveButton.style.borderColor = ''; stopSaveButton.style.color = '';}
@@ -797,6 +838,7 @@
         ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'dblclick', 'contextmenu'].forEach(type => {
             document.removeEventListener(type, recordEvent, true);
         });
+        window.removeEventListener('scroll', recordScrollEvent, true);
         if (currentMacroName && recordedEvents.length > 0) {
             macros[currentMacroName] = recordedEvents;
             if (await saveMacros(macros)) {
@@ -829,6 +871,11 @@
                 return;
             }
             const eventDetail = macroToPlay[index];
+            if (eventDetail.type === 'meta') {
+                index++;
+                setTimeout(executeEvent, 10);
+                return;
+            }
             const element = document.querySelector(eventDetail.selector);
 
             if (!element && eventDetail.type !== 'submit') {
@@ -865,7 +912,9 @@
                      element.focus();
                 } else if (eventDetail.type === 'focusout' && typeof element.blur === 'function') {
                      element.blur();
-                } else if (eventDetail.type === 'submit') {
+                  } else if (eventDetail.type === 'scroll') {
+                      window.scrollTo(eventDetail.scrollX, eventDetail.scrollY);
+                  } else if (eventDetail.type === 'submit') {
                     if (element && typeof element.submit === 'function') {
                         element.submit();
                     } else if (element && element.form && typeof element.form.submit === 'function') {
@@ -2168,8 +2217,24 @@
         const dragHandle = uiContainer.querySelector('#hermes-drag-handle');
         if (!dragHandle) { console.warn("Hermes CS: Drag handle not found."); return; }
 
-        dragHandle.onmousedown = (e) => { /* ... */ };
-        document.addEventListener('mousemove', (e) => { /* ... */ });
+        dragHandle.onmousedown = (e) => {
+            e.preventDefault();
+            dragging = true;
+            justDragged = false;
+            offset.x = e.clientX - (state.position.left !== null ? state.position.left : uiContainer.offsetLeft);
+            offset.y = e.clientY - (state.position.top !== null ? state.position.top : uiContainer.offsetTop);
+            document.body.style.userSelect = 'none';
+        };
+        document.addEventListener('mousemove', (e) => {
+            if (!dragging) return;
+            justDragged = true;
+            state.position.top = Math.max(0, Math.min(e.clientY - offset.y, window.innerHeight - uiContainer.offsetHeight));
+            state.position.left = Math.max(0, Math.min(e.clientX - offset.x, window.innerWidth - uiContainer.offsetWidth));
+            uiContainer.style.top = `${state.position.top}px`;
+            uiContainer.style.left = `${state.position.left}px`;
+            minimizedContainer.style.top = `${state.position.top}px`;
+            minimizedContainer.style.left = `${state.position.left}px`;
+        });
         document.addEventListener('mouseup', async (e) => {
             if (dragging) {
                 dragging = false; document.body.style.userSelect = '';
@@ -2207,8 +2272,18 @@
         debugLogs.push({ timestamp: Date.now(), type: 'ui_minimize_cs', target: 'toggle', details: { isMinimized } });
     }
 
-    function closeAllSubmenus() { /* ... */ }
-    function closeOtherSubmenus(currentSubmenuToKeepOpen) { /* ... */ }
+    function closeAllSubmenus() {
+        if (!shadowRoot) return;
+        shadowRoot.querySelectorAll('.hermes-submenu').forEach(sm => {
+            sm.style.display = 'none';
+        });
+    }
+    function closeOtherSubmenus(currentSubmenuToKeepOpen) {
+        if (!shadowRoot) return;
+        shadowRoot.querySelectorAll('.hermes-submenu').forEach(sm => {
+            if (sm !== currentSubmenuToKeepOpen) sm.style.display = 'none';
+        });
+    }
 
     function setupUI() {
         if (document.querySelector('#hermes-shadow-host')) {
