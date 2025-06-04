@@ -98,6 +98,7 @@
         helpButton: { emoji: '❓', text: 'Help', bunchedText: 'Hlp', title: 'Show help panel' },
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
+        exportButton: { emoji: '📤', text: 'Export', bunchedText: 'Exp', title: 'Export profile to JSON file' },
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' }
     };
 
@@ -622,6 +623,22 @@
             console.error('Hermes CS: Error saving profile data:', error);
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'profile_save_cs', details: { error } });
             return false;
+        }
+    }
+
+    function exportProfileData() {
+        try {
+            const dataStr = JSON.stringify(profileData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hermes_profile_export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            console.log('Hermes CS: Profile data exported.');
+        } catch (error) {
+            console.error('Hermes CS: Error exporting profile data:', error);
         }
     }
 
@@ -2145,6 +2162,8 @@
             if (sniffBtn) updateButtonAppearance(sniffBtn, 'sniffButton', isBunched);
             const importBtn = shadowRoot.querySelector('#hermes-import-button');
             if (importBtn) updateButtonAppearance(importBtn, 'importButton', isBunched);
+            const exportBtn = shadowRoot.querySelector('#hermes-export-button');
+            if (exportBtn) updateButtonAppearance(exportBtn, 'exportButton', isBunched);
 
             if (currentSettings.hermesBorderThickness) {
                 uiContainer.style.borderWidth = currentSettings.hermesBorderThickness;
@@ -2542,6 +2561,20 @@
             input.click();
         };
         uiContainer.appendChild(importButtonElement);
+
+        const exportButtonElement = document.createElement('button');
+        exportButtonElement.id = 'hermes-export-button';
+        updateButtonAppearance(exportButtonElement, 'exportButton', isBunched);
+        exportButtonElement.onclick = () => {
+            closeAllSubmenus();
+            exportProfileData();
+            if (statusIndicator) {
+                statusIndicator.textContent = 'Profile Exported';
+                statusIndicator.style.color = 'var(--hermes-success-text)';
+                setTimeout(resetStatusIndicator, 2000);
+            }
+        };
+        uiContainer.appendChild(exportButtonElement);
     }
 
     async function initialize() {

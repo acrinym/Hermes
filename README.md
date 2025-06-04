@@ -17,8 +17,9 @@
 
 ### ✏️ Form Filler
 - Autodetects fields across any form using label-text heuristic scoring  
-- Uses JSON-based profile data  
-- Supports custom mappings per domain and field ID/name  
+- Uses JSON-based profile data
+- Import or export profiles in JSON format via the UI
+- Supports custom mappings per domain and field ID/name
 - Optional visual overlays (border highlight) to indicate filled fields  
 
 ### 📽️ Macro Recorder + Player
@@ -110,9 +111,8 @@ MIT License — free to use, share, and modify with attribution.
 
 ## 🌐 Coming Soon
 
-- Profile import/export  
-- Macro scheduling  
-- AI-assisted field mapping suggestions  
+- Macro scheduling
+- AI-assisted field mapping suggestions
 
 ---
 
