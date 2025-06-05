@@ -48,6 +48,7 @@
     let macros = {};
     let customMappings = {};
     let skippedFields = [];
+    let fieldSelectMode = false;
     let isMinimized = false;
     let minimizedContainer = null;
     let theme;
@@ -759,6 +760,7 @@
     function matchProfileKey(context, fieldType, field) {
         let bestKey = null;
         let bestScore = 0;
+        let reason = '';
         const threshold = (currentSettings.macro && currentSettings.macro.similarityThreshold) || 0.5;
         const fieldName = (field.name || field.id || '').toLowerCase();
         const labelText = getAssociatedLabelText(field).toLowerCase();
@@ -768,7 +770,7 @@
         for (const key in profileData) {
             const profileKeyLower = key.toLowerCase();
             if (tokens.includes(profileKeyLower) || (fieldName && fieldName.length > 2 && profileKeyLower.includes(fieldName))) {
-                bestKey = key; bestScore = 0.9;
+                bestKey = key; bestScore = 0.9; reason = `Matched '${fieldName || profileKeyLower}'`;
                 break;
             }
             const profileTokens = profileKeyLower.split(/\s+/);
@@ -782,6 +784,7 @@
             if (score > bestScore && score > threshold) {
                 bestScore = score;
                 bestKey = key;
+                reason = `Score from label '${labelText}'`;
             }
         }
 
@@ -791,14 +794,15 @@
             if (siteMappings[fieldIdentifier]) {
                  bestKey = siteMappings[fieldIdentifier];
                  bestScore = 1;
+                 reason = 'Custom mapping';
             } else if (field.id && siteMappings[field.id]) {
-                 bestKey = siteMappings[field.id]; bestScore = 1;
+                 bestKey = siteMappings[field.id]; bestScore = 1; reason = 'Custom mapping';
             } else if (field.name && siteMappings[field.name]) {
-                 bestKey = siteMappings[field.name]; bestScore = 1;
+                 bestKey = siteMappings[field.name]; bestScore = 1; reason = 'Custom mapping';
             }
         }
 
-        if (bestKey === "_HERMES_IGNORE_FIELD_") return null;
+        if (bestKey === "_HERMES_IGNORE_FIELD_") return {key:null, score:1, reason};
 
         if (learningMode) {
             const fieldIdForSkipped = field.name || field.id || getRobustSelector(field);
@@ -806,15 +810,15 @@
 
             if (bestScore < 0.8 && bestScore > 0.25) {
                 if (!existingSkipped) {
-                    skippedFields.push({ field, context, label: labelText || fieldName, currentGuess: bestKey, score: bestScore });
+                    skippedFields.push({ field, context, label: labelText || fieldName, currentGuess: bestKey, score: bestScore, reason });
                 }
             } else if (bestScore <= 0.25) {
                  if (!existingSkipped) {
-                    skippedFields.push({ field, context, label: labelText || fieldName, currentGuess: null, score: 0 });
+                    skippedFields.push({ field, context, label: labelText || fieldName, currentGuess: null, score: 0, reason: '' });
                 }
             }
         }
-        return bestKey;
+        return { key: bestKey, score: bestScore, reason };
     }
 
     function runFormFiller(currentProfileDataToUse = profileData) {
@@ -838,7 +842,8 @@
                 if (field.offsetWidth === 0 || field.offsetHeight === 0 || field.closest('[style*="display:none"]') || field.closest('[style*="visibility:hidden"]')) return;
 
                 const fieldType = field.type ? field.type.toLowerCase() : (field.tagName.toLowerCase() === 'textarea' ? 'textarea' : 'text');
-                const profileKey = matchProfileKey(context, fieldType, field);
+                const match = matchProfileKey(context, fieldType, field);
+                const profileKey = match.key;
 
                 if (profileKey && typeof currentProfileDataToUse[profileKey] !== 'undefined' && currentProfileDataToUse[profileKey] !== null) {
                     if (fieldType === 'checkbox') {
@@ -874,7 +879,7 @@
                     }
                     debugLogs.push({
                         timestamp: Date.now(), type: 'fill_cs', target: getRobustSelector(field),
-                        details: { profileKey, value: currentProfileDataToUse[profileKey] }
+                        details: { profileKey, value: currentProfileDataToUse[profileKey], score: match.score, reason: match.reason }
                     });
                 }
             });
@@ -886,7 +891,7 @@
         }
         console.log(`Hermes CS: Filled ${filledCount} fields.`);
         if (learningMode && skippedFields.length > 0) {
-            console.log('Hermes CS: Skipped fields for training:', skippedFields.map(sf => ({label:sf.label, guess:sf.currentGuess, score: sf.score})));
+            console.log('Hermes CS: Skipped fields for training:', skippedFields.map(sf => ({label:sf.label, guess:sf.currentGuess, score: sf.score, reason: sf.reason}))); 
             if(trainButton) {trainButton.style.borderColor = 'var(--hermes-warning-text)'; trainButton.style.color = 'var(--hermes-warning-text)';}
         } else if (trainButton) {
             trainButton.style.borderColor = ''; trainButton.style.color = '';
@@ -1142,7 +1147,7 @@
 
     function runHeuristicTrainerSession() {
         if (!learningMode) {
-            if(statusIndicator) { statusIndicator.textContent = "Enable Learn Mode First"; statusIndicator.style.color="var(--hermes-warning-text)"; setTimeout(resetStatusIndicator, 2000);}
+            if(statusIndicator) { statusIndicator.textContent = "Enable Learn Mode First"; statusIndicator.style.color="var(--hermes-warning-text)"; setTimeout(resetStatusIndicator, 2000);} 
             return;
         }
         if (skippedFields.length === 0) {
@@ -1155,6 +1160,54 @@
         toggleTrainerPanel(true);
         if (statusIndicator) { statusIndicator.textContent = 'Review in Train Panel'; statusIndicator.style.color = 'var(--hermes-info-text)'; setTimeout(resetStatusIndicator, 2000); }
         if(trainButton) {trainButton.style.borderColor = 'var(--hermes-warning-text)'; trainButton.style.color = 'var(--hermes-warning-text)';}
+    }
+
+    function toggleFieldSelectMode() {
+        if (fieldSelectMode) {
+            disableFieldSelectMode();
+        } else {
+            enableFieldSelectMode();
+        }
+    }
+
+    function enableFieldSelectMode() {
+        fieldSelectMode = true;
+        document.addEventListener('click', handleFieldSelect, true);
+        document.addEventListener('keydown', fieldSelectKey, true);
+        if(statusIndicator) { statusIndicator.textContent = 'Click a field to add'; statusIndicator.style.color = 'var(--hermes-info-text)'; }
+    }
+
+    function disableFieldSelectMode() {
+        fieldSelectMode = false;
+        document.removeEventListener('click', handleFieldSelect, true);
+        document.removeEventListener('keydown', fieldSelectKey, true);
+        if(statusIndicator) { setTimeout(resetStatusIndicator, 10); }
+    }
+
+    function fieldSelectKey(e) {
+        if (e.key === 'Escape') {
+            disableFieldSelectMode();
+        }
+    }
+
+    function handleFieldSelect(e) {
+        if (!fieldSelectMode) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const field = e.target.closest('input, select, textarea');
+        if (field) {
+            const context = window.location.hostname;
+            const fieldType = field.type ? field.type.toLowerCase() : (field.tagName.toLowerCase() === 'textarea' ? 'textarea' : 'text');
+            const match = matchProfileKey(context, fieldType, field);
+            const label = getAssociatedLabelText(field) || field.name || field.id || 'field';
+            const existing = skippedFields.find(sf => sf.field === field);
+            if (!existing) {
+                skippedFields.push({ field, context, label, currentGuess: match.key, score: match.score, reason: match.reason });
+            }
+            populateTrainerPanel();
+            toggleTrainerPanel(true);
+        }
+        disableFieldSelectMode();
     }
 
     function updateMacroDropdown() {
@@ -1331,7 +1384,7 @@
         const panelId = 'hermes-trainer-panel';
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
         const contentHtml = `<p style="margin-bottom:10px;font-size:0.9em;opacity:0.85;">Review unsure fields. Map to profile keys for <strong>${window.location.hostname}</strong> or globally. Saves on select.</p><div id="hermes-skipped-list" style="max-height:50vh;overflow-y:auto;border:1px solid var(--hermes-panel-border);padding:10px;margin-bottom:15px;"></div>`;
-        const customButtonsHtml = `<button id="hermes-trainer-refill" class="hermes-button" style="background:var(--hermes-info-text);color:var(--hermes-panel-bg);">Apply Current & Refill</button>`;
+        const customButtonsHtml = `<button id="hermes-trainer-refill" class="hermes-button" style="background:var(--hermes-info-text);color:var(--hermes-panel-bg);">Apply Current & Refill</button> <button id="hermes-trainer-select" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Select Field on Page</button>`;
         createModal(panelId, 'Hermes Field Trainer', contentHtml, '700px', customButtonsHtml);
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (panelInRoot) {
@@ -1341,6 +1394,8 @@
                 populateTrainerPanel();
                 if (statusIndicator) { statusIndicator.textContent = "Form Refilled & Trainer Updated"; statusIndicator.style.color = "var(--hermes-success-text)"; setTimeout(resetStatusIndicator, 2000); }
             };
+            const selectBtn = panelInRoot.querySelector('#hermes-trainer-select');
+            if (selectBtn) selectBtn.onclick = toggleFieldSelectMode;
         }
     }
     async function saveTrainerMapping(fieldIdentifier, context, selectedProfileKey, isGlobal) {
@@ -1401,7 +1456,7 @@
                 <div style="flex-grow:1;">
                     <strong title="${fieldIdentifier}">${skipped.label||fieldIdentifier}</strong>
                     <div style="font-size:0.8em;opacity:0.7;">Page: ${skipped.context} (Score: ${skipped.score ? skipped.score.toFixed(2) : 'N/A'})</div>
-                    ${skipped.currentGuess ? `<div style="font-size:0.8em;opacity:0.7;">Initial Guess: ${skipped.currentGuess}</div>` : ''}
+                    ${skipped.currentGuess ? `<div style="font-size:0.8em;opacity:0.7;">Initial Guess: ${skipped.currentGuess}${skipped.reason ? ` (${skipped.reason})` : ''}</div>` : ''}
                 </div>
                 <select data-field-id="${fieldIdentifier}" data-context="${skipped.context}" class="hermes-button" style="flex-shrink:0;min-width:150px;">
                     <option value="">-- Select Key --</option>
