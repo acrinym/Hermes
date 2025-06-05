@@ -1,105 +1,110 @@
-# Hermes System Userscript (v2.9.7)
+# Hermes System Chrome Extension (v3.6.0)
 
-**Hermes System** is a powerful, extensible Tampermonkey userscript that serves as:
+**Hermes System** brings advanced form automation and macro capabilities directly to Chrome as a Manifest V3 extension. The extension works on any site and requires no userscript manager.
 
-- 🔁 A **form filler** with intelligent field matching  
-- 📼 A **macro recorder and playback engine**  
-- 🧠 A **heuristic trainer** to learn from skipped fields  
-- 🎨 A **custom theming engine** with draggable UI  
-- 🧩 A **domain whitelist manager**  
-- 🔍 A **debug toolkit** with mutation detection and visual overlays  
-
-> Designed to work on *any* website, Hermes enhances browser interactivity without needing extra software or browser extensions.
+- 🔁 **Form filler** with intelligent field detection
+- 📼 **Macro recorder** and playback engine
+- 🧠 **Heuristic trainer** that learns from skipped fields
+- 🎨 **Theming engine** with draggable and bunchable UI
+- ✨ **Visual effects** like lasers, snowflakes and strobes
+- 🧩 **Domain allowlist** with minimize-on-unlisted mode
+- ❓ **Help panel** and detailed **settings editor**
+- 📤 **Profile import/export** via JSON
+- 🔍 **Debug toolkit** with logs and mutation detection
 
 ---
 
 ## 🌟 Features Overview
 
 ### ✏️ Form Filler
-- Autodetects fields across any form using label-text heuristic scoring  
-- Uses JSON-based profile data
-- Import or export profiles in JSON format via the UI
+- Autodetects fields using label and text heuristics
+- Uses JSON profile data
+- Import or export profiles directly from the UI
 - Supports custom mappings per domain and field ID/name
-- Optional visual overlays (border highlight) to indicate filled fields  
+- Optional visual overlays to highlight filled fields
 
 ### 📽️ Macro Recorder + Player
-- Record user interactions (clicks, inputs, changes)  
-- Save named macros with timestamps  
-- Replay macros with built-in delays  
-- Supports deletion and selection from dropdown  
+- Record clicks, inputs and other events
+- Save named macros with timestamps
+- Replay macros with adjustable delays
+- Delete or select macros from a dropdown
 
 ### 🧠 Heuristic Trainer
-- Tracks skipped or unmapped fields  
-- Generates suggested mappings using token similarity scoring  
-- Integrates suggestions into the profile mapping automatically  
+- Tracks skipped or unmapped fields
+- Suggests mappings based on token similarity
+- Integrates suggestions into your profile automatically
 
-### 🐞 Debug Panel
-- Built-in debug log viewer  
-- Tracks DOM mutations, errors, and macro interactions  
-- Exports diagnostic logs per session  
-- Auto reinjection of the UI if it gets removed from the DOM  
+### 🐞 Debug & Help
+- Built‑in log viewer for errors and DOM mutations
+- Help panel summarizing all controls
+- Auto‑reinjects the UI if removed from the page
 
 ### 🎛️ UI Control Panel
-- Draggable, resizable floating UI window  
-- All functionality accessible via intuitive button panel  
-- Displays status messages like fill success or macro state  
+- Draggable floating window with resize handles
+- Snap buttons to quickly align UI to edges or corners
+- "Bunch" toggle for compact layout
+- Displays status messages for actions
+
+### ✨ Visual Effects
+- Snowflake, Laser (classic & simple) and Strobe modes
+- Canvas based rendering that can be toggled on/off
+- Effect parameters editable in the settings panel
 
 ### 🎨 Theme Engine
-- Switch between multiple themes:  
-  - Light ☀️  
-  - Dark 🌙  
-  - Phoenix 🦅  
-  - Sea Green 🐢  
-  - Aurora Glow 🌠  
-  - Crimson Ember 🔥  
-  - Slate Storm ⛈️  
-- Persistent between sessions via GM storage  
+- Light ☀️, Dark 🌙, Phoenix 🦅, Sea Green 🐢, Aurora Glow 🌠, Crimson Ember 🔥, Slate Storm ⛈️ and many more
+- CSS variables make themes easily customizable
+- Theme choice persists across sessions
 
-### 🔒 Domain Whitelist
-- Manage whitelisted domains from the GUI  
-- Hermes minimizes to emoji mode when not on an approved domain  
-- Add/remove domains dynamically  
+### 🔒 Domain Allowlist
+- Manage allowed domains from the GUI
+- When visiting unlisted domains the UI collapses to a small emoji
+- Add or remove domains without leaving the page
+
+### ⚙️ Settings Panel
+- JSON editor for advanced options such as border thickness or effect density
+- Settings are merged with safe defaults and validated
 
 ---
 
 ## 🔧 Storage Keys Used
 
-Hermes uses the following persistent keys in GM storage:
-
-- `hermes_profile`  
-- `hermes_macros`  
-- `hermes_mappings`  
-- `hermes_overlay_state`  
-- `hermes_learning_state`  
-- `hermes_debug_mode`  
-- `hermes_position`  
-- `hermes_theme`  
-- `hermes_whitelist`  
+Hermes stores its data in `chrome.storage.local` using these keys:
+- `hermes_profile_ext`
+- `hermes_macros_ext`
+- `hermes_mappings_ext`
+- `hermes_overlay_state_ext`
+- `hermes_learning_state_ext`
+- `hermes_debug_mode_ext`
+- `hermes_position_ext`
+- `hermes_theme_ext`
+- `hermes_whitelist_ext`
+- `hermes_settings_v1_ext`
 
 ---
 
 ## 💻 Installation
 
-1. Install [Tampermonkey](https://tampermonkey.net/) in your browser.  
-2. Click [**this link**](#) to install the script (or paste it manually).  
-3. Click the Hermes panel on any website to start filling forms, recording macros, or customizing settings.  
+1. Clone this repository or download the source.
+2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
+3. Click **Load unpacked** and select the `hermes-extension` folder.
+4. The Hermes icon will appear in the toolbar. Navigate to any site and click the icon to toggle the panel.
 
 ---
 
 ## 📜 Developer Notes
 
-- Built entirely in vanilla JS.  
-- Shadow DOM used to encapsulate UI styles.  
-- Each section (debugging, macros, trainer, overlays) is modular.  
-- Designed to be extensible — feel free to fork and adapt.  
+- Built with vanilla JS and Manifest V3 APIs.
+- UI styles are encapsulated in a Shadow DOM.
+- Background service worker stores data in Chrome storage.
+- Modular design—fork or extend as desired.
 
 ---
 
 ## 📬 Feedback / Contributions
 
-PRs welcome. For suggestions or issues, please use the Issues tab.
+PRs are welcome. For suggestions or issues, please use the Issues tab.
 
-> **Author:** Justin (adapt/expand from `YourName` in script header)
+> **Author:** Justin
 
 ---
 
@@ -113,14 +118,6 @@ MIT License — free to use, share, and modify with attribution.
 
 - Macro scheduling
 - AI-assisted field mapping suggestions
-
----
-
-## 📎 Links & Resources
-
-- [Tampermonkey](https://tampermonkey.net/)  
-- [MDN Web Docs](https://developer.mozilla.org/en-US/)  
-- [Userscript.org Archive](https://greasyfork.org/)  
 
 ---
 
