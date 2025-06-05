@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Hermes System Extension",
-  "version": "3.6.0",
+  "version": "3.8.0",
   "description": "Advanced form filler, macro recorder, and heuristic trainer with comprehensive CSS variable theming, draggable UI, whitelist, bunchable layout, edge and corner snapping, effects, help panel, and detailed settings.",
   "permissions": [
     "storage",
@@ -25,7 +25,10 @@
   "action": {
     "default_title": "Hermes System"
     // "default_popup": "popup.html" // If you want a clickable browser icon popup later
-  }
+  },
   // The top-level "icons" block has been removed.
-  // "options_page": "options.html" // For a dedicated settings page later, if desired
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  }
 }

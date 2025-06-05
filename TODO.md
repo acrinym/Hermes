@@ -5,10 +5,10 @@ This file lists potential enhancements for Hermes beyond its current features. T
 ## Macro Enhancements
 - Macro scheduling to run workflows later or on intervals
 - Conditional macros with branching logic or loops
-- Visual macro editor for reordering or editing steps
+ - ~~Visual macro editor for reordering or editing steps~~ (added in v3.8)
 - Shareable macro files or online gallery
 - Trigger macros via global hotkeys or toolbar buttons
-- Export macros as JSON for backups or sharing
+ - ~~Export macros as JSON for backups or sharing~~ (added in v3.8)
 
 ## Form Filling & Heuristics
 - AI-powered field recognition
@@ -18,8 +18,8 @@ This file lists potential enhancements for Hermes beyond its current features. T
 - Capture screenshots or context during training
 
 ## User Interface & Usability
-- Full options page in Chrome settings
-- More themes and import/export support
+- ~~Full options page in Chrome settings~~ (implemented in v3.7)
+- ~~More themes and import/export support~~ (implemented in v3.7)
 - Multi-language localization
 - Dark mode that follows system theme
 - First-run onboarding or tutorial

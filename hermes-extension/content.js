@@ -51,6 +51,7 @@
     let isMinimized = false;
     let minimizedContainer = null;
     let theme;
+    let customThemes = {};
     let isBunched;
     let effectsMode;
     let helpPanelOpenState; // For persisting help panel open/closed state
@@ -78,7 +79,10 @@
         maple: { name: 'Maple', emoji: '🍁' },
         lilac: { name: 'Lilac', emoji: '🌸' },
         desert: { name: 'Desert', emoji: '🏜️' },
-        brick: { name: 'Brick', emoji: '🧱' }
+        brick: { name: 'Brick', emoji: '🧱' },
+        sunset: { name: 'Sunset', emoji: '🌇' },
+        forest: { name: 'Forest', emoji: '🌳' },
+        neon: { name: 'Neon', emoji: '💡' }
     };
 
     const hermesButtonProperties = {
@@ -993,15 +997,31 @@
             try {
                 let eventToDispatch;
                 if (['click', 'mousedown', 'mouseup', 'dblclick', 'contextmenu'].includes(eventDetail.type)) {
+                    const view = (element && element.ownerDocument && element.ownerDocument.defaultView) ? element.ownerDocument.defaultView : window;
                     eventToDispatch = new MouseEvent(eventDetail.type, {
-                        bubbles: true, cancelable: true, view: window, detail: eventDetail.type === 'dblclick' ? 2 : 1,
-                        clientX: eventDetail.clientX, clientY: eventDetail.clientY,
-                        button: eventDetail.button, buttons: eventDetail.button === 0 ? 1 : (eventDetail.button === 2 ? 2 : 0),
-                        shiftKey: eventDetail.shiftKey, ctrlKey: eventDetail.ctrlKey, altKey: eventDetail.altKey, metaKey: eventDetail.metaKey
+                        bubbles: true,
+                        cancelable: true,
+                        view,
+                        detail: eventDetail.type === 'dblclick' ? 2 : 1,
+                        clientX: eventDetail.clientX,
+                        clientY: eventDetail.clientY,
+                        button: eventDetail.button,
+                        buttons: eventDetail.button === 0 ? 1 : (eventDetail.button === 2 ? 2 : 0),
+                        shiftKey: eventDetail.shiftKey,
+                        ctrlKey: eventDetail.ctrlKey,
+                        altKey: eventDetail.altKey,
+                        metaKey: eventDetail.metaKey
                     });
                     element.dispatchEvent(eventToDispatch);
                 } else if (eventDetail.type === 'mousemove') {
-                    eventToDispatch = new MouseEvent('mousemove', { bubbles: true, cancelable: true, view: window, clientX: eventDetail.clientX, clientY: eventDetail.clientY });
+                    const view = (element && element.ownerDocument && element.ownerDocument.defaultView) ? element.ownerDocument.defaultView : window;
+                    eventToDispatch = new MouseEvent('mousemove', {
+                        bubbles: true,
+                        cancelable: true,
+                        view,
+                        clientX: eventDetail.clientX,
+                        clientY: eventDetail.clientY
+                    });
                     element.dispatchEvent(eventToDispatch);
                 } else if (['input', 'change'].includes(eventDetail.type)) {
                     if (element.type === 'checkbox' || element.type === 'radio') {
@@ -1158,6 +1178,12 @@
                 playBtn.title = `Play macro: ${name}`;
                 playBtn.onclick = (e) => { e.stopPropagation(); playMacro(name); closeAllSubmenus(); };
 
+                const editBtn = document.createElement('button');
+                editBtn.className = 'hermes-button hermes-submenu-button';
+                editBtn.innerHTML = '✏️';
+                editBtn.title = `Edit macro: ${name}`;
+                editBtn.onclick = (e) => { e.stopPropagation(); toggleMacroEditor(true, name); closeAllSubmenus(); };
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'hermes-button hermes-submenu-delete-button';
                 deleteBtn.innerHTML = '🗑️';
@@ -1169,14 +1195,32 @@
                     }
                     closeAllSubmenus();
                 };
-                macroItemContainer.append(playBtn, deleteBtn);
+                macroItemContainer.append(playBtn, editBtn, deleteBtn);
                 macroSubmenuEl.appendChild(macroItemContainer);
             });
+            const importBtn = document.createElement('button');
+            importBtn.className = 'hermes-button hermes-submenu-button';
+            importBtn.textContent = 'Import Macros';
+            importBtn.style.marginTop = '5px';
+            importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'hermes-button hermes-submenu-button';
+            exportBtn.textContent = 'Export Macros';
+            exportBtn.style.marginTop = '5px';
+            exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
+            macroSubmenuEl.appendChild(importBtn);
+            macroSubmenuEl.appendChild(exportBtn);
         } else {
             const noMacrosMsg = document.createElement('div');
             noMacrosMsg.className = 'hermes-submenu-empty-message';
             noMacrosMsg.textContent = 'No macros recorded.';
             macroSubmenuEl.appendChild(noMacrosMsg);
+            const importBtn = document.createElement('button');
+            importBtn.className = 'hermes-button hermes-submenu-button';
+            importBtn.textContent = 'Import Macros';
+            importBtn.style.marginTop = '5px';
+            importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
+            macroSubmenuEl.appendChild(importBtn);
         }
     }
 
@@ -1387,6 +1431,97 @@
             if (show) { populateTrainerPanel(); trainerPanel.style.display = 'block'; applyTheme(); }
             else trainerPanel.style.display = 'none';
         }
+    }
+
+    function createMacroEditorPanel() {
+        const panelId = 'hermes-macro-editor';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+        const contentHtml = `<select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>` +
+            `<textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>`;
+        const buttonsHtml = `<button id="hermes-macro-edit-save" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save Macro</button>`;
+        createModal(panelId, 'Macro Editor', contentHtml, '700px', buttonsHtml);
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (panel) {
+            const selectEl = panel.querySelector('#hermes-macro-edit-select');
+            const textArea = panel.querySelector('#hermes-macro-edit-text');
+            const populate = () => {
+                selectEl.innerHTML = Object.keys(macros).map(n => `<option value="${n}">${n}</option>`).join('');
+                if (selectEl.value) textArea.value = JSON.stringify(macros[selectEl.value] || [], null, 2);
+                else textArea.value = '';
+            };
+            populate();
+            selectEl.onchange = () => { textArea.value = JSON.stringify(macros[selectEl.value] || [], null, 2); };
+            const saveBtn = panel.querySelector('#hermes-macro-edit-save');
+            if (saveBtn) saveBtn.onclick = async () => {
+                const name = selectEl.value;
+                try {
+                    const arr = JSON.parse(textArea.value);
+                    macros[name] = arr;
+                    if (await saveMacros(macros)) {
+                        updateMacroDropdown();
+                        if (statusIndicator) { statusIndicator.textContent = 'Macro saved'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+                        toggleMacroEditor(false);
+                    }
+                } catch (e) { alert('Invalid JSON: ' + e.message); }
+            };
+        }
+    }
+
+    function toggleMacroEditor(show, macroName) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-macro-editor');
+        if (show && !panel) { createMacroEditorPanel(); panel = shadowRoot.querySelector('#hermes-macro-editor'); }
+        if (panel) {
+            const selectEl = panel.querySelector('#hermes-macro-edit-select');
+            const textArea = panel.querySelector('#hermes-macro-edit-text');
+            if (show) {
+                panel.style.display = 'block';
+                selectEl.innerHTML = Object.keys(macros).map(n => `<option value="${n}">${n}</option>`).join('');
+                if (macroName && macros[macroName]) selectEl.value = macroName;
+                textArea.value = selectEl.value ? JSON.stringify(macros[selectEl.value] || [], null, 2) : '';
+                applyTheme();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+    }
+
+    function exportMacros() {
+        try {
+            const blob = new Blob([JSON.stringify(macros, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hermes_macros_export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) { console.error('Hermes CS: Error exporting macros', e); }
+    }
+
+    function importMacrosFromFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = async () => {
+                try {
+                    const obj = JSON.parse(reader.result);
+                    macros = { ...macros, ...obj };
+                    if (await saveMacros(macros)) {
+                        updateMacroDropdown();
+                        if (statusIndicator) { statusIndicator.textContent = 'Macros imported'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+                    }
+                } catch (err) {
+                    console.error('Hermes CS: Invalid macro JSON', err);
+                    alert('Invalid macro file');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
     }
 
     function createWhitelistPanel() {
@@ -2081,6 +2216,45 @@
                     --hermes-text-shadow:0 0 3px rgba(204,102,102,0.5); --hermes-line-height:1.4;
                 `;
                 break;
+            case 'sunset':
+                themeVars = `
+                    --hermes-bg:#ffe0b3; --hermes-text:#3d1f00; --hermes-border:#ff6600;
+                    --hermes-button-bg:#ffcc80; --hermes-button-text:#3d1f00; --hermes-button-hover-bg:#ff9933;
+                    --hermes-panel-bg:#fff2e0; --hermes-panel-text:#3d1f00; --hermes-panel-border:#ff6600;
+                    --hermes-input-bg:#fff; --hermes-input-text:#3d1f00; --hermes-input-border:#ff6600;
+                    --hermes-accent-bar-bg:#ff6600; --hermes-highlight-bg:#ff6600; --hermes-highlight-text:#fff;
+                    --hermes-disabled-text:#777; --hermes-error-text:#dc3545; --hermes-success-text:#28a745;
+                    --hermes-warning-text:#ffc107; --hermes-info-text:#17a2b8;
+                    --hermes-link-color:#ff6600; --hermes-link-hover-color:#cc5200;
+                    --hermes-text-shadow:none; --hermes-line-height:1.4;
+                `;
+                break;
+            case 'forest':
+                themeVars = `
+                    --hermes-bg:#e6ffe6; --hermes-text:#003300; --hermes-border:#339966;
+                    --hermes-button-bg:#b3ffb3; --hermes-button-text:#003300; --hermes-button-hover-bg:#339966;
+                    --hermes-panel-bg:#f0fff0; --hermes-panel-text:#003300; --hermes-panel-border:#339966;
+                    --hermes-input-bg:#fff; --hermes-input-text:#003300; --hermes-input-border:#339966;
+                    --hermes-accent-bar-bg:#339966; --hermes-highlight-bg:#339966; --hermes-highlight-text:#fff;
+                    --hermes-disabled-text:#777; --hermes-error-text:#dc3545; --hermes-success-text:#28a745;
+                    --hermes-warning-text:#ffc107; --hermes-info-text:#17a2b8;
+                    --hermes-link-color:#339966; --hermes-link-hover-color:#26734d;
+                    --hermes-text-shadow:none; --hermes-line-height:1.4;
+                `;
+                break;
+            case 'neon':
+                themeVars = `
+                    --hermes-bg:#000000; --hermes-text:#39ff14; --hermes-border:#39ff14;
+                    --hermes-button-bg:#000000; --hermes-button-text:#39ff14; --hermes-button-hover-bg:#1a1a1a;
+                    --hermes-panel-bg:#0d0d0d; --hermes-panel-text:#39ff14; --hermes-panel-border:#39ff14;
+                    --hermes-input-bg:#0d0d0d; --hermes-input-text:#39ff14; --hermes-input-border:#39ff14;
+                    --hermes-accent-bar-bg:#39ff14; --hermes-highlight-bg:#39ff14; --hermes-highlight-text:#000;
+                    --hermes-disabled-text:#555; --hermes-error-text:#ff073a; --hermes-success-text:#28a745;
+                    --hermes-warning-text:#ffc107; --hermes-info-text:#17a2b8;
+                    --hermes-link-color:#39ff14; --hermes-link-hover-color:#26bf0e;
+                    --hermes-text-shadow:0 0 6px #39ff14; --hermes-line-height:1.4;
+                `;
+                break;
             default:
                 console.warn(`Hermes CS: Unknown theme "${theme}", defaulting to dark.`);
                 theme = 'dark';
@@ -2680,7 +2854,7 @@
                 console.error("Hermes CS: CRITICAL - Error getting initial data:", chrome.runtime.lastError.message);
                 profileData = {}; macros = {}; customMappings = {}; whitelist = [];
                 currentSettings = JSON.parse(JSON.stringify(defaultSettings));
-                theme = 'dark'; isBunched = false; effectsMode = 'none';
+                theme = 'dark'; customThemes = {}; isBunched = false; effectsMode = 'none';
                 showOverlays = true; learningMode = false; debugMode = false;
                 state.position = { top: 10, left: 10 }; helpPanelOpenState = false;
                 debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'initial_data_fetch_failed', details: { error: chrome.runtime.lastError.message } });
@@ -2692,6 +2866,8 @@
                 whitelist = initialStateResponse.whitelist || [];
                 currentSettings = deepMerge(defaultSettings, initialStateResponse.settings || {});
                 theme = initialStateResponse.theme || 'dark';
+                customThemes = initialStateResponse.customThemes || {};
+                Object.assign(themeOptions, customThemes);
                 isBunched = initialStateResponse.isBunched || false;
                 effectsMode = initialStateResponse.effectsMode || 'none';
                 showOverlays = initialStateResponse.showOverlays === undefined ? true : initialStateResponse.showOverlays;
