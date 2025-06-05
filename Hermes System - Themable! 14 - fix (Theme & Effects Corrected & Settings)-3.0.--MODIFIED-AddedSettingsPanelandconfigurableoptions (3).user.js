@@ -51,6 +51,7 @@
 
     let isRecording = false;
     let recordedEvents = [];
+    let lastMouseMoveTime = 0;
     let currentMacroName = '';
     let debugLogs = [];
     let profileData = {};
@@ -214,6 +215,17 @@
                 "color": "rgba(255, 255, 255, {alpha})",
                 "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
             }
+        },
+        "_comment_macro": "Settings for macro recording/playback and heuristics.",
+        "macro": {
+            "recordMouseMoves": false,
+            "_comment_recordMouseMoves": "Record mousemove events while recording macros. Default: false.",
+            "mouseMoveInterval": 200,
+            "_comment_mouseMoveInterval": "Minimum time in ms between recorded mousemove events. Default: 200.",
+            "useCoordinateFallback": false,
+            "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
+            "similarityThreshold": 0.5,
+            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
         }
     };
     let currentSettings = {};
@@ -228,6 +240,7 @@
             for (const effectKey in defaultSettings.effects) {
                 currentSettings.effects[effectKey] = {...defaultSettings.effects[effectKey], ...(currentSettings.effects[effectKey] || {})};
             }
+            currentSettings.macro = {...defaultSettings.macro, ...(currentSettings.macro || {})};
 
         } catch (error) {
             console.error('Hermes: Error loading settings, reverting to defaults:', error);
@@ -301,6 +314,11 @@
                 Changes are applied upon saving.
             </p>
             <textarea id="hermes-settings-json" style="width:100%;height:40vh;min-height:200px;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
+            <div id="hermes-settings-controls" style="margin-top:10px;">
+                <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-useCoords"> Use coordinate fallback</label>
+                <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-recordMouse"> Record mouse movements</label>
+                <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
+            </div>
             <h4 style="margin-top:15px; margin-bottom:8px; border-bottom: 1px solid var(--hermes-panel-border); padding-bottom: 5px;">Settings Guide:</h4>
             <div id="hermes-settings-explanations" style="max-height:20vh;overflow-y:auto;padding:5px;background:rgba(0,0,0,0.1);border-radius:4px;">
                 ${explanationsHtml}
@@ -317,6 +335,10 @@
             const settingsTextarea = panelInRoot.querySelector('#hermes-settings-json');
             const saveBtn = panelInRoot.querySelector('#hermes-settings-save-btn');
             const defaultsBtn = panelInRoot.querySelector('#hermes-settings-defaults-btn');
+            const useCoordsCb = panelInRoot.querySelector('#hermes-setting-useCoords');
+            const recordMouseCb = panelInRoot.querySelector('#hermes-setting-recordMouse');
+            const simSlider = panelInRoot.querySelector('#hermes-setting-similarity');
+            const simValue = panelInRoot.querySelector('#hermes-sim-value');
 
             if (settingsTextarea) {
                 settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
@@ -324,11 +346,22 @@
                     return value;
                 }, 2);
             }
+            if (useCoordsCb) useCoordsCb.checked = !!(currentSettings.macro && currentSettings.macro.useCoordinateFallback);
+            if (recordMouseCb) recordMouseCb.checked = !!(currentSettings.macro && currentSettings.macro.recordMouseMoves);
+            if (simSlider) {
+                simSlider.value = (currentSettings.macro && currentSettings.macro.similarityThreshold) || 0.5;
+                if (simValue) simValue.textContent = simSlider.value;
+                simSlider.oninput = () => { if (simValue) simValue.textContent = simSlider.value; };
+            }
 
             if (saveBtn) {
                 saveBtn.onclick = () => {
                     try {
                         const newSettings = JSON.parse(settingsTextarea.value);
+                        newSettings.macro = newSettings.macro || {};
+                        if (useCoordsCb) newSettings.macro.useCoordinateFallback = useCoordsCb.checked;
+                        if (recordMouseCb) newSettings.macro.recordMouseMoves = recordMouseCb.checked;
+                        if (simSlider) newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
                         if (saveSettings(newSettings)) {
                             if (statusIndicator) { statusIndicator.textContent = 'Settings Saved & Applied'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
                             // toggleSettingsPanel(false); // Optionally close panel on save
@@ -350,6 +383,12 @@
                             if (key.startsWith('_comment')) return undefined;
                             return value;
                         }, 2);
+                        if (useCoordsCb) useCoordsCb.checked = !!currentSettings.macro.useCoordinateFallback;
+                        if (recordMouseCb) recordMouseCb.checked = !!currentSettings.macro.recordMouseMoves;
+                        if (simSlider) {
+                            simSlider.value = currentSettings.macro.similarityThreshold;
+                            if (simValue) simValue.textContent = simSlider.value;
+                        }
                         if (statusIndicator) { statusIndicator.textContent = 'Defaults Loaded. Save to apply.'; statusIndicator.style.color = 'var(--hermes-warning-text)'; setTimeout(resetStatusIndicator, 2000); }
                     }
                 };
@@ -365,11 +404,21 @@
             settingsPanel = shadowRoot.querySelector('#hermes-settings-panel');
         } else if (show && settingsPanel) { // Panel exists, refresh content
              const settingsTextarea = settingsPanel.querySelector('#hermes-settings-json');
+             const useCoordsCb = settingsPanel.querySelector('#hermes-setting-useCoords');
+             const recordMouseCb = settingsPanel.querySelector('#hermes-setting-recordMouse');
+             const simSlider = settingsPanel.querySelector('#hermes-setting-similarity');
+             const simValue = settingsPanel.querySelector('#hermes-sim-value');
              if(settingsTextarea) {
                  settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
                     if (key.startsWith('_comment')) return undefined;
                     return value;
                 }, 2);
+             }
+             if (useCoordsCb) useCoordsCb.checked = !!currentSettings.macro.useCoordinateFallback;
+             if (recordMouseCb) recordMouseCb.checked = !!currentSettings.macro.recordMouseMoves;
+             if (simSlider) {
+                 simSlider.value = currentSettings.macro.similarityThreshold;
+                 if (simValue) simValue.textContent = simSlider.value;
              }
         }
 
@@ -507,6 +556,9 @@
         } else if (configKey === 'debugToggle') {
             buttonElement.style.background = debugMode ? 'var(--hermes-highlight-bg)' : 'var(--hermes-button-bg)';
             buttonElement.style.color = debugMode ? 'var(--hermes-highlight-text)' : 'var(--hermes-button-text)';
+        } else if (configKey === 'helpButton') {
+            buttonElement.style.background = 'var(--hermes-error-text)';
+            buttonElement.style.color = 'var(--hermes-panel-bg)';
         }
     }
 
@@ -606,6 +658,19 @@
             current = current.parentElement;
         }
         return path.join(' > ');
+    }
+
+    function getElementIndexPath(element) {
+        const path = [];
+        let current = element;
+        while (current && current !== document.body) {
+            const parent = current.parentElement;
+            if (!parent) break;
+            const index = Array.from(parent.children).indexOf(current);
+            path.unshift(index);
+            current = parent;
+        }
+        return path;
     }
 
     function rgbStringToHex(rgbString) {
@@ -734,6 +799,7 @@
     function matchProfileKey(context, fieldType, field) {
         let bestKey = null;
         let bestScore = 0;
+        const threshold = (currentSettings.macro && currentSettings.macro.similarityThreshold) || 0.5;
         const fieldName = (field.name || field.id || '').toLowerCase();
         const labelText = getAssociatedLabelText(field).toLowerCase();
         const combinedText = `${fieldName} ${labelText}`.trim();
@@ -753,7 +819,7 @@
                 });
             });
             score /= Math.max(tokens.length, profileTokens.length) || 1;
-            if (score > bestScore && score > 0.5) {
+            if (score > bestScore && score > threshold) {
                 bestScore = score;
                 bestKey = key;
             }
@@ -858,6 +924,11 @@
         if (e.target.closest('#hermes-shadow-host')) return;
         const selector = getRobustSelector(e.target);
         if (!selector) return;
+        if (e.type === 'mousemove') {
+            const now = Date.now();
+            if (now - lastMouseMoveTime < (currentSettings.macro && currentSettings.macro.mouseMoveInterval || 200)) return;
+            lastMouseMoveTime = now;
+        }
 
         const eventDetails = {
             type: e.type,
@@ -874,7 +945,8 @@
             shiftKey: e.shiftKey || false,
             ctrlKey: e.ctrlKey || false,
             altKey: e.altKey || false,
-            metaKey: e.metaKey || false
+            metaKey: e.metaKey || false,
+            path: getElementIndexPath(e.target)
         };
         recordedEvents.push(eventDetails);
         debugLogs.push({ timestamp: Date.now(), type: 'record', target: selector, details: eventDetails });
@@ -886,7 +958,9 @@
         if (!currentMacroName) {
             isRecording = false; return;
         }
-        ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'].forEach(type => {
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
+        types.forEach(type => {
             document.addEventListener(type, recordEvent, true);
         });
         if (statusIndicator) { statusIndicator.textContent = `Recording: ${currentMacroName}`; statusIndicator.style.color = 'var(--hermes-error-text)'; }
@@ -897,7 +971,9 @@
     function stopRecording() {
         if (!isRecording) return;
         isRecording = false;
-        ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'].forEach(type => {
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
+        types.forEach(type => {
             document.removeEventListener(type, recordEvent, true);
         });
         if (currentMacroName && recordedEvents.length > 0) {
@@ -932,7 +1008,20 @@
                 return;
             }
             const eventDetail = macroToPlay[index];
-            const element = document.querySelector(eventDetail.selector);
+            let element = document.querySelector(eventDetail.selector);
+            if (!element && currentSettings.macro && currentSettings.macro.useCoordinateFallback) {
+                if (eventDetail.path && Array.isArray(eventDetail.path)) {
+                    let cur = document.body;
+                    for (const idx of eventDetail.path) {
+                        if (!cur || !cur.children[idx]) { cur = null; break; }
+                        cur = cur.children[idx];
+                    }
+                    element = cur;
+                }
+                if (!element && eventDetail.clientX !== null && eventDetail.clientY !== null) {
+                    element = document.elementFromPoint(eventDetail.clientX, eventDetail.clientY);
+                }
+            }
             if (!element && eventDetail.type !== 'submit') {
                 console.warn('Hermes: Element not found for selector:', eventDetail.selector, 'Skipping event.');
                 debugLogs.push({ timestamp: Date.now(), type: 'playback_error', target: eventDetail.selector, details: { error: 'Element not found', eventDetail } });
@@ -942,6 +1031,9 @@
                 if (['click', 'mousedown', 'mouseup'].includes(eventDetail.type)) {
                     const clickEvent = new MouseEvent(eventDetail.type, { bubbles: true, cancelable: true, view: window, detail: 1, clientX: eventDetail.clientX, clientY: eventDetail.clientY, button: eventDetail.button !== null ? eventDetail.button : 0, shiftKey: eventDetail.shiftKey, ctrlKey: eventDetail.ctrlKey, altKey: eventDetail.altKey, metaKey: eventDetail.metaKey });
                     element.dispatchEvent(clickEvent);
+                } else if (eventDetail.type === 'mousemove') {
+                    const moveEvent = new MouseEvent('mousemove', { bubbles: true, cancelable: true, view: window, clientX: eventDetail.clientX, clientY: eventDetail.clientY });
+                    element.dispatchEvent(moveEvent);
                 } else if (['input', 'change'].includes(eventDetail.type)) {
                     if (element.type === 'checkbox' || element.type === 'radio') element.checked = eventDetail.checked;
                     else element.value = eventDetail.value || '';
@@ -1374,6 +1466,14 @@
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
         const contentHtml = `
             <p style="margin-bottom:15px;"><strong>Hermes</strong> automates form filling, records macros, and trains field mappings on web pages.</p>
+            <h3 style="margin-top:15px;color:var(--hermes-panel-text);">Why Use Hermes?</h3>
+            <p>Hermes speeds up repetitive data entry and automates complex page interactions. It is especially useful on sites like <strong>BMC Helix/Remedy</strong> where IDs change on every load. By storing DOM paths and fallback coordinates, Hermes can reliably replay your recorded actions.</p>
+            <ul style="list-style:disc;padding-left:20px;margin-bottom:15px;">
+                <li>Save time by filling forms instantly.</li>
+                <li>Record macros that navigate multi-step flows for you.</li>
+                <li>Customize the UI with themes, effects and detailed settings.</li>
+                <li>Debug mappings and macros using the log viewer and overlays.</li>
+            </ul>
             <h3 style="margin-top:20px;color:var(--hermes-panel-text);">Features</h3>
             <ul style="list-style:disc;padding-left:20px;margin-bottom:15px;">
                 <li><strong>Fill:</strong> Auto-fill forms using your profile data.</li>
