@@ -119,6 +119,8 @@ MIT License — free to use, share, and modify with attribution.
 - Macro scheduling
 - AI-assisted field mapping suggestions
 
+For a full list of ideas and potential enhancements, see [TODO.md](TODO.md).
+
 ---
 
 > "Hermes doesn't just fill forms—it learns them."
