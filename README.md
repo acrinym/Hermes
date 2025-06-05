@@ -12,18 +12,6 @@
 - 📤 **Profile import/export** via JSON
 - 🔍 **Debug toolkit** with logs and mutation detection
 
-## 🤔 Why Use Hermes?
-
-Hermes speeds up repetitive data entry and automates complex page interactions. It is especially helpful on sites like **BMC Helix/Remedy** where element IDs change each load. By storing DOM paths and fallback coordinates, Hermes can replay your recorded actions reliably.
-
-Use Hermes to:
-
-- Save time by filling forms with a single click.
-- Record macros that drive through multi-step workflows for you.
-- Customize the interface with themes, visual effects and a rich settings panel.
-- Debug your mappings and macros using built-in logs and overlays.
-
-
 ---
 
 ## 🌟 Features Overview
