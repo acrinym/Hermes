@@ -1,4 +1,6 @@
-# Hermes System Chrome Extension (v3.7.0)
+
+# Hermes System Chrome Extension (v3.8.0)
+
 
 **Hermes System** brings advanced form automation and macro capabilities directly to Chrome as a Manifest V3 extension. The extension works on any site and requires no userscript manager.
 
@@ -28,6 +30,8 @@
 - Save named macros with timestamps
 - Replay macros with adjustable delays
 - Delete or select macros from a dropdown
+- Edit recorded steps in a dedicated macro editor
+- Import or export macros as JSON files
 
 ### 🧠 Heuristic Trainer
 - Tracks skipped or unmapped fields

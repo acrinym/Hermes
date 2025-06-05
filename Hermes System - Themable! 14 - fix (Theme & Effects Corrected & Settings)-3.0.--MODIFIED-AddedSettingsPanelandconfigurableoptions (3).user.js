@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hermes System - Themable! 14 - fix (Theme & Effects Corrected & Settings)
 // @namespace    http://tampermonkey.net/
-// @version      3.1.0 // MODIFIED: Added Options page and more themes
+// @version      3.2.0 // MODIFIED: Added macro editor and import/export
 // @description  Advanced form filler, macro recorder, and heuristic trainer with comprehensive CSS variable theming, draggable UI, whitelist, bunchable layout, edge and corner snapping, effects, help panel, and detailed settings.
 // @author       YourName (Modified by AI)
 // @match        *://*/*
@@ -1200,6 +1200,12 @@
                 playBtn.title = `Play macro: ${name}`;
                 playBtn.onclick = (e) => { e.stopPropagation(); playMacro(name); closeAllSubmenus(); };
 
+                const editBtn = document.createElement('button');
+                editBtn.className = 'hermes-button hermes-submenu-button';
+                editBtn.innerHTML = '✏️';
+                editBtn.title = `Edit macro: ${name}`;
+                editBtn.onclick = (e) => { e.stopPropagation(); toggleMacroEditor(true, name); closeAllSubmenus(); };
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'hermes-button hermes-submenu-delete-button';
                 deleteBtn.innerHTML = '🗑️';
@@ -1209,14 +1215,32 @@
                     if (confirm(`Are you sure you want to delete macro "${name}"?`)) { deleteMacro(name); }
                     closeAllSubmenus(); // Close after confirm, regardless of choice
                 };
-                macroItemContainer.append(playBtn, deleteBtn);
+                macroItemContainer.append(playBtn, editBtn, deleteBtn);
                 macroSubmenuEl.appendChild(macroItemContainer);
             });
+            const importBtn = document.createElement('button');
+            importBtn.className = 'hermes-button hermes-submenu-button';
+            importBtn.textContent = 'Import Macros';
+            importBtn.style.marginTop = '5px';
+            importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
+            const exportBtn = document.createElement('button');
+            exportBtn.className = 'hermes-button hermes-submenu-button';
+            exportBtn.textContent = 'Export Macros';
+            exportBtn.style.marginTop = '5px';
+            exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
+            macroSubmenuEl.appendChild(importBtn);
+            macroSubmenuEl.appendChild(exportBtn);
         } else {
             const noMacrosMsg = document.createElement('div');
             noMacrosMsg.className = 'hermes-submenu-empty-message';
             noMacrosMsg.textContent = 'No macros recorded.';
             macroSubmenuEl.appendChild(noMacrosMsg);
+            const importBtn = document.createElement('button');
+            importBtn.className = 'hermes-button hermes-submenu-button';
+            importBtn.textContent = 'Import Macros';
+            importBtn.style.marginTop = '5px';
+            importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
+            macroSubmenuEl.appendChild(importBtn);
         }
     }
 
@@ -1396,6 +1420,99 @@
             if (show) { populateTrainerPanel(); trainerPanel.style.display = 'block'; applyTheme(); }
             else trainerPanel.style.display = 'none';
         }
+    }
+
+    function createMacroEditorPanel() {
+        const panelId = 'hermes-macro-editor';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+        const contentHtml = `<select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>` +
+            `<textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>`;
+        const customButtonsHtml = `<button id="hermes-macro-edit-save" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save Macro</button>`;
+        createModal(panelId, 'Macro Editor', contentHtml, '700px', customButtonsHtml);
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (panel) {
+            const selectEl = panel.querySelector('#hermes-macro-edit-select');
+            const textArea = panel.querySelector('#hermes-macro-edit-text');
+            const populate = () => {
+                selectEl.innerHTML = Object.keys(macros).map(n => `<option value="${n}">${n}</option>`).join('');
+                if (selectEl.value) textArea.value = JSON.stringify(macros[selectEl.value] || [], null, 2);
+                else textArea.value = '';
+            };
+            populate();
+            selectEl.onchange = () => { textArea.value = JSON.stringify(macros[selectEl.value] || [], null, 2); };
+            const saveBtn = panel.querySelector('#hermes-macro-edit-save');
+            if (saveBtn) saveBtn.onclick = () => {
+                const name = selectEl.value;
+                try {
+                    const arr = JSON.parse(textArea.value);
+                    macros[name] = arr;
+                    if (saveMacros(macros)) {
+                        updateMacroDropdown();
+                        if (statusIndicator) { statusIndicator.textContent = 'Macro saved'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+                        toggleMacroEditor(false);
+                    }
+                } catch (e) {
+                    alert('Invalid JSON: ' + e.message);
+                }
+            };
+        }
+    }
+
+    function toggleMacroEditor(show, macroName) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-macro-editor');
+        if (show && !panel) { createMacroEditorPanel(); panel = shadowRoot.querySelector('#hermes-macro-editor'); }
+        if (panel) {
+            const selectEl = panel.querySelector('#hermes-macro-edit-select');
+            const textArea = panel.querySelector('#hermes-macro-edit-text');
+            if (show) {
+                panel.style.display = 'block';
+                selectEl.innerHTML = Object.keys(macros).map(n => `<option value="${n}">${n}</option>`).join('');
+                if (macroName && macros[macroName]) selectEl.value = macroName;
+                textArea.value = selectEl.value ? JSON.stringify(macros[selectEl.value] || [], null, 2) : '';
+                applyTheme();
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+    }
+
+    function exportMacros() {
+        try {
+            const blob = new Blob([JSON.stringify(macros, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hermes_macros_export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) { console.error('Hermes: Error exporting macros', e); }
+    }
+
+    function importMacrosFromFile() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json,application/json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const obj = JSON.parse(reader.result);
+                    macros = { ...macros, ...obj };
+                    if (saveMacros(macros)) {
+                        updateMacroDropdown();
+                        if (statusIndicator) { statusIndicator.textContent = 'Macros imported'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+                    }
+                } catch (err) {
+                    console.error('Hermes: Invalid macro JSON', err);
+                    alert('Invalid macro file');
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
     }
 
     function createWhitelistPanel() {
