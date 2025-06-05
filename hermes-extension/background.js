@@ -116,6 +116,17 @@ const defaultSettingsFromUserscript = {
             "color": "rgba(255, 255, 255, {alpha})",
             "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
         }
+    },
+    "_comment_macro": "Settings for macro recording/playback and heuristics.",
+    "macro": {
+        "recordMouseMoves": false,
+        "_comment_recordMouseMoves": "Record mousemove events while recording macros. Default: false.",
+        "mouseMoveInterval": 200,
+        "_comment_mouseMoveInterval": "Minimum time in ms between recorded mousemove events. Default: 200.",
+        "useCoordinateFallback": false,
+        "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
+        "similarityThreshold": 0.5,
+        "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
     }
 };
 
