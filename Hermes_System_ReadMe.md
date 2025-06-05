@@ -32,17 +32,6 @@ Use Hermes to:
 - Supports custom mappings per domain and field ID/name  
 - Optional visual overlays (border highlight) to indicate filled fields  
 
-## 🤔 Why Use Hermes?
-Hermes speeds up repetitive data entry and automates complex page interactions. It is particularly useful on sites like **BMC Helix/Remedy** where IDs change constantly. Hermes stores DOM paths and fallback coordinates to make recorded macros reliable.
-
-Use Hermes to:
-
-- Save time by filling forms instantly.
-- Record macros that walk through complicated workflows for you.
-- Style and tweak the UI using themes and a deep settings panel.
-- Debug your mappings and macros through the built-in log viewer and overlays.
-
-
 ### 📽️ Macro Recorder + Player
 - Record user interactions (clicks, inputs, changes)  
 - Save named macros with timestamps  
