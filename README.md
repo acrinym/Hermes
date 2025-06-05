@@ -1,4 +1,4 @@
-# Hermes System Chrome Extension (v3.6.0)
+# Hermes System Chrome Extension (v3.7.0)
 
 **Hermes System** brings advanced form automation and macro capabilities directly to Chrome as a Manifest V3 extension. The extension works on any site and requires no userscript manager.
 
@@ -51,9 +51,10 @@
 - Effect parameters editable in the settings panel
 
 ### 🎨 Theme Engine
-- Light ☀️, Dark 🌙, Phoenix 🦅, Sea Green 🐢, Aurora Glow 🌠, Crimson Ember 🔥, Slate Storm ⛈️ and many more
+- Light ☀️, Dark 🌙, Phoenix 🦅, Sea Green 🐢, Aurora Glow 🌠, Crimson Ember 🔥, Slate Storm ⛈️ and many more including new Sunset 🌇, Forest 🌳 and Neon 💡 themes
 - CSS variables make themes easily customizable
 - Theme choice persists across sessions
+- Themes can be exported or imported via the Options page
 
 ### 🔒 Domain Allowlist
 - Manage allowed domains from the GUI
@@ -63,6 +64,7 @@
 ### ⚙️ Settings Panel
 - JSON editor for advanced options such as border thickness or effect density
 - Settings are merged with safe defaults and validated
+- Dedicated Options page available from Chrome's extension settings
 
 ---
 

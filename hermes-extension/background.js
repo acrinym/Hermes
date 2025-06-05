@@ -12,10 +12,40 @@ const DEBUG_MODE_KEY_EXT = 'hermes_debug_mode_ext';
 const POSITION_KEY_EXT = 'hermes_position_ext';
 const WHITELIST_KEY_EXT = 'hermes_whitelist_ext';
 const THEME_KEY_EXT = 'hermes_theme_ext';
+const CUSTOM_THEMES_KEY_EXT = 'hermes_custom_themes_ext';
 const BUNCHED_STATE_KEY_EXT = 'hermes_bunched_state_ext';
 const EFFECTS_STATE_KEY_EXT = 'hermes_effects_state_ext';
 const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
 const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
+
+const builtInThemes = {
+    light: { name: 'Light', emoji: '☀️' },
+    dark: { name: 'Dark', emoji: '🌙' },
+    phoenix: { name: 'Phoenix', emoji: '🦅' },
+    seaGreen: { name: 'Sea Green', emoji: '🐢' },
+    auroraGlow: { name: 'Aurora Glow', emoji: '🌠' },
+    crimsonEmber: { name: 'Crimson Ember', emoji: '🔥' },
+    slateStorm: { name: 'Slate Storm', emoji: '⛈️' },
+    classicSlate: { name: 'Classic Slate', emoji: '🪨' },
+    classicWheat: { name: 'Classic Wheat', emoji: '🌾' },
+    classicTeal: { name: 'Classic Teal', emoji: '🦚' },
+    classicSpruce: { name: 'Classic Spruce', emoji: '🌲' },
+    classicStorm: { name: 'Classic Storm', emoji: '⚡' },
+    rose: { name: 'Rose', emoji: '🌹' },
+    pumpkin: { name: 'Pumpkin', emoji: '🎃' },
+    marine: { name: 'Marine', emoji: '⚓' },
+    rainyDay: { name: 'Rainy Day', emoji: '🌧️' },
+    eggplant: { name: 'Eggplant', emoji: '🍆' },
+    plum: { name: 'Plum', emoji: '💜' },
+    redBlueWhite: { name: 'Red Blue White', emoji: '🇺🇸' },
+    maple: { name: 'Maple', emoji: '🍁' },
+    lilac: { name: 'Lilac', emoji: '🌸' },
+    desert: { name: 'Desert', emoji: '🏜️' },
+    brick: { name: 'Brick', emoji: '🧱' },
+    sunset: { name: 'Sunset', emoji: '🌇' },
+    forest: { name: 'Forest', emoji: '🌳' },
+    neon: { name: 'Neon', emoji: '💡' }
+};
 
 // --- In-memory cache for Hermes data ---
 let hermesState = {
@@ -24,6 +54,8 @@ let hermesState = {
     macros: {},
     mappings: {},
     theme: 'dark',
+    customThemes: {},
+    builtInThemes,
     isBunched: false,
     effectsMode: 'none',
     showOverlays: true,
@@ -165,6 +197,8 @@ async function initializeHermesState() {
         [MACRO_KEY_EXT]: '{}',
         [MAPPING_KEY_EXT]: '{}',
         [THEME_KEY_EXT]: 'dark',
+        [CUSTOM_THEMES_KEY_EXT]: '{}',
+        hermes_built_in_themes: JSON.stringify(builtInThemes),
         [BUNCHED_STATE_KEY_EXT]: false,
         [EFFECTS_STATE_KEY_EXT]: 'none',
         [OVERLAY_STATE_KEY_EXT]: true,
@@ -199,6 +233,9 @@ async function initializeHermesState() {
         catch (e) { console.error("Hermes BG: Error parsing mappings JSON.", e); hermesState.mappings = {}; }
 
         hermesState.theme = storedData[THEME_KEY_EXT];
+        try { hermesState.customThemes = JSON.parse(storedData[CUSTOM_THEMES_KEY_EXT]); }
+        catch (e) { console.error("Hermes BG: Error parsing custom themes JSON.", e); hermesState.customThemes = {}; }
+        hermesState.builtInThemes = builtInThemes;
         hermesState.isBunched = storedData[BUNCHED_STATE_KEY_EXT];
         hermesState.effectsMode = storedData[EFFECTS_STATE_KEY_EXT];
         hermesState.showOverlays = storedData[OVERLAY_STATE_KEY_EXT];
@@ -212,6 +249,10 @@ async function initializeHermesState() {
         catch (e) { console.error("Hermes BG: Error parsing whitelist JSON.", e); hermesState.whitelist = []; }
 
         hermesState.helpPanelOpen = storedData[HELP_PANEL_OPEN_KEY_EXT];
+
+        chrome.storage.local.set({
+            hermes_built_in_themes: JSON.stringify(builtInThemes)
+        });
 
         console.log("Hermes BG: State initialization complete. Current learningMode:", hermesState.learningMode, "debugMode:", hermesState.debugMode);
 
@@ -260,6 +301,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 case DEBUG_MODE_KEY_EXT: hermesState.debugMode = value; break;
                 case POSITION_KEY_EXT: hermesState.uiPosition = value; break;
                 case WHITELIST_KEY_EXT: hermesState.whitelist = value; break;
+                case CUSTOM_THEMES_KEY_EXT: hermesState.customThemes = value; break;
                 case HELP_PANEL_OPEN_KEY_EXT: hermesState.helpPanelOpen = value; break;
                 default:
                     console.warn("Hermes BG: Unknown key for SAVE_HERMES_DATA:", key);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hermes System - Themable! 14 - fix (Theme & Effects Corrected & Settings)
 // @namespace    http://tampermonkey.net/
-// @version      3.0.0 // MODIFIED: Added Settings Panel and configurable options
+// @version      3.1.0 // MODIFIED: Added Options page and more themes
 // @description  Advanced form filler, macro recorder, and heuristic trainer with comprehensive CSS variable theming, draggable UI, whitelist, bunchable layout, edge and corner snapping, effects, help panel, and detailed settings.
 // @author       YourName (Modified by AI)
 // @match        *://*/*
@@ -87,7 +87,10 @@
         maple: { name: 'Maple', emoji: '🍁' },
         lilac: { name: 'Lilac', emoji: '🌸' },
         desert: { name: 'Desert', emoji: '🏜️' },
-        brick: { name: 'Brick', emoji: '🧱' }
+        brick: { name: 'Brick', emoji: '🧱' },
+        sunset: { name: 'Sunset', emoji: '🌇' },
+        forest: { name: 'Forest', emoji: '🌳' },
+        neon: { name: 'Neon', emoji: '💡' }
     };
 
     const hermesButtonProperties = {
@@ -1029,10 +1032,30 @@
             }
             try {
                 if (['click', 'mousedown', 'mouseup'].includes(eventDetail.type)) {
-                    const clickEvent = new MouseEvent(eventDetail.type, { bubbles: true, cancelable: true, view: window, detail: 1, clientX: eventDetail.clientX, clientY: eventDetail.clientY, button: eventDetail.button !== null ? eventDetail.button : 0, shiftKey: eventDetail.shiftKey, ctrlKey: eventDetail.ctrlKey, altKey: eventDetail.altKey, metaKey: eventDetail.metaKey });
+                    const view = (element && element.ownerDocument && element.ownerDocument.defaultView) ? element.ownerDocument.defaultView : window;
+                    const clickEvent = new MouseEvent(eventDetail.type, {
+                        bubbles: true,
+                        cancelable: true,
+                        view,
+                        detail: 1,
+                        clientX: eventDetail.clientX,
+                        clientY: eventDetail.clientY,
+                        button: eventDetail.button !== null ? eventDetail.button : 0,
+                        shiftKey: eventDetail.shiftKey,
+                        ctrlKey: eventDetail.ctrlKey,
+                        altKey: eventDetail.altKey,
+                        metaKey: eventDetail.metaKey
+                    });
                     element.dispatchEvent(clickEvent);
                 } else if (eventDetail.type === 'mousemove') {
-                    const moveEvent = new MouseEvent('mousemove', { bubbles: true, cancelable: true, view: window, clientX: eventDetail.clientX, clientY: eventDetail.clientY });
+                    const view = (element && element.ownerDocument && element.ownerDocument.defaultView) ? element.ownerDocument.defaultView : window;
+                    const moveEvent = new MouseEvent('mousemove', {
+                        bubbles: true,
+                        cancelable: true,
+                        view,
+                        clientX: eventDetail.clientX,
+                        clientY: eventDetail.clientY
+                    });
                     element.dispatchEvent(moveEvent);
                 } else if (['input', 'change'].includes(eventDetail.type)) {
                     if (element.type === 'checkbox' || element.type === 'radio') element.checked = eventDetail.checked;
@@ -2425,6 +2448,90 @@
                     --hermes-link-color:#cc6666;
                     --hermes-link-hover-color:#994d4d;
                     --hermes-text-shadow:0 0 3px rgba(204,102,102,0.5);
+                    --hermes-line-height:1.4;
+                `;
+                break;
+            case 'sunset':
+                themeVars = `
+                    --hermes-bg:#ffe0b3;
+                    --hermes-text:#3d1f00;
+                    --hermes-border:#ff6600;
+                    --hermes-button-bg:#ffcc80;
+                    --hermes-button-text:#3d1f00;
+                    --hermes-button-hover-bg:#ff9933;
+                    --hermes-panel-bg:#fff2e0;
+                    --hermes-panel-text:#3d1f00;
+                    --hermes-panel-border:#ff6600;
+                    --hermes-input-bg:#fff;
+                    --hermes-input-text:#3d1f00;
+                    --hermes-input-border:#ff6600;
+                    --hermes-accent-bar-bg:#ff6600;
+                    --hermes-highlight-bg:#ff6600;
+                    --hermes-highlight-text:#fff;
+                    --hermes-disabled-text:#777;
+                    --hermes-error-text:#dc3545;
+                    --hermes-success-text:#28a745;
+                    --hermes-warning-text:#ffc107;
+                    --hermes-info-text:#17a2b8;
+                    --hermes-link-color:#ff6600;
+                    --hermes-link-hover-color:#cc5200;
+                    --hermes-text-shadow:none;
+                    --hermes-line-height:1.4;
+                `;
+                break;
+            case 'forest':
+                themeVars = `
+                    --hermes-bg:#e6ffe6;
+                    --hermes-text:#003300;
+                    --hermes-border:#339966;
+                    --hermes-button-bg:#b3ffb3;
+                    --hermes-button-text:#003300;
+                    --hermes-button-hover-bg:#339966;
+                    --hermes-panel-bg:#f0fff0;
+                    --hermes-panel-text:#003300;
+                    --hermes-panel-border:#339966;
+                    --hermes-input-bg:#fff;
+                    --hermes-input-text:#003300;
+                    --hermes-input-border:#339966;
+                    --hermes-accent-bar-bg:#339966;
+                    --hermes-highlight-bg:#339966;
+                    --hermes-highlight-text:#fff;
+                    --hermes-disabled-text:#777;
+                    --hermes-error-text:#dc3545;
+                    --hermes-success-text:#28a745;
+                    --hermes-warning-text:#ffc107;
+                    --hermes-info-text:#17a2b8;
+                    --hermes-link-color:#339966;
+                    --hermes-link-hover-color:#26734d;
+                    --hermes-text-shadow:none;
+                    --hermes-line-height:1.4;
+                `;
+                break;
+            case 'neon':
+                themeVars = `
+                    --hermes-bg:#000000;
+                    --hermes-text:#39ff14;
+                    --hermes-border:#39ff14;
+                    --hermes-button-bg:#000000;
+                    --hermes-button-text:#39ff14;
+                    --hermes-button-hover-bg:#1a1a1a;
+                    --hermes-panel-bg:#0d0d0d;
+                    --hermes-panel-text:#39ff14;
+                    --hermes-panel-border:#39ff14;
+                    --hermes-input-bg:#0d0d0d;
+                    --hermes-input-text:#39ff14;
+                    --hermes-input-border:#39ff14;
+                    --hermes-accent-bar-bg:#39ff14;
+                    --hermes-highlight-bg:#39ff14;
+                    --hermes-highlight-text:#000;
+                    --hermes-disabled-text:#555;
+                    --hermes-error-text:#ff073a;
+                    --hermes-success-text:#28a745;
+                    --hermes-warning-text:#ffc107;
+                    --hermes-info-text:#17a2b8;
+                    --hermes-link-color:#39ff14;
+                    --hermes-link-hover-color:#26bf0e;
+                    --hermes-text-shadow:0 0 6px #39ff14;
                     --hermes-line-height:1.4;
                 `;
                 break;
