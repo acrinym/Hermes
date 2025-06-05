@@ -18,8 +18,8 @@ This file lists potential enhancements for Hermes beyond its current features. T
 - Capture screenshots or context during training
 
 ## User Interface & Usability
-- Full options page in Chrome settings
-- More themes and import/export support
+- ~~Full options page in Chrome settings~~ (implemented in v3.7)
+- ~~More themes and import/export support~~ (implemented in v3.7)
 - Multi-language localization
 - Dark mode that follows system theme
 - First-run onboarding or tutorial
