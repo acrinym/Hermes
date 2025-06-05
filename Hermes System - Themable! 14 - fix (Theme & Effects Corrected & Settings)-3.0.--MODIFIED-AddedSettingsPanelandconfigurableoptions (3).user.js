@@ -556,6 +556,9 @@
         } else if (configKey === 'debugToggle') {
             buttonElement.style.background = debugMode ? 'var(--hermes-highlight-bg)' : 'var(--hermes-button-bg)';
             buttonElement.style.color = debugMode ? 'var(--hermes-highlight-text)' : 'var(--hermes-button-text)';
+        } else if (configKey === 'helpButton') {
+            buttonElement.style.background = 'var(--hermes-error-text)';
+            buttonElement.style.color = 'var(--hermes-panel-bg)';
         }
     }
 
@@ -1463,6 +1466,14 @@
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
         const contentHtml = `
             <p style="margin-bottom:15px;"><strong>Hermes</strong> automates form filling, records macros, and trains field mappings on web pages.</p>
+            <h3 style="margin-top:15px;color:var(--hermes-panel-text);">Why Use Hermes?</h3>
+            <p>Hermes speeds up repetitive data entry and automates complex page interactions. It is especially useful on sites like <strong>BMC Helix/Remedy</strong> where IDs change on every load. By storing DOM paths and fallback coordinates, Hermes can reliably replay your recorded actions.</p>
+            <ul style="list-style:disc;padding-left:20px;margin-bottom:15px;">
+                <li>Save time by filling forms instantly.</li>
+                <li>Record macros that navigate multi-step flows for you.</li>
+                <li>Customize the UI with themes, effects and detailed settings.</li>
+                <li>Debug mappings and macros using the log viewer and overlays.</li>
+            </ul>
             <h3 style="margin-top:20px;color:var(--hermes-panel-text);">Features</h3>
             <ul style="list-style:disc;padding-left:20px;margin-bottom:15px;">
                 <li><strong>Fill:</strong> Auto-fill forms using your profile data.</li>
