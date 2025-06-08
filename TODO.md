@@ -16,6 +16,7 @@ This file lists potential enhancements for Hermes beyond its current features. T
 - Sliders to adjust similarity thresholds
 - Detect repeated forms to auto-learn fields
 - Capture screenshots or context during training
+- Per-domain configuration files to guide macro playback and field detection
 
 ## User Interface & Usability
 - ~~Full options page in Chrome settings~~ (implemented in v3.7)
