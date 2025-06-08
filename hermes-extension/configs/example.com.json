@@ -1,0 +1,5 @@
+{
+  "loginButton": "#login",
+  "usernameField": "input[name='username']",
+  "passwordField": "input[name='password']"
+}

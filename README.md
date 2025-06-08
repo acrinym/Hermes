@@ -88,6 +88,30 @@ Hermes stores its data in `chrome.storage.local` using these keys:
 
 ---
 
+## 📁 Configs Folder
+
+Site-specific selectors can be placed under `hermes-extension/configs/`.  Each
+file is named after the domain it applies to (e.g.
+`example.com.json`).  Hermes loads these JSON configs to reliably locate buttons
+and fields on pages where the default heuristics struggle.
+
+Example config:
+
+```json
+{
+  "loginButton": "#login",
+  "usernameField": "input[name='username']",
+  "passwordField": "input[name='password']"
+}
+```
+
+When visiting a page Hermes first looks for a config matching the full
+hostname.  If none exists it falls back to a file for the base domain.  For
+`sub.example.com` the extension checks `sub.example.com.json` then
+`example.com.json`.
+
+---
+
 ## 💻 Installation
 
 1. Clone this repository or download the source.
