@@ -47,6 +47,8 @@
     let profileData = {};
     let macros = {};
     let customMappings = {};
+    let siteConfig = null;
+    const siteConfigCache = {};
     let skippedFields = [];
     let fieldSelectMode = false;
     let isMinimized = false;
@@ -721,6 +723,29 @@
         }
     }
 
+    async function loadSiteConfig(hostname) {
+        if (siteConfigCache[hostname]) return siteConfigCache[hostname];
+        const fetchConfig = async (name) => {
+            try {
+                const url = chrome.runtime.getURL('configs/' + name + '.json');
+                const res = await fetch(url);
+                if (res.ok) return await res.json();
+            } catch (e) {
+                if (debugMode) console.warn('Hermes CS: Failed to load config', name, e);
+            }
+            return null;
+        };
+        let cfg = await fetchConfig(hostname);
+        if (!cfg) {
+            const parts = hostname.split('.');
+            if (parts.length > 2) parts.splice(0, parts.length - 2);
+            const tld = parts.join('.');
+            if (tld && tld !== hostname) cfg = await fetchConfig(tld);
+        }
+        siteConfigCache[hostname] = cfg;
+        return cfg;
+    }
+
     async function saveCustomMappings(mappingsToSave) {
         try {
             await saveDataToBackground(MAPPING_KEY_EXT, mappingsToSave);
@@ -799,6 +824,14 @@
                  bestKey = siteMappings[field.id]; bestScore = 1; reason = 'Custom mapping';
             } else if (field.name && siteMappings[field.name]) {
                  bestKey = siteMappings[field.name]; bestScore = 1; reason = 'Custom mapping';
+            }
+        }
+
+        if ((!bestKey || bestScore < threshold) && siteConfig && siteConfig.fields) {
+            for (const [sel, key] of Object.entries(siteConfig.fields)) {
+                try {
+                    if (field.matches(sel)) { bestKey = key; bestScore = 1; reason = 'Site config selector'; break; }
+                } catch(e) {}
             }
         }
 
@@ -978,6 +1011,11 @@
             }
             const eventDetail = macroToPlay[index];
             let element = document.querySelector(eventDetail.selector);
+            if (!element && siteConfig && siteConfig.macros && siteConfig.macros[eventDetail.selector]) {
+                const altSel = siteConfig.macros[eventDetail.selector];
+                const selList = Array.isArray(altSel) ? altSel : [altSel];
+                for (const s of selList) { element = document.querySelector(s); if (element) break; }
+            }
             if (!element && currentSettings.macro && currentSettings.macro.useCoordinateFallback) {
                 if (eventDetail.path && Array.isArray(eventDetail.path)) {
                     let cur = document.body;
@@ -2940,10 +2978,11 @@
                 debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'initial_data_empty', details: {} });
             }
 
-            const setupAction = () => {
+            const setupAction = async () => {
                 if (!document.body) {
                     requestAnimationFrame(setupAction); return;
                 }
+                siteConfig = await loadSiteConfig(window.location.hostname) || {};
                 setupUI();
                 setupAnalysisSnifferPlugin();
                 applyCurrentSettings();
