@@ -63,7 +63,8 @@ let hermesState = {
     debugMode: false,
     uiPosition: { top: null, left: null },
     whitelist: [],
-    helpPanelOpen: false
+    helpPanelOpen: false,
+    configs: {}
 };
 
 // `defaultSettings` object extracted from your "Hermes System - Themable! 14 - fix ... .user.js"
@@ -276,6 +277,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case "GET_HERMES_INITIAL_DATA":
             sendResponse(JSON.parse(JSON.stringify(hermesState)));
             break;
+
+        case "GET_SITE_CONFIG":
+            if (!payload || !payload.site) {
+                console.error("Hermes BG: GET_SITE_CONFIG missing site in payload", payload);
+                sendResponse({ success: false, error: "Missing site" });
+                return true;
+            }
+            const site = payload.site.toLowerCase();
+            if (hermesState.configs[site]) {
+                sendResponse({ success: true, config: hermesState.configs[site] });
+            } else {
+                const url = chrome.runtime.getURL(`configs/${site}.json`);
+                fetch(url)
+                    .then(r => {
+                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                        return r.json();
+                    })
+                    .then(cfg => {
+                        hermesState.configs[site] = cfg;
+                        sendResponse({ success: true, config: cfg });
+                    })
+                    .catch(err => {
+                        console.warn(`Hermes BG: Config for ${site} not found or failed`, err);
+                        sendResponse({ success: false, error: err.toString() });
+                    });
+            }
+            return true;
 
         case "SAVE_HERMES_DATA":
             if (!payload || typeof payload.key === 'undefined') { // Check if key exists

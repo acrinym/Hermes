@@ -56,6 +56,7 @@
     let isBunched;
     let effectsMode;
     let helpPanelOpenState; // For persisting help panel open/closed state
+    let siteConfig = null; // Cached site-specific config
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -2940,38 +2941,50 @@
                 debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'initial_data_empty', details: {} });
             }
 
-            const setupAction = () => {
-                if (!document.body) {
-                    requestAnimationFrame(setupAction); return;
-                }
-                setupUI();
-                setupAnalysisSnifferPlugin();
-                applyCurrentSettings();
+            const finalizeInit = () => {
+                const setupAction = () => {
+                    if (!document.body) {
+                        requestAnimationFrame(setupAction); return;
+                    }
+                    setupUI();
+                    setupAnalysisSnifferPlugin();
+                    applyCurrentSettings();
 
-                if (debugMode) {
-                    HermesDebug.start();
-                    setupDebugControls();
-                }
+                    if (debugMode) {
+                        HermesDebug.start();
+                        setupDebugControls();
+                    }
 
-                if (isWhitelisted()) {
-                    toggleMinimizedUI(true);
+                    if (isWhitelisted()) {
+                        toggleMinimizedUI(true);
+                    } else {
+                        toggleMinimizedUI(false);
+                        if (showOverlays) applyVisualOverlays();
+                        startMutationObserver();
+                    }
+
+                    if (helpPanelOpenState) {
+                        toggleHelpPanel(true);
+                    }
+                    console.log("Hermes CS: Full initialization complete.");
+                };
+
+                if (document.readyState === 'complete' || document.readyState === 'interactive') {
+                    setupAction();
                 } else {
-                    toggleMinimizedUI(false);
-                    if (showOverlays) applyVisualOverlays();
-                    startMutationObserver();
+                    document.addEventListener('DOMContentLoaded', setupAction, { once: true });
                 }
-
-                if (helpPanelOpenState) {
-                    toggleHelpPanel(true);
-                }
-                console.log("Hermes CS: Full initialization complete.");
             };
 
-            if (document.readyState === 'complete' || document.readyState === 'interactive') {
-                setupAction();
-            } else {
-                document.addEventListener('DOMContentLoaded', setupAction, {once: true});
-            }
+            chrome.runtime.sendMessage({ type: "GET_SITE_CONFIG", payload: { site: window.location.hostname } }, (configResp) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Hermes CS: Error getting site config:", chrome.runtime.lastError.message);
+                } else if (configResp && configResp.success) {
+                    siteConfig = configResp.config;
+                    console.log("Hermes CS: Site config loaded", siteConfig);
+                }
+                finalizeInit();
+            });
         });
     }
 
