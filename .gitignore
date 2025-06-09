@@ -1,3 +1,6 @@
+node_modules/
+hermes-extension/node_modules/
+hermes-extension/dist/
 # Node dependencies
 server/node_modules/
 
@@ -6,3 +9,4 @@ npm-debug.log*
 
 # Mac OS
 .DS_Store
+

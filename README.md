@@ -180,6 +180,13 @@ curl http://localhost:3000/api/status/<id>
 
 PRs are welcome. For suggestions or issues, please use the Issues tab.
 
+### Building the extension
+
+1. `cd hermes-extension`
+2. Run `npm install` to install dev dependencies.
+3. Run `npm run build` to bundle `src/` into the `dist/` folder.
+4. Load the `hermes-extension` directory in Chrome as an unpacked extension.
+
 > **Author:** Justin
 
 ---
