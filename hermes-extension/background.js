@@ -47,6 +47,12 @@ const builtInThemes = {
     neon: { name: 'Neon', emoji: '💡' }
 };
 
+// --- GitHub configuration for remote site configs ---
+// Replace these placeholder values with your actual repository details
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/_Configs/';
+const GITHUB_API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/_Configs/';
+const GITHUB_TOKEN = ''; // Personal access token if writing back to the repo
+
 // --- In-memory cache for Hermes data ---
 let hermesState = {
     settings: {},
@@ -288,21 +294,46 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             if (hermesState.configs[site]) {
                 sendResponse({ success: true, config: hermesState.configs[site] });
             } else {
-                const url = chrome.runtime.getURL(`configs/${site}.json`);
-                fetch(url)
-                    .then(r => {
-                        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-                        return r.json();
-                    })
-                    .then(cfg => {
-                        hermesState.configs[site] = cfg;
-                        sendResponse({ success: true, config: cfg });
-                    })
-                    .catch(err => {
-                        console.warn(`Hermes BG: Config for ${site} not found or failed`, err);
-                        sendResponse({ success: false, error: err.toString() });
+                const localUrl = chrome.runtime.getURL(`configs/${site}.json`);
+                fetch(localUrl)
+                    .then(r => { if (!r.ok) throw new Error('local'); return r.json(); })
+                    .then(cfg => { hermesState.configs[site] = cfg; sendResponse({ success: true, config: cfg }); })
+                    .catch(() => {
+                        const remoteUrl = `${GITHUB_RAW_BASE}${site}.json`;
+                        fetch(remoteUrl)
+                            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+                            .then(cfg => { hermesState.configs[site] = cfg; sendResponse({ success: true, config: cfg }); })
+                            .catch(err => { console.warn(`Hermes BG: Config for ${site} not found`, err); sendResponse({ success: false, error: err.toString() }); });
                     });
             }
+            return true;
+
+        case "SAVE_SITE_CONFIG":
+            if (!payload || !payload.site || !payload.config) {
+                sendResponse({ success: false, error: "Missing site or config" });
+                return true;
+            }
+            (async () => {
+                const fileUrl = `${GITHUB_API_BASE}${payload.site}.json`;
+                const content = btoa(JSON.stringify(payload.config, null, 2));
+                const body = { message: `Add config for ${payload.site}`, content };
+                try {
+                    const res = await fetch(fileUrl, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': GITHUB_TOKEN ? `token ${GITHUB_TOKEN}` : undefined
+                        },
+                        body: JSON.stringify(body)
+                    });
+                    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                    hermesState.configs[payload.site] = payload.config;
+                    sendResponse({ success: true });
+                } catch (err) {
+                    console.error('Hermes BG: Failed to save config', err);
+                    sendResponse({ success: false, error: err.toString() });
+                }
+            })();
             return true;
 
         case "SAVE_HERMES_DATA":
