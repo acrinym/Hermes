@@ -19,6 +19,11 @@
     const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
     const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
 
+    // GitHub repo information for remote configs
+    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/_Configs/';
+    const GITHUB_API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/_Configs/';
+    const GITHUB_TOKEN = ''; // Personal access token if saving configs
+
     // =================== State Variables (will be populated by initial data load) ===================
     let showOverlays;
     let learningMode;
@@ -58,7 +63,6 @@
     let isBunched;
     let effectsMode;
     let helpPanelOpenState; // For persisting help panel open/closed state
-    let siteConfig = null; // Cached site-specific config
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -661,6 +665,35 @@
         return path;
     }
 
+    function generateSiteConfig() {
+        const fields = Array.from(document.querySelectorAll('input, textarea, select')).map(el => {
+            const rect = el.getBoundingClientRect();
+            return {
+                selector: getRobustSelector(el),
+                x: rect.left,
+                y: rect.top,
+                width: rect.width,
+                height: rect.height,
+                type: el.type || el.tagName.toLowerCase(),
+                name: el.name || null,
+                id: el.id || null,
+                label: getAssociatedLabelText(el) || null
+            };
+        });
+        const buttons = Array.from(document.querySelectorAll('button, input[type="submit"], input[type="button"]')).map(el => {
+            const rect = el.getBoundingClientRect();
+            return {
+                selector: getRobustSelector(el),
+                x: rect.left,
+                y: rect.top,
+                width: rect.width,
+                height: rect.height,
+                text: el.innerText || el.value || null
+            };
+        });
+        return { fields, buttons };
+    }
+
     function rgbStringToHex(rgbString) {
         if (!rgbString || typeof rgbString !== 'string') return '#000000';
         const match = rgbString.match(/rgba?\(?\s*(\d+)\s*[, ]?\s*(\d+)\s*[, ]?\s*(\d+)/i);
@@ -726,7 +759,7 @@
 
     async function loadSiteConfig(hostname) {
         if (siteConfigCache[hostname]) return siteConfigCache[hostname];
-        const fetchConfig = async (name) => {
+        const fetchLocal = async (name) => {
             try {
                 const url = chrome.runtime.getURL('configs/' + name + '.json');
                 const res = await fetch(url);
@@ -736,12 +769,31 @@
             }
             return null;
         };
-        let cfg = await fetchConfig(hostname);
+        const fetchRemote = async (name) => {
+            try {
+                const res = await fetch(`${GITHUB_RAW_BASE}${name}.json`);
+                if (res.ok) return await res.json();
+            } catch (e) { if (debugMode) console.warn('Hermes CS: Remote config fetch failed', name, e); }
+            return null;
+        };
+
+        let cfg = await fetchLocal(hostname);
         if (!cfg) {
             const parts = hostname.split('.');
             if (parts.length > 2) parts.splice(0, parts.length - 2);
             const tld = parts.join('.');
-            if (tld && tld !== hostname) cfg = await fetchConfig(tld);
+            if (tld && tld !== hostname) cfg = await fetchLocal(tld);
+        }
+        if (!cfg) cfg = await fetchRemote(hostname);
+        if (!cfg) {
+            const parts = hostname.split('.');
+            if (parts.length > 2) parts.splice(0, parts.length - 2);
+            const tld = parts.join('.');
+            if (tld && tld !== hostname) cfg = await fetchRemote(tld);
+        }
+        if (!cfg) {
+            cfg = generateSiteConfig();
+            chrome.runtime.sendMessage({ type: 'SAVE_SITE_CONFIG', payload: { site: hostname, config: cfg } }, () => {});
         }
         siteConfigCache[hostname] = cfg;
         return cfg;
