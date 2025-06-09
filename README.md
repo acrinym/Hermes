@@ -120,9 +120,17 @@ coordinates so you can refine them later.
 ## 💻 Installation
 
 1. Clone this repository or download the source.
-2. Open `chrome://extensions` in Chrome and enable **Developer mode**.
-3. Click **Load unpacked** and select the `hermes-extension` folder.
+2. Open your browser's extensions page and enable **Developer mode**:
+   - Chrome: `chrome://extensions`
+   - Edge: `edge://extensions`
+   - Firefox (109+): `about:debugging#/runtime/this-firefox`
+   - Opera: `opera://extensions`
+3. Click **Load unpacked** (or **Load Temporary Add‑on** in Firefox) and select the `hermes-extension` folder.
 4. The Hermes icon will appear in the toolbar. Navigate to any site and click the icon to toggle the panel.
+
+## 🌐 Browser Compatibility
+
+Hermes works in any Chromium-based browser and Firefox 109+. The same build can be loaded in Chrome, Edge, Opera, or Vivaldi. Firefox users must use the **Load Temporary Add-on** option or package the extension with `web-ext`.
 
 ---
 

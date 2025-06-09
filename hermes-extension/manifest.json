@@ -26,6 +26,12 @@
   "web_accessible_resources": [
     { "resources": ["configs/*"], "matches": ["<all_urls>"] }
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "hermes@example.com",
+      "strict_min_version": "109.0"
+    }
+  },
   "action": {
     "default_title": "Hermes System"
     // "default_popup": "popup.html" // If you want a clickable browser icon popup later
