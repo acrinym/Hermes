@@ -134,6 +134,47 @@ coordinates so you can refine them later.
 - Modular design—fork or extend as desired.
 
 ---
+## 📡 API Usage
+
+Start the server in the `server/` directory with:
+
+```bash
+cd server && npm install && node index.js
+```
+
+### `POST /api/macros/run`
+Trigger execution of a stored macro by name or ID.
+
+```bash
+curl -X POST http://localhost:3000/api/macros/run \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Example Macro"}'
+```
+
+### `GET /api/macros`
+Fetch metadata for all saved macros.
+
+```bash
+curl http://localhost:3000/api/macros
+```
+
+### `POST /api/fill`
+Begin a form fill operation using a profile object.
+
+```bash
+curl -X POST http://localhost:3000/api/fill \
+  -H "Content-Type: application/json" \
+  -d '{"profile":{"first":"John","last":"Doe"}}'
+```
+
+### `GET /api/status/:id`
+Check the status of a macro or fill operation returned by the above calls.
+
+```bash
+curl http://localhost:3000/api/status/<id>
+```
+
+---
 
 ## 📬 Feedback / Contributions
 
