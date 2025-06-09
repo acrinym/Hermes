@@ -1,3 +1,6 @@
+import { deepMerge } from "./utils/helpers";
+import { saveDataToBackground } from "./storage";
+import { createModal } from "./ui/components";
 // hermes-extension/content.js
 
 (function() {
@@ -233,45 +236,6 @@
     let currentSettings = {}; // Will be populated by initial data load from background.js
 
     // Deep merge utility for settings objects
-    function deepMerge(target, source) {
-        target = JSON.parse(JSON.stringify(target));
-        for (const key in source) {
-            if (Object.prototype.hasOwnProperty.call(source, key)) {
-                if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key] && typeof target[key] === 'object') {
-                    target[key] = deepMerge(target[key], source[key]);
-                } else {
-                    target[key] = source[key];
-                }
-            }
-        }
-        return target;
-    }
-
-    // Helper function to send data to background script for saving
-    function saveDataToBackground(storageKey, data) {
-        return new Promise((resolve, reject) => {
-            chrome.runtime.sendMessage(
-                { type: "SAVE_HERMES_DATA", payload: { key: storageKey, value: data } },
-                (response) => {
-                    if (chrome.runtime.lastError) {
-                        console.error(`Hermes CS: Error saving ${storageKey}:`, chrome.runtime.lastError.message);
-                        debugLogs.push({ timestamp: Date.now(), type: 'error', target: `save_${storageKey}_cs`, details: { error: chrome.runtime.lastError.message } });
-                        reject(chrome.runtime.lastError.message);
-                        return;
-                    }
-                    if (response && response.success) {
-                        console.log(`Hermes CS: Data for ${storageKey} saved via background.`);
-                        resolve(true);
-                    } else {
-                        const errorMsg = response ? response.error : `Unknown error saving ${storageKey}`;
-                        console.error(`Hermes CS: Error saving ${storageKey} via background:`, errorMsg);
-                        debugLogs.push({ timestamp: Date.now(), type: 'error', target: `save_${storageKey}_cs_bg_fail`, details: { error: errorMsg } });
-                        reject(errorMsg);
-                    }
-                }
-            );
-        });
-    }
 
 
     async function saveSettings(settingsToSave) {
@@ -363,7 +327,7 @@
             <button id="hermes-settings-save-btn" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save & Apply</button>
             <button id="hermes-settings-defaults-btn" class="hermes-button" style="background:var(--hermes-warning-text);color:var(--hermes-panel-bg);">Load Defaults</button>`;
 
-        createModal(panelId, 'Hermes Configuration Settings', contentHtml, '750px', settingsButtonsHtml);
+        createModal(shadowRoot, panelId, 'Hermes Configuration Settings', contentHtml, '750px', settingsButtonsHtml);
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
 
         if (panelInRoot) {
@@ -543,48 +507,6 @@
             buttonElement.style.background = 'var(--hermes-error-text)';
             buttonElement.style.color = 'var(--hermes-panel-bg)';
         }
-    }
-
-    function getPanelBaseStyle() {
-        return `display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:500px;max-height:80vh;background:var(--hermes-panel-bg, #FFF);border:1px solid var(--hermes-panel-border, #CCC);border-radius:8px;box-shadow:0 5px 15px rgba(0,0,0,0.3);padding:20px;z-index:2147483647;font-family:sans-serif;color:var(--hermes-panel-text, #000);overflow-y:auto;box-sizing:border-box;`;
-    }
-
-    function createModal(id, title, contentHtml, maxWidth = '600px', customButtonsHtml = '') {
-        if (shadowRoot && shadowRoot.querySelector(`#${id}`)) {
-            shadowRoot.querySelector(`#${id}`).remove();
-        }
-        const panel = document.createElement('div');
-        panel.id = id;
-        panel.className = 'hermes-panel';
-        panel.style.cssText = getPanelBaseStyle() + `max-width: ${maxWidth};`;
-
-        let buttonsBlock = `<button class="hermes-panel-close hermes-button">Close</button>`;
-        if(customButtonsHtml) {
-            buttonsBlock = customButtonsHtml.replace(/<button/g, '<button class="hermes-button"') + buttonsBlock;
-        }
-
-        panel.innerHTML = `
-            <h2 class="hermes-panel-title">${title}</h2>
-            <div class="hermes-panel-content">${contentHtml}</div>
-            <div class="hermes-panel-buttons">
-                ${buttonsBlock}
-            </div>`;
-
-        if (shadowRoot) {
-            shadowRoot.appendChild(panel);
-            const closeButton = panel.querySelector('.hermes-panel-close');
-            if(closeButton) closeButton.addEventListener('click', () => {
-                panel.style.display = 'none';
-                if (id === 'hermes-help-panel') {
-                    saveDataToBackground(HELP_PANEL_OPEN_KEY_EXT, false)
-                        .then(() => helpPanelOpenState = false)
-                        .catch(e => console.error("Hermes CS: Failed to save help panel closed state", e));
-                }
-            });
-        } else {
-            console.error("Hermes CS: shadowRoot not available to create modal:", id);
-        }
-        return panel;
     }
 
     function dispatchEvents(field) {
@@ -1409,7 +1331,7 @@
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
         const content = `<p style="font-size:0.9em;margin-bottom:10px;opacity:0.85;">Enter profile as JSON. Keys should match form field names/labels. Example shown if empty.</p><textarea style="width:100%;height:50vh;min-height:250px;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>`;
         const profileButtonsHtml = `<button id="hermes-profile-save-btn" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save Profile</button>`;
-        createModal(panelId, 'Edit Profile Data', content, '700px', profileButtonsHtml);
+        createModal(shadowRoot, panelId, 'Edit Profile Data', content, '700px', profileButtonsHtml);
 
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (panelInRoot) {
@@ -1432,7 +1354,7 @@
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
         const contentHtml = `<div style="max-height:60vh;overflow-y:auto;"><table id="hermes-log-table" style="width:100%;border-collapse:collapse;"><thead style="border-bottom:1px solid var(--hermes-panel-border);position:sticky;top:0;background:var(--hermes-panel-bg);"><tr><th style="padding:8px;text-align:left;">Time</th><th style="padding:8px;text-align:left;">Type</th><th style="padding:8px;text-align:left;">Target</th><th style="padding:8px;text-align:left;">Details</th></tr></thead><tbody id="hermes-log-body"></tbody></table></div>`;
         const customButtonsHtml = `<button id="hermes-log-clear" class="hermes-button" style="background:var(--hermes-error-text);color:var(--hermes-panel-bg);">Clear Logs</button>`;
-        createModal(panelId, 'Hermes Debug Logs', contentHtml, '800px', customButtonsHtml);
+        createModal(shadowRoot, panelId, 'Hermes Debug Logs', contentHtml, '800px', customButtonsHtml);
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (panelInRoot) {
             const clearBtn = panelInRoot.querySelector('#hermes-log-clear');
@@ -1476,7 +1398,7 @@
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
         const contentHtml = `<p style="margin-bottom:10px;font-size:0.9em;opacity:0.85;">Review unsure fields. Map to profile keys for <strong>${window.location.hostname}</strong> or globally. Saves on select.</p><div id="hermes-skipped-list" style="max-height:50vh;overflow-y:auto;border:1px solid var(--hermes-panel-border);padding:10px;margin-bottom:15px;"></div>`;
         const customButtonsHtml = `<button id="hermes-trainer-refill" class="hermes-button" style="background:var(--hermes-info-text);color:var(--hermes-panel-bg);">Apply Current & Refill</button> <button id="hermes-trainer-select" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Select Field on Page</button>`;
-        createModal(panelId, 'Hermes Field Trainer', contentHtml, '700px', customButtonsHtml);
+        createModal(shadowRoot, panelId, 'Hermes Field Trainer', contentHtml, '700px', customButtonsHtml);
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (panelInRoot) {
             const refillBtn = panelInRoot.querySelector('#hermes-trainer-refill');
@@ -1585,7 +1507,7 @@
         const contentHtml = `<select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>` +
             `<textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>`;
         const buttonsHtml = `<button id="hermes-macro-edit-save" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save Macro</button>`;
-        createModal(panelId, 'Macro Editor', contentHtml, '700px', buttonsHtml);
+        createModal(shadowRoot, panelId, 'Macro Editor', contentHtml, '700px', buttonsHtml);
         const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (panel) {
             const selectEl = panel.querySelector('#hermes-macro-edit-select');
@@ -1680,7 +1602,7 @@
                 <button id="hermes-allowlist-add" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);white-space:nowrap;">Add Domain</button>
             </div>
             <div id="hermes-allowlist-list" style="max-height:40vh;overflow-y:auto;border:1px solid var(--hermes-panel-border);padding:10px;"></div>`;
-        createModal(panelId, 'Manage Allowed Domains', contentHtml, '600px');
+        createModal(shadowRoot, panelId, 'Manage Allowed Domains', contentHtml, '600px');
 
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (!panelInRoot) return;
@@ -1798,7 +1720,7 @@
                 <li>Use Learn mode to improve field mappings.</li>
                 <li>Check the <strong>Settings (⚙️)</strong> panel for advanced customization of UI appearance and effect parameters.</li>
             </ul>`;
-        createModal(panelId, 'Hermes Help', contentHtml, '600px');
+        createModal(shadowRoot, panelId, 'Hermes Help', contentHtml, '600px');
         const panelInRoot = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
         if (panelInRoot) {
             const closeBtn = panelInRoot.querySelector('.hermes-panel-close');
@@ -3116,3 +3038,4 @@
     initialize();
 
 })();
+

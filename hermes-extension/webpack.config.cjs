@@ -2,8 +2,8 @@ const path = require('path');
 
 module.exports = {
   entry: {
-    background: './src/background.js',
-    content: './src/content.js'
+    background: './src/background.ts',
+    content: './src/content.ts'
   },
   output: {
     filename: '[name].js',
@@ -12,15 +12,16 @@ module.exports = {
   module: {
     rules: [
       {
-        test: /\.js$/,
+        test: /\.ts$/,
         exclude: /node_modules/,
         use: {
-          loader: 'babel-loader',
-          options: {
-            presets: ['@babel/preset-env']
-          }
+          loader: 'ts-loader',
+          options: { transpileOnly: true }
         }
       }
     ]
+  },
+  resolve: {
+    extensions: ['.ts', '.js']
   }
 };

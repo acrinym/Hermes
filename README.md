@@ -128,13 +128,14 @@ coordinates so you can refine them later.
 
 ## 📜 Developer Notes
 
-- Built with vanilla JS and Manifest V3 APIs.
+
+- Built with **TypeScript** and Manifest V3 APIs.
 - UI styles are encapsulated in a Shadow DOM.
 - Background service worker stores data in Chrome storage.
 - Modular design—fork or extend as desired.
 
 ---
-## 📡 API Usage
+3. Run `npm run build` to compile the TypeScript sources under `src/` into `dist/`.
 
 Start the server in the `server/` directory with:
 

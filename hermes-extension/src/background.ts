@@ -1,3 +1,4 @@
+import { deepMerge } from "./utils/helpers";
 // hermes-extension/background.js
 
 console.log("Hermes Extension: Background Service Worker Initializing...");
@@ -168,23 +169,6 @@ const defaultSettingsFromUserscript = {
         "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
     }
 };
-
-// Function to deeply merge a source object into a target object
-function deepMerge(target, source) {
-    target = JSON.parse(JSON.stringify(target)); 
-    for (const key in source) {
-        if (source.hasOwnProperty(key)) {
-            if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) && target[key] && typeof target[key] === 'object') {
-                deepMerge(target[key], source[key]); 
-            } else {
-                target[key] = source[key]; 
-            }
-        }
-    }
-    return target;
-}
-
-
 async function initializeHermesState() {
     console.log("Hermes BG: Initializing Hermes state from chrome.storage.local...");
 
@@ -267,6 +251,7 @@ async function initializeHermesState() {
         console.error("Hermes BG: CRITICAL error initializing Hermes state:", error);
     }
 }
+
 
 chrome.runtime.onInstalled.addListener((details) => {
     console.log("Hermes BG: Extension event -", details.reason);
@@ -398,3 +383,4 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 console.log("Hermes BG: All event listeners set up. Ready for messages.");
+
