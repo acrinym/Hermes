@@ -6,6 +6,18 @@ const themes: Record<string, Record<string, string>> = {
     dark: {
         '--hermes-bg': '#2c2c2c',
         '--hermes-text': '#e0e0e0'
+    },
+    phoenix: {
+        '--hermes-bg': '#ffe8e8',
+        '--hermes-text': '#b33'
+    },
+    forest: {
+        '--hermes-bg': '#234d20',
+        '--hermes-text': '#e7ffe7'
+    },
+    neon: {
+        '--hermes-bg': '#000',
+        '--hermes-text': '#39ff14'
     }
 };
 

@@ -1,6 +1,7 @@
 declare const chrome: any;
 
 export function addDebugLog(type: string, target: string | null = null, details: any = {}): void {
+    if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return;
     const payload = { timestamp: Date.now(), type, target, details };
     chrome.runtime.sendMessage({ type: 'ADD_DEBUG_LOG', payload });
 }
