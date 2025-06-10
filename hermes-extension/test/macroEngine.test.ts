@@ -20,4 +20,13 @@ describe('MacroEngine', () => {
     expect(input.value).toBe('John');
     expect(clickSpy).toHaveBeenCalled();
   });
+
+  test('set, list and delete macros', async () => {
+    const engine = new MacroEngine();
+    await engine.set('m1', [{ type: 'click', selector: '#a', timestamp: 0 } as any]);
+    expect(engine.list()).toContain('m1');
+    expect(engine.get('m1')?.length).toBe(1);
+    await engine.delete('m1');
+    expect(engine.list()).not.toContain('m1');
+  });
 });
