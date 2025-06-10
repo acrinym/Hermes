@@ -5,7 +5,14 @@ import { loadSettings } from './settings.ts';
 import { getInitialData } from './storage/index.ts';
 import { startSnowflakes, stopEffects } from './effectsEngine.ts';
 import { showHelp } from './help.ts';
-import { setupDebugControls, toggleLogViewer, addDebugLog, startMutationObserver, stopMutationObserver } from './debug.ts';
+import { setupUI } from './ui/setup.ts';
+import {
+  setupDebugControls,
+  toggleLogViewer,
+  addDebugLog,
+  startMutationObserver,
+  stopMutationObserver
+} from './debug.ts';
 
 export async function initUI() {
     const data = await getInitialData();
@@ -64,4 +71,5 @@ export async function initUI() {
 
     // load settings just to demonstrate
     loadSettings();
+    setupUI();
 }
