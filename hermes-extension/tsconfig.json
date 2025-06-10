@@ -4,7 +4,6 @@
     "module": "esnext",
     "allowJs": true,
     "checkJs": false,
-    "noEmit": true
   },
   "include": ["src/**/*"]
 }
