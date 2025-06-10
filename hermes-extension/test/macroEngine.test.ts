@@ -64,4 +64,5 @@ describe('MacroEngine', () => {
     engine.play('demo', true);
     expect(spy).toHaveBeenCalledWith(60, 45);
   });
+
 });
