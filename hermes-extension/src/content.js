@@ -23,8 +23,8 @@ import { createModal } from "./ui/components.js";
     const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
 
     // GitHub repo information for remote configs
-    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/_Configs/';
-    const GITHUB_API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/_Configs/';
+    const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/acrinym/Hermes/main/_Configs/';
+    const GITHUB_API_BASE = 'https://api.github.com/repos/acrinym/Hermes/contents/_Configs/';
     const GITHUB_TOKEN = ''; // Personal access token if saving configs
 
     // =================== State Variables (will be populated by initial data load) ===================

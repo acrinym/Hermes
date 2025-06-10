@@ -115,6 +115,13 @@ and saves a scaffolded config to the `_Configs` folder of this repository via th
 GitHub API.  The generated file includes robust selectors and element
 coordinates so you can refine them later.
 
+### Customizing Repository URLs
+
+By default Hermes pulls remote configs from this repository using constants in
+`src/background.js` and `src/content.js`. If you fork the project or keep your
+configs elsewhere, update `GITHUB_RAW_BASE` and `GITHUB_API_BASE` in those files
+to point at the `_Configs` directory of your own repo.
+
 ---
 
 ## 💻 Installation
