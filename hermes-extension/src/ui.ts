@@ -5,7 +5,7 @@ import { applyTheme } from './theme.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { getInitialData, saveDataToBackground } from './storage/index.ts';
 import { startSnowflakes, startLasers, stopEffects } from './effectsEngine.ts';
-import { showHelp } from './help.ts';
+import { toggleHelpPanel } from './help.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
 import {
@@ -16,6 +16,7 @@ import {
   stopMutationObserver
 } from './debug.ts';
 import { isAllowed } from './allowlist.ts';
+import { initOverlays, toggleOverlays } from './overlays.ts';
 
 let macroMenu: HTMLDivElement;
 
@@ -24,6 +25,7 @@ export async function initUI() {
     const profile = data.profile || {};
     const theme = data.theme || 'dark';
     applyTheme(theme);
+    initOverlays(!!data.showOverlays);
     await macroEngine.init();
 
     const container = setupUI();
@@ -89,9 +91,18 @@ export async function initUI() {
     fxBtn.onclick = () => startSnowflakes();
     container.appendChild(fxBtn);
 
+    const overlayBtn = document.createElement('button');
+    overlayBtn.textContent = 'Overlay';
+    overlayBtn.onclick = () => {
+        toggleOverlays();
+        overlayBtn.style.background = overlayBtn.style.background ? '' : 'lightgreen';
+    };
+    if (data.showOverlays) overlayBtn.style.background = 'lightgreen';
+    container.appendChild(overlayBtn);
+
     const helpBtn = document.createElement('button');
     helpBtn.textContent = '?';
-    helpBtn.onclick = showHelp;
+    helpBtn.onclick = () => toggleHelpPanel(true);
     container.appendChild(helpBtn);
 
     const settingsBtn = document.createElement('button');
@@ -142,6 +153,11 @@ export async function initUI() {
         startMutationObserver(() => addDebugLog('mutation', 'dom', {}));
     }
     window.addEventListener('beforeunload', stopMutationObserver);
+
+    // open help panel if it was previously left open
+    if (data.helpPanelOpen) {
+        toggleHelpPanel(true);
+    }
 
     // load settings just to demonstrate
     loadSettings();
