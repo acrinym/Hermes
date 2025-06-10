@@ -3,7 +3,8 @@ const path = require('path');
 module.exports = {
   entry: {
     background: './src/background.js',
-    content: './src/content.js'
+    content: './src/content.js',
+    options: './options.ts'
   },
   output: {
     filename: '[name].js',
@@ -11,6 +12,11 @@ module.exports = {
   },
   module: {
     rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: 'ts-loader'
+      },
       {
         test: /\.js$/,
         exclude: /node_modules/,
@@ -22,5 +28,8 @@ module.exports = {
         }
       }
     ]
+  },
+  resolve: {
+    extensions: ['.ts', '.js']
   }
 };
