@@ -1,8 +1,9 @@
-export function saveDataToBackground(storageKey, data) {
+declare const chrome: any;
+export function saveDataToBackground(storageKey: string, data: any): Promise<boolean> {
     return new Promise((resolve, reject) => {
         chrome.runtime.sendMessage(
-            { type: "SAVE_HERMES_DATA", payload: { key: storageKey, value: data } },
-            (response) => {
+            { type: 'SAVE_HERMES_DATA', payload: { key: storageKey, value: data } },
+            (response: any) => {
                 if (chrome.runtime.lastError) {
                     console.error(`Hermes CS: Error saving ${storageKey}:`, chrome.runtime.lastError.message);
                     reject(chrome.runtime.lastError.message);
@@ -18,5 +19,11 @@ export function saveDataToBackground(storageKey, data) {
                 }
             }
         );
+    });
+}
+
+export function getInitialData(): Promise<any> {
+    return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: 'GET_HERMES_INITIAL_DATA' }, resolve);
     });
 }
