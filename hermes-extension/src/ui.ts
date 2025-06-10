@@ -1,5 +1,6 @@
 import { macroEngine } from './macroEngine.ts';
 import { fillForm } from './formFiller.ts';
+import { runHeuristicTrainerSession } from './trainer.ts';
 import { applyTheme } from './theme.ts';
 import { loadSettings } from './settings.ts';
 import { getInitialData } from './storage/index.ts';
@@ -21,6 +22,11 @@ export async function initUI() {
     fillBtn.textContent = 'Fill';
     fillBtn.onclick = () => fillForm(profile);
     container.appendChild(fillBtn);
+
+    const trainBtn = document.createElement('button');
+    trainBtn.textContent = 'Train';
+    trainBtn.onclick = () => runHeuristicTrainerSession(profile);
+    container.appendChild(trainBtn);
 
     const recBtn = document.createElement('button');
     recBtn.textContent = 'Rec';
