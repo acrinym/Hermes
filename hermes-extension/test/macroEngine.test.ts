@@ -14,7 +14,7 @@ describe('MacroEngine', () => {
     const clickSpy = jest.fn();
     document.getElementById('btn')!.addEventListener('click', clickSpy);
 
-    engine.play('demo');
+    engine.play('demo', true);
 
     const input = document.getElementById('name') as HTMLInputElement;
     expect(input.value).toBe('John');

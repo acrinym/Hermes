@@ -3,10 +3,10 @@ import { fillForm } from './formFiller.ts';
 import { runHeuristicTrainerSession } from './trainer.ts';
 import { applyTheme } from './theme.ts';
 import { loadSettings } from './settings.ts';
-import { getInitialData } from './storage/index.ts';
-import { startSnowflakes, stopEffects } from './effectsEngine.ts';
+import { getInitialData, saveDataToBackground } from './storage/index.ts';
+import { startSnowflakes, startLasers, stopEffects } from './effectsEngine.ts';
 import { showHelp } from './help.ts';
-import { setupUI } from './ui/setup.ts';
+import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import {
   setupDebugControls,
   toggleLogViewer,
@@ -14,6 +14,7 @@ import {
   startMutationObserver,
   stopMutationObserver
 } from './debug.ts';
+import { isAllowed } from './allowlist.ts';
 
 export async function initUI() {
     const data = await getInitialData();
@@ -22,9 +23,9 @@ export async function initUI() {
     applyTheme(theme);
     await macroEngine.init();
 
-    const container = document.createElement('div');
-    container.id = 'hermes-ui';
-    container.style.cssText = 'position:fixed;top:10px;right:10px;background:var(--hermes-bg);color:var(--hermes-text);padding:5px;z-index:2147483640;border:1px solid #999';
+    const container = setupUI();
+    const allowed = isAllowed(location.hostname, data.whitelist || []);
+    if (!allowed) toggleMinimizedUI(true);
 
     const fillBtn = document.createElement('button');
     fillBtn.textContent = 'Fill';
@@ -69,13 +70,45 @@ export async function initUI() {
     logBtn.onclick = () => toggleLogViewer(true);
     container.appendChild(logBtn);
 
-    document.body.appendChild(container);
+    const debugBtn = document.createElement('button');
+    let debugEnabled = !!data.debugMode;
+    debugBtn.textContent = 'Debug';
+    debugBtn.onclick = () => {
+        debugEnabled = !debugEnabled;
+        if (debugEnabled) {
+            startMutationObserver(() => addDebugLog('mutation','dom',{}));
+        } else {
+            stopMutationObserver();
+        }
+        saveDataToBackground('hermes_debug_mode_ext', debugEnabled);
+    };
+    container.appendChild(debugBtn);
+
+    const learnBtn = document.createElement('button');
+    let learning = !!data.learningMode;
+    learnBtn.textContent = 'Learn';
+    learnBtn.onclick = () => {
+        learning = !learning;
+        saveDataToBackground('hermes_learning_state_ext', learning);
+    };
+    container.appendChild(learnBtn);
+
+    const laserBtn = document.createElement('button');
+    laserBtn.textContent = 'Lasers';
+    laserBtn.onclick = () => startLasers();
+    container.appendChild(laserBtn);
+
+    const stopFxBtn = document.createElement('button');
+    stopFxBtn.textContent = 'FX Off';
+    stopFxBtn.onclick = () => stopEffects();
+    container.appendChild(stopFxBtn);
 
     setupDebugControls();
-    startMutationObserver(() => addDebugLog('mutation', 'dom', {}));
+    if (debugEnabled) {
+        startMutationObserver(() => addDebugLog('mutation', 'dom', {}));
+    }
     window.addEventListener('beforeunload', stopMutationObserver);
 
     // load settings just to demonstrate
     loadSettings();
-    setupUI();
 }

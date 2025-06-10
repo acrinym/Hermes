@@ -1,6 +1,7 @@
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let flakes: {x:number;y:number;r:number;s:number}[] = [];
+let lasers: {x:number;y:number;len:number;s:number}[] = [];
 let running = false;
 
 function initCanvas() {
@@ -32,8 +33,15 @@ export function startSnowflakes() {
     }
 }
 
+export function startLasers() {
+    initCanvas();
+    lasers = [];
+    if (!running) { running = true; loop(); }
+}
+
 export function stopEffects() {
     running = false;
+    lasers = [];
     if (canvas) canvas.style.display = 'none';
 }
 
@@ -49,5 +57,19 @@ function loop() {
         ctx.fillStyle='white';
         ctx.fill();
     });
+
+    if (Math.random() < 0.05) {
+        lasers.push({x:Math.random()*canvas.width,y:0,len:20+Math.random()*60,s:5+Math.random()*10});
+    }
+    lasers.forEach(l=>{
+        ctx.beginPath();
+        ctx.strokeStyle='rgba(255,0,0,0.7)';
+        ctx.lineWidth=2;
+        ctx.moveTo(l.x,l.y);
+        ctx.lineTo(l.x,l.y+l.len);
+        ctx.stroke();
+        l.y += l.s;
+    });
+    lasers = lasers.filter(l=>l.y < canvas!.height);
     if (running) requestAnimationFrame(loop);
 }
