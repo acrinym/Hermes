@@ -17,6 +17,10 @@ interface MacroEvent {
     altKey?: boolean;
     metaKey?: boolean;
     path?: number[];
+    offsetX?: number | null;
+    offsetY?: number | null;
+    rectW?: number | null;
+    rectH?: number | null;
 }
 
 export class MacroEngine {
@@ -24,6 +28,12 @@ export class MacroEngine {
     private recording = false;
     private events: MacroEvent[] = [];
     private name = '';
+    private settings = {
+        recordMouseMoves: false,
+        mouseMoveInterval: 200,
+        useCoordinateFallback: false,
+        relativeCoordinates: true
+    };
     private recordMouseMoves = false;
     private mouseMoveInterval = 200;
     private lastMouseMove = 0;
@@ -36,12 +46,16 @@ export class MacroEngine {
         console.log('Hermes: macro engine ready');
     }
 
+    updateSettings(partial: Partial<{ recordMouseMoves: boolean; mouseMoveInterval: number; useCoordinateFallback: boolean; relativeCoordinates: boolean }>) {
+        this.settings = { ...this.settings, ...partial };
+    }
+
     startRecording(name?: string, opts: { recordMouseMoves?: boolean; mouseMoveInterval?: number } = {}) {
         this.name = name || `macro_${Date.now()}`;
         this.events = [];
         this.recording = true;
-        this.recordMouseMoves = !!opts.recordMouseMoves;
-        if (opts.mouseMoveInterval !== undefined) this.mouseMoveInterval = opts.mouseMoveInterval;
+        this.recordMouseMoves = opts.recordMouseMoves !== undefined ? !!opts.recordMouseMoves : this.settings.recordMouseMoves;
+        this.mouseMoveInterval = opts.mouseMoveInterval !== undefined ? opts.mouseMoveInterval : this.settings.mouseMoveInterval;
         this.lastMouseMove = 0;
         addDebugLog('macro_start', null, { name: this.name });
         const types = ['click','input','change','mousedown','mouseup','keydown','keyup','focusin','focusout','submit'];
@@ -72,7 +86,7 @@ export class MacroEngine {
             if (idx >= macro.length) return;
             const ev = macro[idx];
             let el: Element | null = ev.selector ? document.querySelector(ev.selector) : null;
-            if (!el && ev.path) {
+            if (!el && this.settings.useCoordinateFallback && ev.path) {
                 let cur: Element | null = document.body;
                 for (const i of ev.path) {
                     if (!cur || !cur.children[i]) { cur = null; break; }
@@ -80,15 +94,25 @@ export class MacroEngine {
                 }
                 el = cur;
             }
-            if (!el && ev.clientX !== null && ev.clientY !== null) {
+            if (!el && this.settings.useCoordinateFallback && ev.clientX !== null && ev.clientY !== null) {
                 el = document.elementFromPoint(ev.clientX!, ev.clientY!);
             }
             if (el) {
+                const rect = (el as HTMLElement).getBoundingClientRect();
+                const calcCoords = () => {
+                    if (this.settings.relativeCoordinates && ev.offsetX !== null && ev.offsetY !== null) {
+                        const x = rect.left + (ev.rectW && rect.width ? ev.offsetX * (rect.width / ev.rectW) : ev.offsetX);
+                        const y = rect.top + (ev.rectH && rect.height ? ev.offsetY * (rect.height / ev.rectH) : ev.offsetY);
+                        return { x, y };
+                    }
+                    return { x: ev.clientX || rect.left, y: ev.clientY || rect.top };
+                };
+                const coords = calcCoords();
                 if (['click','mousedown','mouseup'].includes(ev.type)) {
-                    const me = new MouseEvent(ev.type, { bubbles:true, cancelable:true, clientX:ev.clientX||0, clientY:ev.clientY||0, button:ev.button||0, shiftKey:!!ev.shiftKey, ctrlKey:!!ev.ctrlKey, altKey:!!ev.altKey, metaKey:!!ev.metaKey });
+                    const me = new MouseEvent(ev.type, { bubbles:true, cancelable:true, clientX:coords.x, clientY:coords.y, button:ev.button||0, shiftKey:!!ev.shiftKey, ctrlKey:!!ev.ctrlKey, altKey:!!ev.altKey, metaKey:!!ev.metaKey });
                     el.dispatchEvent(me);
                 } else if (ev.type === 'mousemove') {
-                    const me = new MouseEvent('mousemove', { bubbles:true, cancelable:true, clientX:ev.clientX||0, clientY:ev.clientY||0 });
+                    const me = new MouseEvent('mousemove', { bubbles:true, cancelable:true, clientX:coords.x, clientY:coords.y });
                     el.dispatchEvent(me);
                 } else if (ev.type === 'input' || ev.type === 'change') {
                     (el as HTMLInputElement).value = ev.value || '';
@@ -136,6 +160,14 @@ export class MacroEngine {
         return this.saveMacros();
     }
 
+    async rename(oldName: string, newName: string): Promise<boolean> {
+        if (!(oldName in this.macros)) return false;
+        if (oldName === newName) return true;
+        this.macros[newName] = this.macros[oldName];
+        delete this.macros[oldName];
+        return this.saveMacros();
+    }
+
     async import(obj: Record<string, MacroEvent[]>): Promise<boolean> {
         this.macros = { ...this.macros, ...obj };
         return this.saveMacros();
@@ -143,6 +175,71 @@ export class MacroEngine {
 
     getAll(): Record<string, MacroEvent[]> {
         return { ...this.macros };
+    }
+
+    exportMacros(format: 'json' | 'xml' = 'json'): string {
+        if (format === 'xml') {
+            const doc = document.implementation.createDocument('', 'macros', null);
+            const root = doc.documentElement;
+            for (const [name, events] of Object.entries(this.macros)) {
+                const macroEl = doc.createElement('macro');
+                macroEl.setAttribute('name', name);
+                for (const ev of events) {
+                    const evEl = doc.createElement('event');
+                    for (const [k, v] of Object.entries(ev) as [keyof MacroEvent, any][]) {
+                        if (v === undefined || v === null) continue;
+                        if (Array.isArray(v)) evEl.setAttribute(k, v.join(','));
+                        else evEl.setAttribute(k, String(v));
+                    }
+                    macroEl.appendChild(evEl);
+                }
+                root.appendChild(macroEl);
+            }
+            return new XMLSerializer().serializeToString(doc);
+        }
+        return JSON.stringify(this.macros, null, 2);
+    }
+
+    async importFromString(data: string): Promise<boolean> {
+        data = data.trim();
+        if (!data) return false;
+        try {
+            const obj = JSON.parse(data);
+            return this.import(obj);
+        } catch {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'application/xml');
+                const macroNodes = Array.from(doc.querySelectorAll('macro'));
+                const obj: Record<string, MacroEvent[]> = {};
+                for (const macroNode of macroNodes) {
+                    const name = macroNode.getAttribute('name');
+                    if (!name) continue;
+                    const evs: MacroEvent[] = [];
+                    const eventNodes = Array.from(macroNode.querySelectorAll('event'));
+                    for (const evNode of eventNodes) {
+                        const ev: any = {};
+                        for (const attr of Array.from(evNode.attributes)) {
+                            let val: any = attr.value;
+                            if (['timestamp','clientX','clientY','button'].includes(attr.name)) {
+                                val = parseInt(attr.value, 10);
+                            } else if (['checked','shiftKey','ctrlKey','altKey','metaKey'].includes(attr.name)) {
+                                val = attr.value === 'true';
+                            } else if (attr.name === 'path') {
+                                val = attr.value.split(',').map(n => parseInt(n, 10));
+                            }
+                            (ev as any)[attr.name] = val;
+                        }
+                        evs.push(ev as MacroEvent);
+                    }
+                    obj[name] = evs;
+                }
+                return this.import(obj);
+            } catch (err) {
+                console.error('Hermes: Failed to import macros from string', err);
+                return false;
+            }
+        }
     }
 
     private async saveMacros(): Promise<boolean> {
@@ -168,6 +265,7 @@ export class MacroEngine {
         const val = (target as HTMLInputElement).value;
         const checked = (target as HTMLInputElement).checked;
         const path = this.getIndexPath(target);
+        const rect = target.getBoundingClientRect();
         this.events.push({
             type: e.type,
             selector,
@@ -179,6 +277,10 @@ export class MacroEngine {
             button: (e as MouseEvent).button !== undefined ? (e as MouseEvent).button : null,
             clientX: (e as MouseEvent).clientX !== undefined ? (e as MouseEvent).clientX : null,
             clientY: (e as MouseEvent).clientY !== undefined ? (e as MouseEvent).clientY : null,
+            offsetX: (e as MouseEvent).clientX !== undefined ? (e as MouseEvent).clientX - rect.left : null,
+            offsetY: (e as MouseEvent).clientY !== undefined ? (e as MouseEvent).clientY - rect.top : null,
+            rectW: rect.width,
+            rectH: rect.height,
             shiftKey: (e as MouseEvent).shiftKey || (e as KeyboardEvent).shiftKey || false,
             ctrlKey: (e as MouseEvent).ctrlKey || (e as KeyboardEvent).ctrlKey || false,
             altKey: (e as MouseEvent).altKey || (e as KeyboardEvent).altKey || false,

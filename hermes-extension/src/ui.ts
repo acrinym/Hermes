@@ -25,6 +25,8 @@ export async function initUI() {
     const theme = data.theme || 'dark';
     applyTheme(theme);
     await macroEngine.init();
+    const settings = await loadSettings();
+    if (settings.macro) macroEngine.updateSettings(settings.macro);
 
     const container = setupUI();
     const allowed = isAllowed(location.hostname, data.whitelist || []);
@@ -249,11 +251,13 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
 }
 
 function exportMacros() {
-    const blob = new Blob([JSON.stringify(macroEngine.getAll(), null, 2)], { type: 'application/json' });
+    const format: 'json' | 'xml' = 'json';
+    const data = macroEngine.exportMacros(format);
+    const blob = new Blob([data], { type: format === 'json' ? 'application/json' : 'application/xml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'hermes_macros_export.json';
+    a.download = `hermes_macros_export.${format === 'json' ? 'json' : 'xml'}`;
     a.click();
     URL.revokeObjectURL(url);
 }
@@ -261,18 +265,18 @@ function exportMacros() {
 function importMacrosFromFile() {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.json,application/json';
+    input.accept = '.json,.xml,application/json,application/xml,text/xml';
     input.onchange = () => {
         const file = input.files ? input.files[0] : null;
         if (!file) return;
         const reader = new FileReader();
         reader.onload = async () => {
-            try {
-                const obj = JSON.parse(reader.result as string);
-                await macroEngine.import(obj);
+            if (typeof reader.result !== 'string') return;
+            const ok = await macroEngine.importFromString(reader.result);
+            if (ok) {
                 updateMacroSubmenuContents(macroMenu);
-            } catch (err) {
-                console.error('Hermes: Invalid macro JSON', err);
+            } else {
+                console.error('Hermes: Invalid macro file');
                 alert('Invalid macro file');
             }
         };
