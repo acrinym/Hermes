@@ -7,5 +7,5 @@
     "outDir": "dist",
     "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "options.ts", "src/global.d.ts"]
 }

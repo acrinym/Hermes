@@ -1,5 +1,5 @@
 import { saveDataToBackground, getInitialData } from './storage/index.ts';
-import { createModal } from './ui/components.js';
+import { createModal } from './ui/components.ts';
 
 export interface Settings {
     [key: string]: any;

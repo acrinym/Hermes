@@ -7,7 +7,7 @@ import { getInitialData, saveDataToBackground } from './storage/index.ts';
 import { startSnowflakes, startLasers, stopEffects } from './effectsEngine.ts';
 import { showHelp } from './help.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
-import { createModal } from './ui/components.js';
+import { createModal } from './ui/components.ts';
 import {
   setupDebugControls,
   toggleLogViewer,

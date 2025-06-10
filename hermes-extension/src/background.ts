@@ -1,4 +1,4 @@
-import { deepMerge } from "./utils/helpers.js";
+import { deepMerge } from "./utils/helpers.ts";
 // hermes-extension/background.js
 
 console.log("Hermes Extension: Background Service Worker Initializing...");

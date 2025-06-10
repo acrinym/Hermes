@@ -1,12 +1,12 @@
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
 
-const themeSelect = document.getElementById('themeSelect');
-const exportBtn = document.getElementById('exportThemes');
-const importBtn = document.getElementById('importThemes');
-const importFile = document.getElementById('importFile');
+const themeSelect = document.getElementById('themeSelect') as HTMLSelectElement;
+const exportBtn = document.getElementById('exportThemes') as HTMLButtonElement;
+const importBtn = document.getElementById('importThemes') as HTMLButtonElement;
+const importFile = document.getElementById('importFile') as HTMLInputElement;
 
-function populateThemes(builtIn, custom, current) {
+function populateThemes(builtIn: Record<string, any>, custom: Record<string, any>, current: string) {
     themeSelect.innerHTML = '';
     const allThemes = { ...builtIn, ...custom };
     Object.keys(allThemes).forEach(key => {
@@ -46,13 +46,13 @@ function exportThemes() {
     });
 }
 
-function importThemes(files) {
+function importThemes(files: FileList) {
     if (!files.length) return;
     const file = files[0];
     const reader = new FileReader();
     reader.onload = () => {
         try {
-            const obj = JSON.parse(reader.result);
+            const obj = JSON.parse(reader.result as string);
             chrome.storage.local.set({ [CUSTOM_THEMES_KEY]: JSON.stringify(obj) }, load);
         } catch (e) {
             console.error('Invalid theme JSON', e);
@@ -64,6 +64,10 @@ function importThemes(files) {
 themeSelect.addEventListener('change', saveTheme);
 exportBtn.addEventListener('click', exportThemes);
 importBtn.addEventListener('click', () => importFile.click());
-importFile.addEventListener('change', () => importThemes(importFile.files));
+importFile.addEventListener('change', () => {
+    if (importFile.files) {
+        importThemes(importFile.files);
+    }
+});
 
 document.addEventListener('DOMContentLoaded', load);
