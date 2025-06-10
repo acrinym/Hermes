@@ -74,7 +74,7 @@ let hermesState = {
     configs: {}
 };
 
-// `defaultSettings` object extracted from your "Hermes System - Themable! 14 - fix ... .user.js"
+// `defaultSettings` object extracted from your "hermes-system-themable-14.user.js"
 const defaultSettingsFromUserscript = {
     "_comment_main_ui": "Settings for the main Hermes UI appearance.",
     "hermesBorderThickness": "1px",
