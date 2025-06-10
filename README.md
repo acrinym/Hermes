@@ -116,6 +116,29 @@ scroll sizes and the viewport dimensions.  A scaffolded JSON file is then saved
 to the `_Configs` folder of this repository via the GitHub API so you can refine
 it later.
 
+### GitHub Settings
+
+The extension expects the URLs for the remote config repository to be provided
+via Chrome storage or build-time environment variables.
+
+- **`github_raw_base`** – Base URL for raw config files
+- **`github_api_base`** – API endpoint for creating/updating configs
+- **`github_token`** – Personal token for write access (optional)
+
+You can set these at runtime with:
+
+```javascript
+chrome.storage.local.set({
+  github_raw_base: 'https://raw.githubusercontent.com/USER/REPO/main/_Configs/',
+  github_api_base: 'https://api.github.com/repos/USER/REPO/contents/_Configs/',
+  github_token: 'ghp_xxx' // optional
+});
+```
+
+Alternatively, define the environment variables `GITHUB_RAW_BASE`,
+`GITHUB_API_BASE`, and `GITHUB_TOKEN` when running `npm run build` to embed them
+in the bundle.
+
 ---
 
 ## 💻 Installation
