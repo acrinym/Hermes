@@ -115,7 +115,8 @@ PRs welcome. For suggestions or issues, please use the Issues tab.
 
 ## 📚 License
 
-MIT License — free to use, share, and modify with attribution.
+This project is licensed under the [MIT License](LICENSE).
+
 
 ---
 
