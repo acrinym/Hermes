@@ -35,31 +35,36 @@ export async function initUI() {
     if (!allowed) toggleMinimizedUI(true);
 
     const fillBtn = document.createElement('button');
+    fillBtn.className = 'hermes-button';
     fillBtn.textContent = 'Fill';
     fillBtn.onclick = () => fillForm(profile);
     container.appendChild(fillBtn);
 
     const trainBtn = document.createElement('button');
+    trainBtn.className = 'hermes-button';
     trainBtn.textContent = 'Train';
     trainBtn.onclick = () => runHeuristicTrainerSession(profile);
     container.appendChild(trainBtn);
 
     const recBtn = document.createElement('button');
+    recBtn.className = 'hermes-button';
     recBtn.textContent = 'Rec';
     recBtn.onclick = () => macroEngine.startRecording();
     container.appendChild(recBtn);
 
     const stopBtn = document.createElement('button');
+    stopBtn.className = 'hermes-button';
     stopBtn.textContent = 'Stop';
     stopBtn.onclick = () => macroEngine.stopRecording();
     container.appendChild(stopBtn);
 
     const macrosBtn = document.createElement('button');
+    macrosBtn.className = 'hermes-button';
     macrosBtn.textContent = 'Macros';
     container.appendChild(macrosBtn);
 
     macroMenu = document.createElement('div');
-    macroMenu.style.cssText = 'display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:2147483647;';
+    macroMenu.style.cssText = 'display:none;position:absolute;background:var(--hermes-bg);border:1px solid var(--hermes-border);padding:4px;z-index:2147483647;';
     container.appendChild(macroMenu);
 
     const updateMacroDropdown = () => {
@@ -81,6 +86,7 @@ export async function initUI() {
     document.addEventListener('click', () => { macroMenu.style.display = 'none'; });
 
     const playBtn = document.createElement('button');
+    playBtn.className = 'hermes-button';
     playBtn.textContent = 'Play';
     playBtn.onclick = () => {
         const name = prompt('Macro name');
@@ -89,11 +95,13 @@ export async function initUI() {
     container.appendChild(playBtn);
 
     const fxBtn = document.createElement('button');
+    fxBtn.className = 'hermes-button';
     fxBtn.textContent = 'Snow';
     fxBtn.onclick = () => startSnowflakes();
     container.appendChild(fxBtn);
 
     const overlayBtn = document.createElement('button');
+    overlayBtn.className = 'hermes-button';
     overlayBtn.textContent = 'Overlay';
     overlayBtn.onclick = () => {
         toggleOverlays();
@@ -103,21 +111,25 @@ export async function initUI() {
     container.appendChild(overlayBtn);
 
     const helpBtn = document.createElement('button');
+    helpBtn.className = 'hermes-button';
     helpBtn.textContent = '?';
     helpBtn.onclick = () => toggleHelpPanel(true);
     container.appendChild(helpBtn);
 
     const settingsBtn = document.createElement('button');
+    settingsBtn.className = 'hermes-button';
     settingsBtn.textContent = 'Settings';
     settingsBtn.onclick = () => toggleSettingsPanel(true);
     container.appendChild(settingsBtn);
 
     const logBtn = document.createElement('button');
+    logBtn.className = 'hermes-button';
     logBtn.textContent = 'Logs';
     logBtn.onclick = () => toggleLogViewer(true);
     container.appendChild(logBtn);
 
     const debugBtn = document.createElement('button');
+    debugBtn.className = 'hermes-button';
     let debugEnabled = !!data.debugMode;
     debugBtn.textContent = 'Debug';
     debugBtn.onclick = () => {
@@ -132,6 +144,7 @@ export async function initUI() {
     container.appendChild(debugBtn);
 
     const learnBtn = document.createElement('button');
+    learnBtn.className = 'hermes-button';
     let learning = !!data.learningMode;
     learnBtn.textContent = 'Learn';
     learnBtn.onclick = () => {
@@ -141,11 +154,13 @@ export async function initUI() {
     container.appendChild(learnBtn);
 
     const laserBtn = document.createElement('button');
+    laserBtn.className = 'hermes-button';
     laserBtn.textContent = 'Lasers';
     laserBtn.onclick = () => startLasers();
     container.appendChild(laserBtn);
 
     const stopFxBtn = document.createElement('button');
+    stopFxBtn.className = 'hermes-button';
     stopFxBtn.textContent = 'FX Off';
     stopFxBtn.onclick = () => stopEffects();
     container.appendChild(stopFxBtn);
@@ -175,14 +190,17 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
             row.style.gap = '2px';
 
             const play = document.createElement('button');
+            play.className = 'hermes-button';
             play.textContent = name;
             play.onclick = (e) => { e.stopPropagation(); macroEngine.play(name); menu.style.display = 'none'; };
 
             const edit = document.createElement('button');
+            edit.className = 'hermes-button';
             edit.textContent = '✏️';
             edit.onclick = (e) => { e.stopPropagation(); toggleMacroEditor(true, name); };
 
             const del = document.createElement('button');
+            del.className = 'hermes-button';
             del.textContent = '🗑️';
             del.onclick = async (e) => {
                 e.stopPropagation();
@@ -196,10 +214,12 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
             menu.appendChild(row);
         });
         const importBtn = document.createElement('button');
+        importBtn.className = 'hermes-button';
         importBtn.textContent = 'Import Macros';
         importBtn.style.marginTop = '4px';
         importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); };
         const exportBtn = document.createElement('button');
+        exportBtn.className = 'hermes-button';
         exportBtn.textContent = 'Export Macros';
         exportBtn.style.marginTop = '4px';
         exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); };
@@ -210,6 +230,7 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
         msg.textContent = 'No macros recorded.';
         menu.appendChild(msg);
         const importBtn = document.createElement('button');
+        importBtn.className = 'hermes-button';
         importBtn.textContent = 'Import Macros';
         importBtn.style.marginTop = '4px';
         importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); };
