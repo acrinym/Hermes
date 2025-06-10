@@ -2,7 +2,7 @@
   "name": "hermes-extension",
   "version": "1.0.0",
   "description": "",
-  "main": "background.js",
+  "main": "dist/background.js",
   "scripts": {
     "build": "webpack --mode=production"
   },
