@@ -201,7 +201,7 @@ PRs are welcome. For suggestions or issues, please use the Issues tab.
 
 ## 📚 License
 
-MIT License — free to use, share, and modify with attribution.
+Proprietary License — all rights reserved. Contact the author for permissions.
 
 ---
 
