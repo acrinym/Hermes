@@ -1,6 +1,6 @@
-import { initUI } from './ui';
-import { initEffects } from './effects';
-import { initMacros } from './macros';
+import { initUI } from './ui.ts';
+import { initEffects } from './effects.ts';
+import { initMacros } from './macros.ts';
 
 export function init() {
   initUI();
