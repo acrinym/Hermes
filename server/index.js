@@ -53,6 +53,10 @@ app.get('/api/status/:id', (req, res) => {
   res.json(op);
 });
 
-app.listen(port, () => {
-  console.log(`Hermes server listening on port ${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Hermes server listening on port ${port}`);
+  });
+}
+
+module.exports = app;
