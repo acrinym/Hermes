@@ -2,7 +2,7 @@ import { macroEngine } from './macroEngine.ts';
 import { fillForm } from './formFiller.ts';
 import { runHeuristicTrainerSession } from './trainer.ts';
 import { applyTheme } from './theme.ts';
-import { loadSettings } from './settings.ts';
+import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { getInitialData, saveDataToBackground } from './storage/index.ts';
 import { startSnowflakes, startLasers, stopEffects } from './effectsEngine.ts';
 import { showHelp } from './help.ts';
@@ -64,6 +64,11 @@ export async function initUI() {
     helpBtn.textContent = '?';
     helpBtn.onclick = showHelp;
     container.appendChild(helpBtn);
+
+    const settingsBtn = document.createElement('button');
+    settingsBtn.textContent = 'Settings';
+    settingsBtn.onclick = () => toggleSettingsPanel(true);
+    container.appendChild(settingsBtn);
 
     const logBtn = document.createElement('button');
     logBtn.textContent = 'Logs';
