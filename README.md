@@ -183,6 +183,39 @@ Check the status of a macro or fill operation returned by the above calls.
 curl http://localhost:3000/api/status/<id>
 ```
 
+
+## ⏰ Macro Scheduling
+
+Hermes lets you trigger macros at a future date or on a repeating schedule.
+Start the server and visit [http://localhost:3000/schedule](http://localhost:3000/schedule) to use the visual scheduler.
+The page lists available macros with checkboxes and provides date and time pickers alongside simple recurrence options.
+
+1. **Select macros** – tick the checkboxes for any macros you want to run.
+2. **Choose a date** – pick the starting day from the calendar widget.
+3. **Set a time** – specify the exact time the macro should start.
+4. **Repeat** – run once or choose Daily, Weekly or Monthly.
+
+Press **Schedule Macro** to save. Scheduled jobs can be viewed or cancelled via the `/api/schedule` endpoints.
+
+---
+
+## 🚀 Development Setup & Testing
+
+Install dependencies for both the server and extension with the included script
+before running tests:
+
+```bash
+./setup.sh
+```
+
+This runs `npm install` inside the `server/` and `hermes-extension/` folders.
+Afterwards you can execute the test suites individually:
+
+```bash
+cd server && npm test
+cd ../hermes-extension && npm test
+```
+
 ---
 
 ## 🚀 Development Setup & Testing
@@ -227,7 +260,6 @@ Proprietary License — all rights reserved. Contact the author for permissions.
 
 ## 🌐 Coming Soon
 
-- Macro scheduling
 - AI-assisted field mapping suggestions
 
 For a full list of ideas and potential enhancements, see [TODO.md](TODO.md).
