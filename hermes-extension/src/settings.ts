@@ -1,5 +1,6 @@
 import { saveDataToBackground, getInitialData } from './storage/index.ts';
 import { createModal } from './ui/components.js';
+import { updateMacroSettings } from './macros.ts';
 
 export interface Settings {
     [key: string]: any;
@@ -35,11 +36,13 @@ function populatePanel() {
     const textarea = settingsPanel.querySelector('#hermes-settings-json') as HTMLTextAreaElement | null;
     const useCoords = settingsPanel.querySelector('#hermes-setting-useCoords') as HTMLInputElement | null;
     const recordMouse = settingsPanel.querySelector('#hermes-setting-recordMouse') as HTMLInputElement | null;
+    const relativeCoords = settingsPanel.querySelector('#hermes-setting-relativeCoords') as HTMLInputElement | null;
     const simSlider = settingsPanel.querySelector('#hermes-setting-similarity') as HTMLInputElement | null;
     const simValue = settingsPanel.querySelector('#hermes-sim-value') as HTMLElement | null;
     if (textarea) textarea.value = JSON.stringify(currentSettings, null, 2);
     if (useCoords) useCoords.checked = !!currentSettings?.macro?.useCoordinateFallback;
     if (recordMouse) recordMouse.checked = !!currentSettings?.macro?.recordMouseMoves;
+    if (relativeCoords) relativeCoords.checked = !!currentSettings?.macro?.relativeCoordinates;
     if (simSlider) {
         simSlider.value = String(currentSettings?.macro?.similarityThreshold ?? 0.5);
         if (simValue) simValue.textContent = simSlider.value;
@@ -53,6 +56,7 @@ export function createSettingsPanel(): HTMLElement {
         <div style="margin-top:10px;">
             <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-useCoords"> Use coordinate fallback</label>
             <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-recordMouse"> Record mouse movements</label>
+            <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-relativeCoords"> Track element movement</label>
             <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
         </div>`;
     const buttonsHtml = `
@@ -63,6 +67,7 @@ export function createSettingsPanel(): HTMLElement {
     const textarea = settingsPanel.querySelector('#hermes-settings-json') as HTMLTextAreaElement;
     const useCoords = settingsPanel.querySelector('#hermes-setting-useCoords') as HTMLInputElement;
     const recordMouse = settingsPanel.querySelector('#hermes-setting-recordMouse') as HTMLInputElement;
+    const relativeCoords = settingsPanel.querySelector('#hermes-setting-relativeCoords') as HTMLInputElement;
     const simSlider = settingsPanel.querySelector('#hermes-setting-similarity') as HTMLInputElement;
     const simValue = settingsPanel.querySelector('#hermes-sim-value') as HTMLElement;
 
@@ -74,8 +79,10 @@ export function createSettingsPanel(): HTMLElement {
             newSettings.macro = newSettings.macro || {};
             newSettings.macro.useCoordinateFallback = useCoords.checked;
             newSettings.macro.recordMouseMoves = recordMouse.checked;
+            newSettings.macro.relativeCoordinates = relativeCoords.checked;
             newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
             const ok = await saveSettings(newSettings);
+            updateMacroSettings(newSettings.macro);
             if (ok) alert('Settings saved');
             else alert('Failed to save settings');
         } catch (err: any) {
@@ -87,6 +94,7 @@ export function createSettingsPanel(): HTMLElement {
         textarea.value = JSON.stringify(defaultSettings, null, 2);
         useCoords.checked = !!defaultSettings?.macro?.useCoordinateFallback;
         recordMouse.checked = !!defaultSettings?.macro?.recordMouseMoves;
+        relativeCoords.checked = !!defaultSettings?.macro?.relativeCoordinates;
         simSlider.value = String(defaultSettings?.macro?.similarityThreshold ?? 0.5);
         if (simValue) simValue.textContent = simSlider.value;
     });
