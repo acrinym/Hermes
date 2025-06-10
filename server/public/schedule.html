@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Macro Scheduler</title>
+</head>
+<body>
+  <h1>Schedule Macros</h1>
+  <form id="scheduleForm">
+    <fieldset>
+      <legend>Select Macros</legend>
+      <div id="macroList"></div>
+    </fieldset>
+    <label>Date: <input type="date" id="date" required></label><br>
+    <label>Time: <input type="time" id="time" required></label><br>
+    <fieldset>
+      <legend>Repeat</legend>
+      <label><input type="radio" name="repeat" value="once" checked> Once</label>
+      <label><input type="radio" name="repeat" value="daily"> Daily</label>
+      <label><input type="radio" name="repeat" value="weekly"> Weekly</label>
+      <label><input type="radio" name="repeat" value="monthly"> Monthly</label>
+    </fieldset>
+    <button type="submit">Schedule Macro</button>
+  </form>
+  <script>
+    async function loadMacros() {
+      const res = await fetch('/api/macros');
+      const macros = await res.json();
+      const list = document.getElementById('macroList');
+      macros.forEach(m => {
+        const label = document.createElement('label');
+        label.style.display = 'block';
+        label.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.name}`;
+        list.appendChild(label);
+      });
+    }
+    async function submitForm(e) {
+      e.preventDefault();
+      const ids = Array.from(document.querySelectorAll('#macroList input:checked')).map(i => i.value);
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const recurrence = document.querySelector('input[name="repeat"]:checked').value;
+      for (const id of ids) {
+        await fetch('/api/schedule', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, date, time, recurrence })
+        });
+      }
+      alert('Macro(s) scheduled!');
+    }
+    document.getElementById('scheduleForm').addEventListener('submit', submitForm);
+    loadMacros();
+  </script>
+</body>
+</html>
