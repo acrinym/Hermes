@@ -52,10 +52,26 @@ const builtInThemes = {
 };
 
 // --- GitHub configuration for remote site configs ---
-// Replace these placeholder values with your actual repository details
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/_Configs/';
-const GITHUB_API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/_Configs/';
-const GITHUB_TOKEN = ''; // Personal access token if writing back to the repo
+// These values can be stored in chrome.storage under the keys below or
+// provided as environment variables at build time.
+const GITHUB_RAW_BASE_KEY = 'github_raw_base';
+const GITHUB_API_BASE_KEY = 'github_api_base';
+const GITHUB_TOKEN_KEY = 'github_token';
+
+let GITHUB_RAW_BASE = '';
+let GITHUB_API_BASE = '';
+let GITHUB_TOKEN = '';
+
+async function loadGithubSettings() {
+    const data = await chrome.storage.local.get({
+        [GITHUB_RAW_BASE_KEY]: '',
+        [GITHUB_API_BASE_KEY]: '',
+        [GITHUB_TOKEN_KEY]: ''
+    });
+    GITHUB_RAW_BASE = data[GITHUB_RAW_BASE_KEY] || process.env.GITHUB_RAW_BASE || '';
+    GITHUB_API_BASE = data[GITHUB_API_BASE_KEY] || process.env.GITHUB_API_BASE || '';
+    GITHUB_TOKEN = data[GITHUB_TOKEN_KEY] || process.env.GITHUB_TOKEN || '';
+}
 
 // --- In-memory cache for Hermes data ---
 let hermesState = {
@@ -174,6 +190,8 @@ const defaultSettingsFromUserscript = {
 };
 async function initializeHermesState() {
     console.log("Hermes BG: Initializing Hermes state from chrome.storage.local...");
+
+    await loadGithubSettings();
 
     if (!defaultSettingsFromUserscript || Object.keys(defaultSettingsFromUserscript).length === 0) {
         console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
