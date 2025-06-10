@@ -1,21 +1,9 @@
-let recording = false;
-let events: any[] = [];
+import { macroEngine } from './macroEngine.ts';
 
-export function initMacros() {
-  console.log('Hermes: macros initialized');
+export async function initMacros() {
+    await macroEngine.init();
 }
 
-export function startRecording() {
-  events = [];
-  recording = true;
-  console.log('Hermes: recording started');
-}
-
-export function stopRecording() {
-  recording = false;
-  console.log('Hermes: recording stopped', events);
-}
-
-export function playMacro() {
-  console.log('Hermes: playing macro', events);
-}
+export const startRecording = () => macroEngine.startRecording();
+export const stopRecording = () => macroEngine.stopRecording();
+export const playMacro = (name: string) => macroEngine.play(name);

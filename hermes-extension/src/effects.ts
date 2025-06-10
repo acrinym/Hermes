@@ -1,3 +1,7 @@
+import { startSnowflakes, stopEffects } from './effectsEngine.ts';
+
 export function initEffects() {
-  console.log('Hermes: effects initialized');
+    startSnowflakes();
 }
+
+export { stopEffects };

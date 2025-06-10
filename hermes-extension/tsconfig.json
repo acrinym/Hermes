@@ -4,6 +4,8 @@
     "module": "esnext",
     "allowJs": true,
     "checkJs": false,
+    "outDir": "dist",
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*"]
 }
