@@ -57,7 +57,7 @@ export class MacroEngine {
         this.recording = false;
         if (this.events.length) {
             this.macros[this.name] = this.events;
-            saveDataToBackground('hermes_macros_ext', this.macros);
+            this.saveMacros();
         }
         addDebugLog('macro_stop', null, { name: this.name, count: this.events.length });
         this.name = '';
@@ -115,6 +115,44 @@ export class MacroEngine {
             }
         };
         run();
+    }
+
+    list(): string[] {
+        return Object.keys(this.macros);
+    }
+
+    get(name: string): MacroEvent[] | undefined {
+        return this.macros[name];
+    }
+
+    async set(name: string, events: MacroEvent[]): Promise<boolean> {
+        this.macros[name] = events;
+        return this.saveMacros();
+    }
+
+    async delete(name: string): Promise<boolean> {
+        if (!(name in this.macros)) return false;
+        delete this.macros[name];
+        return this.saveMacros();
+    }
+
+    async import(obj: Record<string, MacroEvent[]>): Promise<boolean> {
+        this.macros = { ...this.macros, ...obj };
+        return this.saveMacros();
+    }
+
+    getAll(): Record<string, MacroEvent[]> {
+        return { ...this.macros };
+    }
+
+    private async saveMacros(): Promise<boolean> {
+        try {
+            await saveDataToBackground('hermes_macros_ext', this.macros);
+            return true;
+        } catch (e) {
+            console.error('Hermes CS: Failed to save macros', e);
+            return false;
+        }
     }
 
     private handleEvent = (e: Event) => {
