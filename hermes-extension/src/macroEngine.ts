@@ -136,6 +136,14 @@ export class MacroEngine {
         return this.saveMacros();
     }
 
+    async rename(oldName: string, newName: string): Promise<boolean> {
+        if (!(oldName in this.macros)) return false;
+        if (oldName === newName) return true;
+        this.macros[newName] = this.macros[oldName];
+        delete this.macros[oldName];
+        return this.saveMacros();
+    }
+
     async import(obj: Record<string, MacroEvent[]>): Promise<boolean> {
         this.macros = { ...this.macros, ...obj };
         return this.saveMacros();
@@ -143,6 +151,71 @@ export class MacroEngine {
 
     getAll(): Record<string, MacroEvent[]> {
         return { ...this.macros };
+    }
+
+    exportMacros(format: 'json' | 'xml' = 'json'): string {
+        if (format === 'xml') {
+            const doc = document.implementation.createDocument('', 'macros', null);
+            const root = doc.documentElement;
+            for (const [name, events] of Object.entries(this.macros)) {
+                const macroEl = doc.createElement('macro');
+                macroEl.setAttribute('name', name);
+                for (const ev of events) {
+                    const evEl = doc.createElement('event');
+                    for (const [k, v] of Object.entries(ev) as [keyof MacroEvent, any][]) {
+                        if (v === undefined || v === null) continue;
+                        if (Array.isArray(v)) evEl.setAttribute(k, v.join(','));
+                        else evEl.setAttribute(k, String(v));
+                    }
+                    macroEl.appendChild(evEl);
+                }
+                root.appendChild(macroEl);
+            }
+            return new XMLSerializer().serializeToString(doc);
+        }
+        return JSON.stringify(this.macros, null, 2);
+    }
+
+    async importFromString(data: string): Promise<boolean> {
+        data = data.trim();
+        if (!data) return false;
+        try {
+            const obj = JSON.parse(data);
+            return this.import(obj);
+        } catch {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data, 'application/xml');
+                const macroNodes = Array.from(doc.querySelectorAll('macro'));
+                const obj: Record<string, MacroEvent[]> = {};
+                for (const macroNode of macroNodes) {
+                    const name = macroNode.getAttribute('name');
+                    if (!name) continue;
+                    const evs: MacroEvent[] = [];
+                    const eventNodes = Array.from(macroNode.querySelectorAll('event'));
+                    for (const evNode of eventNodes) {
+                        const ev: any = {};
+                        for (const attr of Array.from(evNode.attributes)) {
+                            let val: any = attr.value;
+                            if (['timestamp','clientX','clientY','button'].includes(attr.name)) {
+                                val = parseInt(attr.value, 10);
+                            } else if (['checked','shiftKey','ctrlKey','altKey','metaKey'].includes(attr.name)) {
+                                val = attr.value === 'true';
+                            } else if (attr.name === 'path') {
+                                val = attr.value.split(',').map(n => parseInt(n, 10));
+                            }
+                            (ev as any)[attr.name] = val;
+                        }
+                        evs.push(ev as MacroEvent);
+                    }
+                    obj[name] = evs;
+                }
+                return this.import(obj);
+            } catch (err) {
+                console.error('Hermes: Failed to import macros from string', err);
+                return false;
+            }
+        }
     }
 
     private async saveMacros(): Promise<boolean> {
