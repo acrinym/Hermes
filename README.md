@@ -110,10 +110,11 @@ hostname.  If none exists it falls back to a file for the base domain.  For
 `sub.example.com` the extension checks `sub.example.com.json` then
 `example.com.json`.
 
-If no config is found, Hermes now auto-scans the DOM for form fields and buttons
-and saves a scaffolded config to the `_Configs` folder of this repository via the
-GitHub API.  The generated file includes robust selectors and element
-coordinates so you can refine them later.
+If no config is found Hermes automatically scans the page.  The scan gathers
+editable field selectors, clickable buttons, current scroll positions, maximum
+scroll sizes and the viewport dimensions.  A scaffolded JSON file is then saved
+to the `_Configs` folder of this repository via the GitHub API so you can refine
+it later.
 
 ---
 
