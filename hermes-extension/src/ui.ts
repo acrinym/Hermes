@@ -6,6 +6,13 @@ import { getInitialData } from './storage/index.ts';
 import { startSnowflakes, stopEffects } from './effectsEngine.ts';
 import { showHelp } from './help.ts';
 import { setupUI } from './ui/setup.ts';
+import {
+  setupDebugControls,
+  toggleLogViewer,
+  addDebugLog,
+  startMutationObserver,
+  stopMutationObserver
+} from './debug.ts';
 
 export async function initUI() {
     const data = await getInitialData();
@@ -51,7 +58,16 @@ export async function initUI() {
     helpBtn.onclick = showHelp;
     container.appendChild(helpBtn);
 
+    const logBtn = document.createElement('button');
+    logBtn.textContent = 'Logs';
+    logBtn.onclick = () => toggleLogViewer(true);
+    container.appendChild(logBtn);
+
     document.body.appendChild(container);
+
+    setupDebugControls();
+    startMutationObserver(() => addDebugLog('mutation', 'dom', {}));
+    window.addEventListener('beforeunload', stopMutationObserver);
 
     // load settings just to demonstrate
     loadSettings();

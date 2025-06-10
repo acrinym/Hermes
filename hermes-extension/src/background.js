@@ -19,6 +19,9 @@ const EFFECTS_STATE_KEY_EXT = 'hermes_effects_state_ext';
 const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
 const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
 
+// --- Debug Log Storage ---
+let debugLogs = [];
+
 const builtInThemes = {
     light: { name: 'Light', emoji: '☀️' },
     dark: { name: 'Dark', emoji: '🌙' },
@@ -371,6 +374,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     }
                 });
             }
+            break;
+
+        case "ADD_DEBUG_LOG":
+            if (payload) {
+                debugLogs.push(payload);
+            }
+            sendResponse({ success: true });
+            break;
+
+        case "GET_DEBUG_LOGS":
+            sendResponse({ success: true, logs: debugLogs });
+            break;
+
+        case "CLEAR_DEBUG_LOGS":
+            debugLogs = [];
+            sendResponse({ success: true });
             break;
 
         default:
