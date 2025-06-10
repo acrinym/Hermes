@@ -168,6 +168,8 @@ const defaultSettingsFromUserscript = {
         "_comment_mouseMoveInterval": "Minimum time in ms between recorded mousemove events. Default: 200.",
         "useCoordinateFallback": false,
         "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
+        "relativeCoordinates": true,
+        "_comment_relativeCoordinates": "Adjust recorded coordinates based on current element position.",
         "similarityThreshold": 0.5,
         "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
     }

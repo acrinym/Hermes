@@ -15,3 +15,4 @@ export const getMacros = () => macroEngine.getAll();
 export const renameMacro = (oldName: string, newName: string) => macroEngine.rename(oldName, newName);
 export const importMacrosFromString = (data: string) => macroEngine.importFromString(data);
 export const exportMacros = (format: 'json' | 'xml' = 'json') => macroEngine.exportMacros(format);
+export const updateMacroSettings = (s: Partial<{ recordMouseMoves: boolean; mouseMoveInterval: number; useCoordinateFallback: boolean; relativeCoordinates: boolean }>) => macroEngine.updateSettings(s);

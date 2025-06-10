@@ -25,6 +25,8 @@ export async function initUI() {
     const theme = data.theme || 'dark';
     applyTheme(theme);
     await macroEngine.init();
+    const settings = await loadSettings();
+    if (settings.macro) macroEngine.updateSettings(settings.macro);
 
     const container = setupUI();
     const allowed = isAllowed(location.hostname, data.whitelist || []);
