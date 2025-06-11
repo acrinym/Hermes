@@ -1,16 +1,8 @@
-const themes: Record<string, Record<string, string>> = {
-    light: {
-        '--hermes-bg': '#f8f9fa',
-        '--hermes-text': '#212529'
-    },
-    dark: {
-        '--hermes-bg': '#2c2c2c',
-        '--hermes-text': '#e0e0e0'
-    }
-};
+import { themes } from './themeDefs.ts';
+import { themeOptions } from './themeOptions.ts';
 
 export function applyTheme(name: string) {
-    const vars = themes[name] || themes.dark;
+    const vars = themes[name] || themes['dark'];
     const style = document.getElementById('hermes-theme-style') || document.createElement('style');
     style.id = 'hermes-theme-style';
     let css = ':root{';
@@ -18,4 +10,8 @@ export function applyTheme(name: string) {
     css += '}';
     style.textContent = css;
     document.head.appendChild(style);
+}
+
+export function getThemeOptions() {
+    return themeOptions;
 }
