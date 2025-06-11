@@ -46,21 +46,23 @@ export class MacroEngine {
         console.log('Hermes: macro engine ready');
     }
 
-    updateSettings(partial: Partial<{ recordMouseMoves: boolean; mouseMoveInterval: number; useCoordinateFallback: boolean; relativeCoordinates: boolean }>) {
+    updateSettings(partial: Partial<typeof this.settings>) {
         this.settings = { ...this.settings, ...partial };
     }
 
-    startRecording(name?: string, opts: { recordMouseMoves?: boolean; mouseMoveInterval?: number } = {}) {
+    startRecording(name?: string, opts: Partial<typeof this.settings> = {}) {
         this.name = name || `macro_${Date.now()}`;
         this.events = [];
         this.recording = true;
-        this.recordMouseMoves = opts.recordMouseMoves !== undefined ? !!opts.recordMouseMoves : this.settings.recordMouseMoves;
-        this.mouseMoveInterval = opts.mouseMoveInterval !== undefined ? opts.mouseMoveInterval : this.settings.mouseMoveInterval;
+        this.recordMouseMoves = opts.recordMouseMoves ?? this.settings.recordMouseMoves;
+        this.mouseMoveInterval = opts.mouseMoveInterval ?? this.settings.mouseMoveInterval;
         this.lastMouseMove = 0;
-        addDebugLog('macro_start', null, { name: this.name });
+
         const types = ['click','input','change','mousedown','mouseup','keydown','keyup','focusin','focusout','submit'];
         if (this.recordMouseMoves) types.push('mousemove');
         for (const t of types) document.addEventListener(t, this.handleEvent, true);
+
+        addDebugLog('macro_start', null, { name: this.name });
     }
 
     stopRecording() {
@@ -80,87 +82,103 @@ export class MacroEngine {
     play(name: string, instant = false) {
         const macro = this.macros[name];
         if (!macro) return;
+
         let idx = 0;
         let last = macro[0]?.timestamp || Date.now();
         const run = () => {
             if (idx >= macro.length) return;
             const ev = macro[idx];
             let el: Element | null = ev.selector ? document.querySelector(ev.selector) : null;
+
             if (!el && this.settings.useCoordinateFallback && ev.path) {
                 let cur: Element | null = document.body;
                 for (const i of ev.path) {
-                    if (!cur || !cur.children[i]) { cur = null; break; }
+                    if (!cur?.children[i]) { cur = null; break; }
                     cur = cur.children[i];
                 }
                 el = cur;
             }
+
             if (!el && this.settings.useCoordinateFallback && ev.clientX !== null && ev.clientY !== null) {
                 el = document.elementFromPoint(ev.clientX!, ev.clientY!);
             }
+
             if (el) {
                 const rect = (el as HTMLElement).getBoundingClientRect();
-                const calcCoords = () => {
-                    if (this.settings.relativeCoordinates && ev.offsetX !== null && ev.offsetY !== null) {
-                        const x = rect.left + (ev.rectW && rect.width ? ev.offsetX * (rect.width / ev.rectW) : ev.offsetX);
-                        const y = rect.top + (ev.rectH && rect.height ? ev.offsetY * (rect.height / ev.rectH) : ev.offsetY);
-                        return { x, y };
+                const coords = this.settings.relativeCoordinates && ev.offsetX !== null && ev.offsetY !== null
+                    ? {
+                        x: rect.left + (ev.rectW && rect.width ? ev.offsetX * (rect.width / ev.rectW) : ev.offsetX),
+                        y: rect.top + (ev.rectH && rect.height ? ev.offsetY * (rect.height / ev.rectH) : ev.offsetY)
                     }
-                    return { x: ev.clientX || rect.left, y: ev.clientY || rect.top };
-                };
-                const coords = calcCoords();
-                if (['click','mousedown','mouseup'].includes(ev.type)) {
-                    const me = new MouseEvent(ev.type, { bubbles:true, cancelable:true, clientX:coords.x, clientY:coords.y, button:ev.button||0, shiftKey:!!ev.shiftKey, ctrlKey:!!ev.ctrlKey, altKey:!!ev.altKey, metaKey:!!ev.metaKey });
-                    el.dispatchEvent(me);
-                } else if (ev.type === 'mousemove') {
-                    const me = new MouseEvent('mousemove', { bubbles:true, cancelable:true, clientX:coords.x, clientY:coords.y });
-                    el.dispatchEvent(me);
-                } else if (ev.type === 'input' || ev.type === 'change') {
-                    (el as HTMLInputElement).value = ev.value || '';
-                    el.dispatchEvent(new Event('input', { bubbles:true }));
-                } else if (ev.type.startsWith('key')) {
-                    const ke = new KeyboardEvent(ev.type, { bubbles:true, cancelable:true, key:ev.key||'', code:ev.code||'', shiftKey:!!ev.shiftKey, ctrlKey:!!ev.ctrlKey, altKey:!!ev.altKey, metaKey:!!ev.metaKey });
-                    el.dispatchEvent(ke);
-                } else if (ev.type === 'focusin') {
-                    (el as HTMLElement).focus();
-                } else if (ev.type === 'focusout') {
-                    (el as HTMLElement).blur();
-                } else if (ev.type === 'submit') {
-                    (el as HTMLFormElement).submit();
+                    : { x: ev.clientX || rect.left, y: ev.clientY || rect.top };
+
+                const dispatch = (event: Event) => el?.dispatchEvent(event);
+
+                switch (ev.type) {
+                    case 'click':
+                    case 'mousedown':
+                    case 'mouseup':
+                        dispatch(new MouseEvent(ev.type, {
+                            bubbles: true, cancelable: true,
+                            clientX: coords.x, clientY: coords.y,
+                            button: ev.button || 0,
+                            shiftKey: !!ev.shiftKey, ctrlKey: !!ev.ctrlKey,
+                            altKey: !!ev.altKey, metaKey: !!ev.metaKey
+                        }));
+                        break;
+                    case 'mousemove':
+                        dispatch(new MouseEvent('mousemove', {
+                            bubbles: true, cancelable: true,
+                            clientX: coords.x, clientY: coords.y
+                        }));
+                        break;
+                    case 'input':
+                    case 'change':
+                        (el as HTMLInputElement).value = ev.value || '';
+                        dispatch(new Event('input', { bubbles: true }));
+                        break;
+                    case 'keydown':
+                    case 'keyup':
+                        dispatch(new KeyboardEvent(ev.type, {
+                            bubbles: true, cancelable: true,
+                            key: ev.key || '', code: ev.code || '',
+                            shiftKey: !!ev.shiftKey, ctrlKey: !!ev.ctrlKey,
+                            altKey: !!ev.altKey, metaKey: !!ev.metaKey
+                        }));
+                        break;
+                    case 'focusin': (el as HTMLElement).focus(); break;
+                    case 'focusout': (el as HTMLElement).blur(); break;
+                    case 'submit': (el as HTMLFormElement).submit(); break;
                 }
+
                 addDebugLog('macro_play', ev.selector || '', { type: ev.type });
             }
+
             idx++;
-            const delay = Math.min(Math.max(ev.timestamp - last, 50), 3000);
+            const delay = instant ? 0 : Math.min(Math.max(ev.timestamp - last, 50), 3000);
             last = ev.timestamp;
-            if (instant) {
-                run();
-            } else {
-                setTimeout(run, delay);
-            }
+            setTimeout(run, delay);
         };
+
         run();
     }
 
-    list(): string[] {
-        return Object.keys(this.macros);
-    }
+    list() { return Object.keys(this.macros); }
+    get(name: string) { return this.macros[name]; }
+    getAll() { return { ...this.macros }; }
 
-    get(name: string): MacroEvent[] | undefined {
-        return this.macros[name];
-    }
-
-    async set(name: string, events: MacroEvent[]): Promise<boolean> {
+    async set(name: string, events: MacroEvent[]) {
         this.macros[name] = events;
         return this.saveMacros();
     }
 
-    async delete(name: string): Promise<boolean> {
+    async delete(name: string) {
         if (!(name in this.macros)) return false;
         delete this.macros[name];
         return this.saveMacros();
     }
 
-    async rename(oldName: string, newName: string): Promise<boolean> {
+    async rename(oldName: string, newName: string) {
         if (!(oldName in this.macros)) return false;
         if (oldName === newName) return true;
         this.macros[newName] = this.macros[oldName];
@@ -168,13 +186,9 @@ export class MacroEngine {
         return this.saveMacros();
     }
 
-    async import(obj: Record<string, MacroEvent[]>): Promise<boolean> {
+    async import(obj: Record<string, MacroEvent[]>) {
         this.macros = { ...this.macros, ...obj };
         return this.saveMacros();
-    }
-
-    getAll(): Record<string, MacroEvent[]> {
-        return { ...this.macros };
     }
 
     exportMacros(format: 'json' | 'xml' = 'json'): string {
@@ -186,10 +200,9 @@ export class MacroEngine {
                 macroEl.setAttribute('name', name);
                 for (const ev of events) {
                     const evEl = doc.createElement('event');
-                    for (const [k, v] of Object.entries(ev) as [keyof MacroEvent, any][]) {
+                    for (const [k, v] of Object.entries(ev)) {
                         if (v === undefined || v === null) continue;
-                        if (Array.isArray(v)) evEl.setAttribute(k, v.join(','));
-                        else evEl.setAttribute(k, String(v));
+                        evEl.setAttribute(k, Array.isArray(v) ? v.join(',') : String(v));
                     }
                     macroEl.appendChild(evEl);
                 }
@@ -201,9 +214,9 @@ export class MacroEngine {
     }
 
     async importFromString(data: string): Promise<boolean> {
-        data = data.trim();
-        if (!data) return false;
         try {
+            data = data.trim();
+            if (!data) return false;
             const obj = JSON.parse(data);
             return this.import(obj);
         } catch {
@@ -216,21 +229,16 @@ export class MacroEngine {
                     const name = macroNode.getAttribute('name');
                     if (!name) continue;
                     const evs: MacroEvent[] = [];
-                    const eventNodes = Array.from(macroNode.querySelectorAll('event'));
-                    for (const evNode of eventNodes) {
+                    for (const evNode of macroNode.querySelectorAll('event')) {
                         const ev: any = {};
-                        for (const attr of Array.from(evNode.attributes)) {
+                        for (const attr of evNode.attributes) {
                             let val: any = attr.value;
-                            if (['timestamp','clientX','clientY','button'].includes(attr.name)) {
-                                val = parseInt(attr.value, 10);
-                            } else if (['checked','shiftKey','ctrlKey','altKey','metaKey'].includes(attr.name)) {
-                                val = attr.value === 'true';
-                            } else if (attr.name === 'path') {
-                                val = attr.value.split(',').map(n => parseInt(n, 10));
-                            }
-                            (ev as any)[attr.name] = val;
+                            if (['timestamp','clientX','clientY','button'].includes(attr.name)) val = parseInt(val, 10);
+                            else if (['checked','shiftKey','ctrlKey','altKey','metaKey'].includes(attr.name)) val = val === 'true';
+                            else if (attr.name === 'path') val = val.split(',').map(n => parseInt(n, 10));
+                            ev[attr.name] = val;
                         }
-                        evs.push(ev as MacroEvent);
+                        evs.push(ev);
                     }
                     obj[name] = evs;
                 }
@@ -242,7 +250,7 @@ export class MacroEngine {
         }
     }
 
-    private async saveMacros(): Promise<boolean> {
+    private async saveMacros() {
         try {
             await saveDataToBackground('hermes_macros_ext', this.macros);
             return true;
@@ -254,18 +262,22 @@ export class MacroEngine {
 
     private handleEvent = (e: Event) => {
         if (!this.recording) return;
+
         if (e.type === 'mousemove') {
             const now = Date.now();
             if (now - this.lastMouseMove < this.mouseMoveInterval) return;
             this.lastMouseMove = now;
         }
+
         const target = e.target as HTMLElement | null;
         if (!target) return;
+
         const selector = this.getSelector(target);
         const val = (target as HTMLInputElement).value;
         const checked = (target as HTMLInputElement).checked;
-        const path = this.getIndexPath(target);
         const rect = target.getBoundingClientRect();
+        const path = this.getIndexPath(target);
+
         this.events.push({
             type: e.type,
             selector,
@@ -274,9 +286,9 @@ export class MacroEngine {
             timestamp: Date.now(),
             key: (e as KeyboardEvent).key || null,
             code: (e as KeyboardEvent).code || null,
-            button: (e as MouseEvent).button !== undefined ? (e as MouseEvent).button : null,
-            clientX: (e as MouseEvent).clientX !== undefined ? (e as MouseEvent).clientX : null,
-            clientY: (e as MouseEvent).clientY !== undefined ? (e as MouseEvent).clientY : null,
+            button: (e as MouseEvent).button ?? null,
+            clientX: (e as MouseEvent).clientX ?? null,
+            clientY: (e as MouseEvent).clientY ?? null,
             offsetX: (e as MouseEvent).clientX !== undefined ? (e as MouseEvent).clientX - rect.left : null,
             offsetY: (e as MouseEvent).clientY !== undefined ? (e as MouseEvent).clientY - rect.top : null,
             rectW: rect.width,
@@ -287,12 +299,13 @@ export class MacroEngine {
             metaKey: (e as MouseEvent).metaKey || (e as KeyboardEvent).metaKey || false,
             path
         });
+
         addDebugLog('macro_record', selector, { type: e.type });
     };
 
     private getSelector(el: Element): string {
         if ((el as HTMLElement).id) return `#${(el as HTMLElement).id}`;
-        const path = [] as string[];
+        const path = [];
         let cur: Element | null = el;
         while (cur && cur.nodeType === 1 && path.length < 4) {
             let selector = cur.nodeName.toLowerCase();
@@ -317,3 +330,4 @@ export class MacroEngine {
 }
 
 export const macroEngine = new MacroEngine();
+-

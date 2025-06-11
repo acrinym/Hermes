@@ -1,3 +1,55 @@
+/**
+ * @file theme.ts (Merged)
+ * @description A single, self-contained TypeScript script for applying themes.
+ * This script merges the Shadow DOM support from the 'refactor' branch with the
+ * extensive theme definitions and styles from the 'main' branch, with all
+ * necessary functions included directly in this file.
+ */
+
+// --- UTILITY FUNCTIONS (Included directly in the script) ---
+
+/**
+ * Converts a string of RGB values into a hex color code.
+ * e.g., "255 255 255" becomes "#ffffff".
+ * This function was required by themes in the 'main' branch.
+ * @param rgbString A string containing three space-separated number values.
+ * @returns The hex color string.
+ */
+function rgbStringToHex(rgbString: string): string {
+    const parts = rgbString.split(' ').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) {
+        console.error(`Invalid RGB string provided: "${rgbString}"`);
+        return '#000000'; // Return a default/error color
+    }
+    const toHex = (c: number) => {
+        const hex = Math.max(0, Math.min(255, c)).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    };
+    const [r, g, b] = parts;
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
+ * Determines the root element where styles should be applied.
+ * It checks for a specific UI container with a Shadow DOM first,
+ * and falls back to the main document if not found.
+ * This function was originally an import in the 'refactor' branch.
+ * @returns The ShadowRoot if it exists, otherwise the main Document.
+ */
+function getRoot(): Document | ShadowRoot {
+    // A common pattern is to have a single container for the UI.
+    // We check if that container exists and is using a Shadow DOM.
+    const hermesUIContainer = document.getElementById('hermes-ui-container');
+    if (hermesUIContainer && hermesUIContainer.shadowRoot) {
+        return hermesUIContainer.shadowRoot;
+    }
+    // Otherwise, we fall back to the main document.
+    return document;
+}
+
+
+// --- THEME DEFINITIONS (From 'main' branch) ---
+
 export const themes: Record<string, Record<string, string>> = {
     light: {
         "--hermes-bg": "#f8f9fa",
@@ -182,132 +234,132 @@ export const themes: Record<string, Record<string, string>> = {
         "--hermes-line-height": "1.4",
     },
     classicSlate: {
-        "--hermes-bg": "${rgbStringToHex("64 64 64")}",
-        "--hermes-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-border": "${rgbStringToHex("128 128 128")}",
-        "--hermes-button-bg": "${rgbStringToHex("128 128 128")}",
-        "--hermes-button-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-button-hover-bg": "${rgbStringToHex("64 64 64")}",
-        "--hermes-panel-bg": "${rgbStringToHex("128 128 128")}",
-        "--hermes-panel-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-panel-border": "${rgbStringToHex("64 64 64")}",
-        "--hermes-input-bg": "${rgbStringToHex("255 255 255")}",
-        "--hermes-input-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-input-border": "${rgbStringToHex("128 128 128")}",
-        "--hermes-accent-bar-bg": "${rgbStringToHex("64 64 64")}",
-        "--hermes-highlight-bg": "${rgbStringToHex("64 64 64")}",
-        "--hermes-highlight-text": "${rgbStringToHex("255 255 255")}",
+        "--hermes-bg": rgbStringToHex("64 64 64"),
+        "--hermes-text": rgbStringToHex("255 255 255"),
+        "--hermes-border": rgbStringToHex("128 128 128"),
+        "--hermes-button-bg": rgbStringToHex("128 128 128"),
+        "--hermes-button-text": rgbStringToHex("255 255 255"),
+        "--hermes-button-hover-bg": rgbStringToHex("64 64 64"),
+        "--hermes-panel-bg": rgbStringToHex("128 128 128"),
+        "--hermes-panel-text": rgbStringToHex("255 255 255"),
+        "--hermes-panel-border": rgbStringToHex("64 64 64"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("128 128 128"),
+        "--hermes-accent-bar-bg": rgbStringToHex("64 64 64"),
+        "--hermes-highlight-bg": rgbStringToHex("64 64 64"),
+        "--hermes-highlight-text": rgbStringToHex("255 255 255"),
         "--hermes-disabled-text": "#777",
         "--hermes-error-text": "#f5c6cb",
         "--hermes-success-text": "#c3e6cb",
         "--hermes-warning-text": "#ffeeba",
         "--hermes-info-text": "#bee5eb",
-        "--hermes-link-color": "${rgbStringToHex("64 64 64")}",
-        "--hermes-link-hover-color": "${rgbStringToHex("96 96 96")}",
+        "--hermes-link-color": rgbStringToHex("64 64 64"),
+        "--hermes-link-hover-color": rgbStringToHex("96 96 96"),
         "--hermes-text-shadow": "none",
         "--hermes-line-height": "1.4",
     },
     classicWheat: {
-        "--hermes-bg": "${rgbStringToHex("245 222 179")}",
-        "--hermes-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-border": "${rgbStringToHex("139 69 19")}",
-        "--hermes-button-bg": "${rgbStringToHex("222 184 135")}",
-        "--hermes-button-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-button-hover-bg": "${rgbStringToHex("188 143 143")}",
-        "--hermes-panel-bg": "${rgbStringToHex("245 245 220")}",
-        "--hermes-panel-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-panel-border": "${rgbStringToHex("139 69 19")}",
-        "--hermes-input-bg": "${rgbStringToHex("255 255 255")}",
-        "--hermes-input-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-input-border": "${rgbStringToHex("139 69 19")}",
-        "--hermes-accent-bar-bg": "${rgbStringToHex("222 184 135")}",
-        "--hermes-highlight-bg": "${rgbStringToHex("222 184 135")}",
-        "--hermes-highlight-text": "${rgbStringToHex("0 0 0")}",
+        "--hermes-bg": rgbStringToHex("245 222 179"),
+        "--hermes-text": rgbStringToHex("0 0 0"),
+        "--hermes-border": rgbStringToHex("139 69 19"),
+        "--hermes-button-bg": rgbStringToHex("222 184 135"),
+        "--hermes-button-text": rgbStringToHex("0 0 0"),
+        "--hermes-button-hover-bg": rgbStringToHex("188 143 143"),
+        "--hermes-panel-bg": rgbStringToHex("245 245 220"),
+        "--hermes-panel-text": rgbStringToHex("0 0 0"),
+        "--hermes-panel-border": rgbStringToHex("139 69 19"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("139 69 19"),
+        "--hermes-accent-bar-bg": rgbStringToHex("222 184 135"),
+        "--hermes-highlight-bg": rgbStringToHex("222 184 135"),
+        "--hermes-highlight-text": rgbStringToHex("0 0 0"),
         "--hermes-disabled-text": "#777",
         "--hermes-error-text": "#dc3545",
         "--hermes-success-text": "#28a745",
         "--hermes-warning-text": "#ffc107",
         "--hermes-info-text": "#17a2b8",
-        "--hermes-link-color": "${rgbStringToHex("139 69 19")}",
-        "--hermes-link-hover-color": "${rgbStringToHex("160 82 45")}",
+        "--hermes-link-color": rgbStringToHex("139 69 19"),
+        "--hermes-link-hover-color": rgbStringToHex("160 82 45"),
         "--hermes-text-shadow": "none",
         "--hermes-line-height": "1.4",
     },
     classicTeal: {
-        "--hermes-bg": "${rgbStringToHex("0 128 128")}",
-        "--hermes-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-border": "${rgbStringToHex("32 178 170")}",
-        "--hermes-button-bg": "${rgbStringToHex("32 178 170")}",
-        "--hermes-button-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-button-hover-bg": "${rgbStringToHex("0 139 139")}",
-        "--hermes-panel-bg": "${rgbStringToHex("0 139 139")}",
-        "--hermes-panel-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-panel-border": "${rgbStringToHex("32 178 170")}",
-        "--hermes-input-bg": "${rgbStringToHex("255 255 255")}",
-        "--hermes-input-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-input-border": "${rgbStringToHex("32 178 170")}",
-        "--hermes-accent-bar-bg": "${rgbStringToHex("0 128 128")}",
-        "--hermes-highlight-bg": "${rgbStringToHex("0 128 128")}",
-        "--hermes-highlight-text": "${rgbStringToHex("255 255 255")}",
+        "--hermes-bg": rgbStringToHex("0 128 128"),
+        "--hermes-text": rgbStringToHex("255 255 255"),
+        "--hermes-border": rgbStringToHex("32 178 170"),
+        "--hermes-button-bg": rgbStringToHex("32 178 170"),
+        "--hermes-button-text": rgbStringToHex("255 255 255"),
+        "--hermes-button-hover-bg": rgbStringToHex("0 139 139"),
+        "--hermes-panel-bg": rgbStringToHex("0 139 139"),
+        "--hermes-panel-text": rgbStringToHex("255 255 255"),
+        "--hermes-panel-border": rgbStringToHex("32 178 170"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("32 178 170"),
+        "--hermes-accent-bar-bg": rgbStringToHex("0 128 128"),
+        "--hermes-highlight-bg": rgbStringToHex("0 128 128"),
+        "--hermes-highlight-text": rgbStringToHex("255 255 255"),
         "--hermes-disabled-text": "#777",
         "--hermes-error-text": "#f5c6cb",
         "--hermes-success-text": "#c3e6cb",
         "--hermes-warning-text": "#ffeeba",
         "--hermes-info-text": "#bee5eb",
-        "--hermes-link-color": "${rgbStringToHex("32 178 170")}",
-        "--hermes-link-hover-color": "${rgbStringToHex("0 139 139")}",
+        "--hermes-link-color": rgbStringToHex("32 178 170"),
+        "--hermes-link-hover-color": rgbStringToHex("0 139 139"),
         "--hermes-text-shadow": "none",
         "--hermes-line-height": "1.4",
     },
     classicSpruce: {
-        "--hermes-bg": "${rgbStringToHex("0 100 0")}",
-        "--hermes-text": "${rgbStringToHex("245 245 220")}",
-        "--hermes-border": "${rgbStringToHex("34 139 34")}",
-        "--hermes-button-bg": "${rgbStringToHex("34 139 34")}",
-        "--hermes-button-text": "${rgbStringToHex("245 245 220")}",
-        "--hermes-button-hover-bg": "${rgbStringToHex("0 100 0")}",
-        "--hermes-panel-bg": "${rgbStringToHex("34 139 34")}",
-        "--hermes-panel-text": "${rgbStringToHex("245 245 220")}",
-        "--hermes-panel-border": "${rgbStringToHex("0 100 0")}",
-        "--hermes-input-bg": "${rgbStringToHex("255 255 255")}",
-        "--hermes-input-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-input-border": "${rgbStringToHex("34 139 34")}",
-        "--hermes-accent-bar-bg": "${rgbStringToHex("0 100 0")}",
-        "--hermes-highlight-bg": "${rgbStringToHex("0 100 0")}",
-        "--hermes-highlight-text": "${rgbStringToHex("245 245 220")}",
+        "--hermes-bg": rgbStringToHex("0 100 0"),
+        "--hermes-text": rgbStringToHex("245 245 220"),
+        "--hermes-border": rgbStringToHex("34 139 34"),
+        "--hermes-button-bg": rgbStringToHex("34 139 34"),
+        "--hermes-button-text": rgbStringToHex("245 245 220"),
+        "--hermes-button-hover-bg": rgbStringToHex("0 100 0"),
+        "--hermes-panel-bg": rgbStringToHex("34 139 34"),
+        "--hermes-panel-text": rgbStringToHex("245 245 220"),
+        "--hermes-panel-border": rgbStringToHex("0 100 0"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("34 139 34"),
+        "--hermes-accent-bar-bg": rgbStringToHex("0 100 0"),
+        "--hermes-highlight-bg": rgbStringToHex("0 100 0"),
+        "--hermes-highlight-text": rgbStringToHex("245 245 220"),
         "--hermes-disabled-text": "#777",
         "--hermes-error-text": "#f5c6cb",
         "--hermes-success-text": "#c3e6cb",
         "--hermes-warning-text": "#ffeeba",
         "--hermes-info-text": "#bee5eb",
-        "--hermes-link-color": "${rgbStringToHex("34 139 34")}",
-        "--hermes-link-hover-color": "${rgbStringToHex("0 100 0")}",
+        "--hermes-link-color": rgbStringToHex("34 139 34"),
+        "--hermes-link-hover-color": rgbStringToHex("0 100 0"),
         "--hermes-text-shadow": "none",
         "--hermes-line-height": "1.4",
     },
     classicStorm: {
-        "--hermes-bg": "${rgbStringToHex("105 105 105")}",
-        "--hermes-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-border": "${rgbStringToHex("169 169 169")}",
-        "--hermes-button-bg": "${rgbStringToHex("169 169 169")}",
-        "--hermes-button-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-button-hover-bg": "${rgbStringToHex("128 128 128")}",
-        "--hermes-panel-bg": "${rgbStringToHex("169 169 169")}",
-        "--hermes-panel-text": "${rgbStringToHex("255 255 255")}",
-        "--hermes-panel-border": "${rgbStringToHex("105 105 105")}",
-        "--hermes-input-bg": "${rgbStringToHex("255 255 255")}",
-        "--hermes-input-text": "${rgbStringToHex("0 0 0")}",
-        "--hermes-input-border": "${rgbStringToHex("169 169 169")}",
-        "--hermes-accent-bar-bg": "${rgbStringToHex("105 105 105")}",
-        "--hermes-highlight-bg": "${rgbStringToHex("105 105 105")}",
-        "--hermes-highlight-text": "${rgbStringToHex("255 255 255")}",
+        "--hermes-bg": rgbStringToHex("105 105 105"),
+        "--hermes-text": rgbStringToHex("255 255 255"),
+        "--hermes-border": rgbStringToHex("169 169 169"),
+        "--hermes-button-bg": rgbStringToHex("169 169 169"),
+        "--hermes-button-text": rgbStringToHex("255 255 255"),
+        "--hermes-button-hover-bg": rgbStringToHex("128 128 128"),
+        "--hermes-panel-bg": rgbStringToHex("169 169 169"),
+        "--hermes-panel-text": rgbStringToHex("255 255 255"),
+        "--hermes-panel-border": rgbStringToHex("105 105 105"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("169 169 169"),
+        "--hermes-accent-bar-bg": rgbStringToHex("105 105 105"),
+        "--hermes-highlight-bg": rgbStringToHex("105 105 105"),
+        "--hermes-highlight-text": rgbStringToHex("255 255 255"),
         "--hermes-disabled-text": "#777",
         "--hermes-error-text": "#f5c6cb",
         "--hermes-success-text": "#c3e6cb",
         "--hermes-warning-text": "#ffeeba",
         "--hermes-info-text": "#bee5eb",
-        "--hermes-link-color": "${rgbStringToHex("169 169 169")}",
-        "--hermes-link-hover-color": "${rgbStringToHex("128 128 128")}",
+        "--hermes-link-color": rgbStringToHex("169 169 169"),
+        "--hermes-link-hover-color": rgbStringToHex("128 128 128"),
         "--hermes-text-shadow": "none",
         "--hermes-line-height": "1.4",
     },
@@ -677,14 +729,80 @@ export const themes: Record<string, Record<string, string>> = {
     },
 };
 
+
+// --- THEME OPTIONS (Generated from themes object, for 'refactor' branch compatibility) ---
+
+/**
+ * An array of theme options suitable for use in a dropdown menu.
+ * This was originally an import in the 'refactor' branch.
+ */
+export const themeOptions = Object.keys(themes).map(name => ({
+    value: name,
+    label: name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+}));
+
+
+// --- CORE FUNCTIONS (Merged Logic) ---
+
+/**
+ * Applies a theme by injecting CSS variables into the document head or a Shadow DOM root.
+ * This function combines the Shadow DOM logic from the 'refactor' branch with the
+ * additional component styles from the 'main' branch.
+ * @param name The name of the theme to apply (e.g., 'dark', 'phoenix').
+ */
 export function applyTheme(name: string) {
-    const vars = themes[name] || themes.dark;
-    const style = document.getElementById('hermes-theme-style') || document.createElement('style');
-    style.id = 'hermes-theme-style';
-    let css = ':root{';
-    Object.entries(vars).forEach(([k,v]) => { css += `${k}:${v};`; });
-    css += '}';
-    css += `\n.hermes-button{background:var(--hermes-button-bg);color:var(--hermes-button-text);border:1px solid var(--hermes-border);border-radius:4px;padding:4px 6px;cursor:pointer;}\n.hermes-button:hover{background:var(--hermes-button-hover-bg);}\n#hermes-ui-container{border:1px solid var(--hermes-border);}\n#hermes-minimized-container{border:1px solid var(--hermes-border);}\n`;
-    style.textContent = css;
-    document.head.appendChild(style);
+    const vars = themes[name] || themes['dark']; // Fallback to 'dark' theme if name is invalid
+    const root = getRoot();
+    let style: HTMLStyleElement | null;
+
+    // Additional specific CSS rules from the 'main' branch to be included with the theme.
+    const additionalCss = `
+        .hermes-button {
+            background: var(--hermes-button-bg);
+            color: var(--hermes-button-text);
+            border: 1px solid var(--hermes-border);
+            border-radius: 4px;
+            padding: 4px 6px;
+            cursor: pointer;
+        }
+        .hermes-button:hover {
+            background: var(--hermes-button-hover-bg);
+        }
+        #hermes-ui-container, #hermes-minimized-container {
+            border: 1px solid var(--hermes-border);
+        }
+    `;
+
+    // Combine theme variables into a single CSS string.
+    const variablesCss = Object.entries(vars).reduce((acc, [key, value]) => `${acc}${key}:${value};`, '');
+
+    // Apply styles differently depending on whether we are in a Shadow DOM or the main document.
+    if (root instanceof ShadowRoot) {
+        style = root.getElementById('hermes-theme-style') as HTMLStyleElement | null;
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'hermes-theme-style';
+            root.appendChild(style);
+        }
+        // In Shadow DOM, variables are scoped to the host element.
+        style.textContent = `:host{${variablesCss}} ${additionalCss}`;
+    } else {
+        style = document.getElementById('hermes-theme-style') as HTMLStyleElement | null;
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'hermes-theme-style';
+            document.head.appendChild(style);
+        }
+        // In the main document, variables are applied to the :root.
+        style.textContent = `:root{${variablesCss}} ${additionalCss}`;
+    }
+}
+
+/**
+ * Returns the available theme options, allowing a UI to build a theme selector.
+ * This function was originally an import in the 'refactor' branch.
+ * @returns An array of objects with 'value' and 'label' for each theme.
+ */
+export function getThemeOptions() {
+    return themeOptions;
 }

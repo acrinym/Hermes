@@ -1,3 +1,4 @@
+import { getRoot } from './root.ts';
 import { createModal } from './ui/components.js';
 import { saveDataToBackground } from './storage/index.ts';
 
@@ -38,13 +39,26 @@ function createHelpPanel(): HTMLElement {
             <li>Enable Debug mode to access logs and dev tools.</li>
             <li>Use Learn mode to improve field mappings.</li>
             <li>Check the <strong>Settings (⚙️)</strong> panel for advanced customization of UI appearance and effect parameters.</li>
-        </ul>`;
-    return createModal(document.body as any, 'hermes-help-panel', 'Hermes Help', contentHtml, '600px');
+        </ul>
+    `;
+
+    const root = getRoot();
+    return createModal(root instanceof ShadowRoot ? root : document.body, 'hermes-help-panel', 'Hermes Help', contentHtml, '600px');
 }
 
 export function toggleHelpPanel(show: boolean) {
+    const root = getRoot();
+
     if (!helpPanel && show) helpPanel = createHelpPanel();
     if (!helpPanel) return;
+
     helpPanel.style.display = show ? 'block' : 'none';
-    saveDataToBackground('hermes_help_panel_state_ext', show).catch(e => console.error('Hermes CS: Failed to persist help state', e));
+
+    saveDataToBackground('hermes_help_panel_state_ext', show)
+        .catch(e => console.error('Hermes CS: Failed to persist help state', e));
+
+    // ensure appended to the correct DOM root
+    if (!root.contains(helpPanel)) {
+        root.appendChild(helpPanel);
+    }
 }
