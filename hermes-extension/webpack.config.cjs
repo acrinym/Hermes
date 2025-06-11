@@ -2,6 +2,7 @@ const path = require('path');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 module.exports = {
+  mode: 'production',
   entry: {
     background: './src/background.js',
     content: './src/content.js'
