@@ -267,7 +267,7 @@ PRs are welcome. For suggestions or issues, please use the Issues tab.
 ### Building the extension
 
 1. `cd hermes-extension`
-2. Run `npm install` to install dev dependencies.
+2. (optional) Run `npm install` to install dev dependencies. The build script will install them automatically if missing.
 3. From inside `hermes-extension/`, run `npm run build` to bundle `src/` into a `dist/` folder. This `dist/` directory is excluded from version control via `.gitignore`.
 4. Load the `hermes-extension` directory in Chrome as an unpacked extension.
 

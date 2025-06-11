@@ -162,6 +162,11 @@ const overlaysManager = {
 };
 
 let macroMenu: HTMLDivElement; // Global reference for the macro menu
+let themeMenu: HTMLDivElement; // Submenu for theme selection
+let effectsMenu: HTMLDivElement; // Submenu for visual effects
+let themeBtn: HTMLButtonElement; // Reference to theme button
+let effectsBtn: HTMLButtonElement; // Reference to effects button
+let currentEffect = 'none';
 
 
 // --- MERGED UI INITIALIZATION SCRIPT ---
@@ -225,10 +230,20 @@ export async function initUI() {
         }
     });
 
-    // -- Special Effects Controls --
-    createButton('Snow', () => effectsEngine.startSnowflakes());
-    createButton('Lasers', () => effectsEngine.startLasers());
-    createButton('FX Off', () => effectsEngine.stopEffects());
+    // -- Theme & Effects Controls --
+    themeBtn = createButton('Theme ▼', (e) => {
+        e.stopPropagation();
+        const isVisible = themeMenu.style.display === 'block';
+        closeAllSubmenus(themeMenu);
+        themeMenu.style.display = isVisible ? 'none' : 'block';
+    });
+
+    effectsBtn = createButton('Effects ▼', (e) => {
+        e.stopPropagation();
+        const isVisible = effectsMenu.style.display === 'block';
+        closeAllSubmenus(effectsMenu);
+        effectsMenu.style.display = isVisible ? 'none' : 'block';
+    });
 
     // -- Panels and Toggles --
     const overlayBtn = createButton('Overlay', () => {
@@ -267,8 +282,30 @@ export async function initUI() {
     macrosBtn.style.position = 'relative';
     macrosBtn.appendChild(macroMenu);
 
-    // Close menu when clicking elsewhere
-    document.addEventListener('click', () => { macroMenu.style.display = 'none'; });
+    themeMenu = document.createElement('div');
+    themeMenu.className = 'hermes-submenu';
+    themeMenu.style.cssText = `
+        display:none; position:absolute; top: 100%; left: 0;
+        background: var(--hermes-bg); border: 1px solid var(--hermes-border);
+        padding: 5px; z-index: 1; min-width: 200px;
+    `;
+    themeBtn.style.position = 'relative';
+    themeBtn.appendChild(themeMenu);
+    updateThemeSubmenu(themeMenu);
+
+    effectsMenu = document.createElement('div');
+    effectsMenu.className = 'hermes-submenu';
+    effectsMenu.style.cssText = `
+        display:none; position:absolute; top: 100%; left: 0;
+        background: var(--hermes-bg); border: 1px solid var(--hermes-border);
+        padding: 5px; z-index: 1; min-width: 200px;
+    `;
+    effectsBtn.style.position = 'relative';
+    effectsBtn.appendChild(effectsMenu);
+    updateEffectsSubmenu(effectsMenu);
+
+    // Close menus when clicking elsewhere
+    document.addEventListener('click', () => { closeAllSubmenus(); });
 
     // --- Final Initialization Steps ---
     debugManager.setupDebugControls();
@@ -427,4 +464,55 @@ function importMacrosFromFile() {
         reader.readAsText(file);
     };
     input.click();
+}
+
+function updateThemeSubmenu(menu: HTMLElement) {
+    menu.innerHTML = '';
+    Object.entries(themeOptions).forEach(([key, opt]) => {
+        const btn = document.createElement('button');
+        btn.className = 'hermes-button';
+        btn.textContent = `${opt.emoji} ${opt.name}`;
+        btn.style.width = '100%';
+        btn.style.textAlign = 'left';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            applyTheme(key);
+            saveDataToBackground('hermes_theme_ext', key);
+            themeBtn.textContent = `Theme ▼`;
+            menu.style.display = 'none';
+        };
+        menu.appendChild(btn);
+    });
+}
+
+function updateEffectsSubmenu(menu: HTMLElement) {
+    menu.innerHTML = '';
+    const opts = [
+        { mode: 'none', name: 'None' },
+        { mode: 'snow', name: 'Snowflakes' },
+        { mode: 'laser', name: 'Lasers' },
+    ];
+    opts.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'hermes-button';
+        btn.textContent = opt.name;
+        btn.style.width = '100%';
+        btn.style.textAlign = 'left';
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            currentEffect = opt.mode;
+            if (opt.mode === 'snow') effectsEngine.startSnowflakes();
+            else if (opt.mode === 'laser') effectsEngine.startLasers();
+            else effectsEngine.stopEffects();
+            saveDataToBackground('hermes_effects_state_ext', opt.mode);
+            menu.style.display = 'none';
+        };
+        menu.appendChild(btn);
+    });
+}
+
+function closeAllSubmenus(except?: HTMLElement) {
+    [macroMenu, themeMenu, effectsMenu].forEach(menu => {
+        if (menu && menu !== except) menu.style.display = 'none';
+    });
 }

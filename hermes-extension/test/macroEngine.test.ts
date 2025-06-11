@@ -1,7 +1,19 @@
 import { MacroEngine } from '../src/macroEngine.ts';
 
+beforeAll(() => {
+  (global as any).chrome = {
+    runtime: {
+      sendMessage: (_: any, cb?: (resp: any) => void) => { if (cb) cb({ success: true }); }
+    }
+  };
+});
+
+afterAll(() => {
+  delete (global as any).chrome;
+});
+
 describe('MacroEngine', () => {
-  test('play applies events to the DOM', () => {
+  test('play applies events to the DOM', async () => {
     const engine = new MacroEngine();
     (engine as any).macros = {
       demo: [
@@ -15,6 +27,7 @@ describe('MacroEngine', () => {
     document.getElementById('btn')!.addEventListener('click', clickSpy);
 
     engine.play('demo', true);
+    await new Promise(res => setTimeout(res, 0));
 
     const input = document.getElementById('name') as HTMLInputElement;
     expect(input.value).toBe('John');
