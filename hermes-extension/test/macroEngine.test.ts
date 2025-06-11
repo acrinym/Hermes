@@ -13,8 +13,9 @@ describe('MacroEngine', () => {
     document.body.innerHTML = '<input id="name"/><button id="btn"></button>';
     const clickSpy = jest.fn();
     document.getElementById('btn')!.addEventListener('click', clickSpy);
-
+    jest.useFakeTimers();
     engine.play('demo', true);
+    jest.runAllTimers();
 
     const input = document.getElementById('name') as HTMLInputElement;
     expect(input.value).toBe('John');
@@ -61,7 +62,9 @@ describe('MacroEngine', () => {
     btn.getBoundingClientRect = jest.fn(() => ({ left: 50, top: 40, width: 100, height: 50, right: 150, bottom: 90 } as any));
     const spy = jest.fn();
     btn.addEventListener('click', (e: MouseEvent) => spy((e as MouseEvent).clientX, (e as MouseEvent).clientY));
+    jest.useFakeTimers();
     engine.play('demo', true);
+    jest.runAllTimers();
     expect(spy).toHaveBeenCalledWith(60, 45);
   });
 
