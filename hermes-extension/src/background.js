@@ -19,6 +19,9 @@ const EFFECTS_STATE_KEY_EXT = 'hermes_effects_state_ext';
 const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
 const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
 
+// --- Debug Log Storage ---
+let debugLogs = [];
+
 const builtInThemes = {
     light: { name: 'Light', emoji: '☀️' },
     dark: { name: 'Dark', emoji: '🌙' },
@@ -49,10 +52,26 @@ const builtInThemes = {
 };
 
 // --- GitHub configuration for remote site configs ---
-// Replace these placeholder values with your actual repository details
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/_Configs/';
-const GITHUB_API_BASE = 'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/_Configs/';
-const GITHUB_TOKEN = ''; // Personal access token if writing back to the repo
+// These values can be stored in chrome.storage under the keys below or
+// provided as environment variables at build time.
+const GITHUB_RAW_BASE_KEY = 'github_raw_base';
+const GITHUB_API_BASE_KEY = 'github_api_base';
+const GITHUB_TOKEN_KEY = 'github_token';
+
+let GITHUB_RAW_BASE = '';
+let GITHUB_API_BASE = '';
+let GITHUB_TOKEN = '';
+
+async function loadGithubSettings() {
+    const data = await chrome.storage.local.get({
+        [GITHUB_RAW_BASE_KEY]: '',
+        [GITHUB_API_BASE_KEY]: '',
+        [GITHUB_TOKEN_KEY]: ''
+    });
+    GITHUB_RAW_BASE = data[GITHUB_RAW_BASE_KEY] || process.env.GITHUB_RAW_BASE || '';
+    GITHUB_API_BASE = data[GITHUB_API_BASE_KEY] || process.env.GITHUB_API_BASE || '';
+    GITHUB_TOKEN = data[GITHUB_TOKEN_KEY] || process.env.GITHUB_TOKEN || '';
+}
 
 // --- In-memory cache for Hermes data ---
 let hermesState = {
@@ -74,7 +93,7 @@ let hermesState = {
     configs: {}
 };
 
-// `defaultSettings` object extracted from your "Hermes System - Themable! 14 - fix ... .user.js"
+// `defaultSettings` object extracted from your "hermes-system-themable-14.user.js"
 const defaultSettingsFromUserscript = {
     "_comment_main_ui": "Settings for the main Hermes UI appearance.",
     "hermesBorderThickness": "1px",
@@ -165,12 +184,16 @@ const defaultSettingsFromUserscript = {
         "_comment_mouseMoveInterval": "Minimum time in ms between recorded mousemove events. Default: 200.",
         "useCoordinateFallback": false,
         "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
+        "relativeCoordinates": true,
+        "_comment_relativeCoordinates": "Adjust recorded coordinates based on current element position.",
         "similarityThreshold": 0.5,
         "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
     }
 };
 async function initializeHermesState() {
     console.log("Hermes BG: Initializing Hermes state from chrome.storage.local...");
+
+    await loadGithubSettings();
 
     if (!defaultSettingsFromUserscript || Object.keys(defaultSettingsFromUserscript).length === 0) {
         console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
@@ -371,6 +394,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     }
                 });
             }
+            break;
+
+        case "ADD_DEBUG_LOG":
+            if (payload) {
+                debugLogs.push(payload);
+            }
+            sendResponse({ success: true });
+            break;
+
+        case "GET_DEBUG_LOGS":
+            sendResponse({ success: true, logs: debugLogs });
+            break;
+
+        case "CLEAR_DEBUG_LOGS":
+            debugLogs = [];
+            sendResponse({ success: true });
             break;
 
         default:

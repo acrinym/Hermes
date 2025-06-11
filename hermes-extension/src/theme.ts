@@ -1,11 +1,782 @@
-import { themes } from './themeDefs.ts';
-import { themeOptions } from './themeOptions.ts';
-import { getRoot } from './root.ts';
+/**
+ * @file theme.ts (Merged)
+ * @description A single, self-contained TypeScript script for applying themes.
+ * This script merges the Shadow DOM support from the 'refactor' branch with the
+ * extensive theme definitions and styles from the 'main' branch, with all
+ * necessary functions included directly in this file.
+ */
 
+// --- UTILITY FUNCTIONS (Included directly in the script) ---
+
+/**
+ * Converts a string of RGB values into a hex color code.
+ * e.g., "255 255 255" becomes "#ffffff".
+ * This function was required by themes in the 'main' branch.
+ * @param rgbString A string containing three space-separated number values.
+ * @returns The hex color string.
+ */
+function rgbStringToHex(rgbString: string): string {
+    const parts = rgbString.split(' ').map(Number);
+    if (parts.length !== 3 || parts.some(isNaN)) {
+        console.error(`Invalid RGB string provided: "${rgbString}"`);
+        return '#000000'; // Return a default/error color
+    }
+    const toHex = (c: number) => {
+        const hex = Math.max(0, Math.min(255, c)).toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    };
+    const [r, g, b] = parts;
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
+ * Determines the root element where styles should be applied.
+ * It checks for a specific UI container with a Shadow DOM first,
+ * and falls back to the main document if not found.
+ * This function was originally an import in the 'refactor' branch.
+ * @returns The ShadowRoot if it exists, otherwise the main Document.
+ */
+function getRoot(): Document | ShadowRoot {
+    // A common pattern is to have a single container for the UI.
+    // We check if that container exists and is using a Shadow DOM.
+    const hermesUIContainer = document.getElementById('hermes-ui-container');
+    if (hermesUIContainer && hermesUIContainer.shadowRoot) {
+        return hermesUIContainer.shadowRoot;
+    }
+    // Otherwise, we fall back to the main document.
+    return document;
+}
+
+
+// --- THEME DEFINITIONS (From 'main' branch) ---
+
+export const themes: Record<string, Record<string, string>> = {
+    light: {
+        "--hermes-bg": "#f8f9fa",
+        "--hermes-text": "#212529",
+        "--hermes-border": "#ced4da",
+        "--hermes-button-bg": "#e9ecef",
+        "--hermes-button-text": "#212529",
+        "--hermes-button-hover-bg": "#dee2e6",
+        "--hermes-panel-bg": "#ffffff",
+        "--hermes-panel-text": "#212529",
+        "--hermes-panel-border": "#ced4da",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#212529",
+        "--hermes-input-border": "#ced4da",
+        "--hermes-accent-bar-bg": "#e9ecef",
+        "--hermes-highlight-bg": "#007bff",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#6c757d",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#007bff",
+        "--hermes-link-hover-color": "#0056b3",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    dark: {
+        "--hermes-bg": "#2c2c2c",
+        "--hermes-text": "#e0e0e0",
+        "--hermes-border": "#555",
+        "--hermes-button-bg": "#484848",
+        "--hermes-button-text": "#e0e0e0",
+        "--hermes-button-hover-bg": "#585858",
+        "--hermes-panel-bg": "#333333",
+        "--hermes-panel-text": "#e0e0e0",
+        "--hermes-panel-border": "#444",
+        "--hermes-input-bg": "#3a3a3a",
+        "--hermes-input-text": "#e0e0e0",
+        "--hermes-input-border": "#666",
+        "--hermes-accent-bar-bg": "#1e1e1e",
+        "--hermes-highlight-bg": "#007bff",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#6cb2eb",
+        "--hermes-link-hover-color": "#3490dc",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    phoenix: {
+        "--hermes-bg": "#1a0000",
+        "--hermes-text": "#ffcc00",
+        "--hermes-border": "#ff4500",
+        "--hermes-button-bg": "#8b0000",
+        "--hermes-button-text": "#ffcc00",
+        "--hermes-button-hover-bg": "#ff4500",
+        "--hermes-panel-bg": "#2c0000",
+        "--hermes-panel-text": "#ffcc00",
+        "--hermes-panel-border": "#ff4500",
+        "--hermes-input-bg": "#3a0000",
+        "--hermes-input-text": "#ffcc00",
+        "--hermes-input-border": "#ff4500",
+        "--hermes-accent-bar-bg": "#ff4500",
+        "--hermes-highlight-bg": "#ff4500",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#ff4500",
+        "--hermes-link-hover-color": "#cc3700",
+        "--hermes-text-shadow": "0 0 3px rgba(255,69,0,0.5)",
+        "--hermes-line-height": "1.4",
+    },
+    seaGreen: {
+        "--hermes-bg": "#e6f3f3",
+        "--hermes-text": "#004d4d",
+        "--hermes-border": "#00a3a3",
+        "--hermes-button-bg": "#b2d8d8",
+        "--hermes-button-text": "#004d4d",
+        "--hermes-button-hover-bg": "#00a3a3",
+        "--hermes-panel-bg": "#f0fafa",
+        "--hermes-panel-text": "#004d4d",
+        "--hermes-panel-border": "#00a3a3",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#004d4d",
+        "--hermes-input-border": "#00a3a3",
+        "--hermes-accent-bar-bg": "#008080",
+        "--hermes-highlight-bg": "#008080",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#aaa",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#008080",
+        "--hermes-link-hover-color": "#006666",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    auroraGlow: {
+        "--hermes-bg": "#1a2b3c",
+        "--hermes-text": "#a3d9ff",
+        "--hermes-border": "#4b9cd3",
+        "--hermes-button-bg": "#2e4b6e",
+        "--hermes-button-text": "#a3d9ff",
+        "--hermes-button-hover-bg": "#4b9cd3",
+        "--hermes-panel-bg": "#223548",
+        "--hermes-panel-text": "#a3d9ff",
+        "--hermes-panel-border": "#4b9cd3",
+        "--hermes-input-bg": "#2e4b6e",
+        "--hermes-input-text": "#a3d9ff",
+        "--hermes-input-border": "#4b9cd3",
+        "--hermes-accent-bar-bg": "#4b9cd3",
+        "--hermes-highlight-bg": "#4b9cd3",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#4b9cd3",
+        "--hermes-link-hover-color": "#3a7aa8",
+        "--hermes-text-shadow": "0 0 3px rgba(75,156,211,0.5)",
+        "--hermes-line-height": "1.4",
+    },
+    crimsonEmber: {
+        "--hermes-bg": "#3d0000",
+        "--hermes-text": "#ff9999",
+        "--hermes-border": "#cc0000",
+        "--hermes-button-bg": "#660000",
+        "--hermes-button-text": "#ff9999",
+        "--hermes-button-hover-bg": "#cc0000",
+        "--hermes-panel-bg": "#4d0000",
+        "--hermes-panel-text": "#ff9999",
+        "--hermes-panel-border": "#cc0000",
+        "--hermes-input-bg": "#660000",
+        "--hermes-input-text": "#ff9999",
+        "--hermes-input-border": "#cc0000",
+        "--hermes-accent-bar-bg": "#cc0000",
+        "--hermes-highlight-bg": "#cc0000",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#cc0000",
+        "--hermes-link-hover-color": "#990000",
+        "--hermes-text-shadow": "0 0 3px rgba(204,0,0,0.5)",
+        "--hermes-line-height": "1.4",
+    },
+    slateStorm: {
+        "--hermes-bg": "#2f3b4c",
+        "--hermes-text": "#d9e1e8",
+        "--hermes-border": "#596475",
+        "--hermes-button-bg": "#3f4e62",
+        "--hermes-button-text": "#d9e1e8",
+        "--hermes-button-hover-bg": "#596475",
+        "--hermes-panel-bg": "#354356",
+        "--hermes-panel-text": "#d9e1e8",
+        "--hermes-panel-border": "#596475",
+        "--hermes-input-bg": "#3f4e62",
+        "--hermes-input-text": "#d9e1e8",
+        "--hermes-input-border": "#596475",
+        "--hermes-accent-bar-bg": "#596475",
+        "--hermes-highlight-bg": "#596475",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#596475",
+        "--hermes-link-hover-color": "#465366",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    classicSlate: {
+        "--hermes-bg": rgbStringToHex("64 64 64"),
+        "--hermes-text": rgbStringToHex("255 255 255"),
+        "--hermes-border": rgbStringToHex("128 128 128"),
+        "--hermes-button-bg": rgbStringToHex("128 128 128"),
+        "--hermes-button-text": rgbStringToHex("255 255 255"),
+        "--hermes-button-hover-bg": rgbStringToHex("64 64 64"),
+        "--hermes-panel-bg": rgbStringToHex("128 128 128"),
+        "--hermes-panel-text": rgbStringToHex("255 255 255"),
+        "--hermes-panel-border": rgbStringToHex("64 64 64"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("128 128 128"),
+        "--hermes-accent-bar-bg": rgbStringToHex("64 64 64"),
+        "--hermes-highlight-bg": rgbStringToHex("64 64 64"),
+        "--hermes-highlight-text": rgbStringToHex("255 255 255"),
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": rgbStringToHex("64 64 64"),
+        "--hermes-link-hover-color": rgbStringToHex("96 96 96"),
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    classicWheat: {
+        "--hermes-bg": rgbStringToHex("245 222 179"),
+        "--hermes-text": rgbStringToHex("0 0 0"),
+        "--hermes-border": rgbStringToHex("139 69 19"),
+        "--hermes-button-bg": rgbStringToHex("222 184 135"),
+        "--hermes-button-text": rgbStringToHex("0 0 0"),
+        "--hermes-button-hover-bg": rgbStringToHex("188 143 143"),
+        "--hermes-panel-bg": rgbStringToHex("245 245 220"),
+        "--hermes-panel-text": rgbStringToHex("0 0 0"),
+        "--hermes-panel-border": rgbStringToHex("139 69 19"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("139 69 19"),
+        "--hermes-accent-bar-bg": rgbStringToHex("222 184 135"),
+        "--hermes-highlight-bg": rgbStringToHex("222 184 135"),
+        "--hermes-highlight-text": rgbStringToHex("0 0 0"),
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": rgbStringToHex("139 69 19"),
+        "--hermes-link-hover-color": rgbStringToHex("160 82 45"),
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    classicTeal: {
+        "--hermes-bg": rgbStringToHex("0 128 128"),
+        "--hermes-text": rgbStringToHex("255 255 255"),
+        "--hermes-border": rgbStringToHex("32 178 170"),
+        "--hermes-button-bg": rgbStringToHex("32 178 170"),
+        "--hermes-button-text": rgbStringToHex("255 255 255"),
+        "--hermes-button-hover-bg": rgbStringToHex("0 139 139"),
+        "--hermes-panel-bg": rgbStringToHex("0 139 139"),
+        "--hermes-panel-text": rgbStringToHex("255 255 255"),
+        "--hermes-panel-border": rgbStringToHex("32 178 170"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("32 178 170"),
+        "--hermes-accent-bar-bg": rgbStringToHex("0 128 128"),
+        "--hermes-highlight-bg": rgbStringToHex("0 128 128"),
+        "--hermes-highlight-text": rgbStringToHex("255 255 255"),
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": rgbStringToHex("32 178 170"),
+        "--hermes-link-hover-color": rgbStringToHex("0 139 139"),
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    classicSpruce: {
+        "--hermes-bg": rgbStringToHex("0 100 0"),
+        "--hermes-text": rgbStringToHex("245 245 220"),
+        "--hermes-border": rgbStringToHex("34 139 34"),
+        "--hermes-button-bg": rgbStringToHex("34 139 34"),
+        "--hermes-button-text": rgbStringToHex("245 245 220"),
+        "--hermes-button-hover-bg": rgbStringToHex("0 100 0"),
+        "--hermes-panel-bg": rgbStringToHex("34 139 34"),
+        "--hermes-panel-text": rgbStringToHex("245 245 220"),
+        "--hermes-panel-border": rgbStringToHex("0 100 0"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("34 139 34"),
+        "--hermes-accent-bar-bg": rgbStringToHex("0 100 0"),
+        "--hermes-highlight-bg": rgbStringToHex("0 100 0"),
+        "--hermes-highlight-text": rgbStringToHex("245 245 220"),
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": rgbStringToHex("34 139 34"),
+        "--hermes-link-hover-color": rgbStringToHex("0 100 0"),
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    classicStorm: {
+        "--hermes-bg": rgbStringToHex("105 105 105"),
+        "--hermes-text": rgbStringToHex("255 255 255"),
+        "--hermes-border": rgbStringToHex("169 169 169"),
+        "--hermes-button-bg": rgbStringToHex("169 169 169"),
+        "--hermes-button-text": rgbStringToHex("255 255 255"),
+        "--hermes-button-hover-bg": rgbStringToHex("128 128 128"),
+        "--hermes-panel-bg": rgbStringToHex("169 169 169"),
+        "--hermes-panel-text": rgbStringToHex("255 255 255"),
+        "--hermes-panel-border": rgbStringToHex("105 105 105"),
+        "--hermes-input-bg": rgbStringToHex("255 255 255"),
+        "--hermes-input-text": rgbStringToHex("0 0 0"),
+        "--hermes-input-border": rgbStringToHex("169 169 169"),
+        "--hermes-accent-bar-bg": rgbStringToHex("105 105 105"),
+        "--hermes-highlight-bg": rgbStringToHex("105 105 105"),
+        "--hermes-highlight-text": rgbStringToHex("255 255 255"),
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": rgbStringToHex("169 169 169"),
+        "--hermes-link-hover-color": rgbStringToHex("128 128 128"),
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    rose: {
+        "--hermes-bg": "#ffe6e6",
+        "--hermes-text": "#4a0000",
+        "--hermes-border": "#ff9999",
+        "--hermes-button-bg": "#ffcccc",
+        "--hermes-button-text": "#4a0000",
+        "--hermes-button-hover-bg": "#ff9999",
+        "--hermes-panel-bg": "#fff0f0",
+        "--hermes-panel-text": "#4a0000",
+        "--hermes-panel-border": "#ff9999",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#4a0000",
+        "--hermes-input-border": "#ff9999",
+        "--hermes-accent-bar-bg": "#ff9999",
+        "--hermes-highlight-bg": "#ff9999",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#ff9999",
+        "--hermes-link-hover-color": "#cc6666",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    pumpkin: {
+        "--hermes-bg": "#ffedcc",
+        "--hermes-text": "#3d2600",
+        "--hermes-border": "#ff9900",
+        "--hermes-button-bg": "#ffcc80",
+        "--hermes-button-text": "#3d2600",
+        "--hermes-button-hover-bg": "#ff9900",
+        "--hermes-panel-bg": "#fff5e6",
+        "--hermes-panel-text": "#3d2600",
+        "--hermes-panel-border": "#ff9900",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#3d2600",
+        "--hermes-input-border": "#ff9900",
+        "--hermes-accent-bar-bg": "#ff9900",
+        "--hermes-highlight-bg": "#ff9900",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#ff9900",
+        "--hermes-link-hover-color": "#cc7a00",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    marine: {
+        "--hermes-bg": "#e6f3ff",
+        "--hermes-text": "#002966",
+        "--hermes-border": "#0066cc",
+        "--hermes-button-bg": "#b3d9ff",
+        "--hermes-button-text": "#002966",
+        "--hermes-button-hover-bg": "#0066cc",
+        "--hermes-panel-bg": "#f0faff",
+        "--hermes-panel-text": "#002966",
+        "--hermes-panel-border": "#0066cc",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#002966",
+        "--hermes-input-border": "#0066cc",
+        "--hermes-accent-bar-bg": "#0066cc",
+        "--hermes-highlight-bg": "#0066cc",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#0066cc",
+        "--hermes-link-hover-color": "#004d99",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    rainyDay: {
+        "--hermes-bg": "#e6e9ed",
+        "--hermes-text": "#2e3748",
+        "--hermes-border": "#6c8294",
+        "--hermes-button-bg": "#b8c1cc",
+        "--hermes-button-text": "#2e3748",
+        "--hermes-button-hover-bg": "#6c8294",
+        "--hermes-panel-bg": "#f0f2f5",
+        "--hermes-panel-text": "#2e3748",
+        "--hermes-panel-border": "#6c8294",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#2e3748",
+        "--hermes-input-border": "#6c8294",
+        "--hermes-accent-bar-bg": "#6c8294",
+        "--hermes-highlight-bg": "#6c8294",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#6c8294",
+        "--hermes-link-hover-color": "#536675",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    eggplant: {
+        "--hermes-bg": "#f2e6f2",
+        "--hermes-text": "#3c2f3c",
+        "--hermes-border": "#663366",
+        "--hermes-button-bg": "#d9c2d9",
+        "--hermes-button-text": "#3c2f3c",
+        "--hermes-button-hover-bg": "#663366",
+        "--hermes-panel-bg": "#f9f2f9",
+        "--hermes-panel-text": "#3c2f3c",
+        "--hermes-panel-border": "#663366",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#3c2f3c",
+        "--hermes-input-border": "#663366",
+        "--hermes-accent-bar-bg": "#663366",
+        "--hermes-highlight-bg": "#663366",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#663366",
+        "--hermes-link-hover-color": "#4d264d",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    plum: {
+        "--hermes-bg": "#1c0b21",
+        "--hermes-text": "#e0b0ff",
+        "--hermes-border": "#9933cc",
+        "--hermes-button-bg": "#330033",
+        "--hermes-button-text": "#e0b0ff",
+        "--hermes-button-hover-bg": "#9933cc",
+        "--hermes-panel-bg": "#2d1a33",
+        "--hermes-panel-text": "#e0b0ff",
+        "--hermes-panel-border": "#9933cc",
+        "--hermes-input-bg": "#330033",
+        "--hermes-input-text": "#e0b0ff",
+        "--hermes-input-border": "#9933cc",
+        "--hermes-accent-bar-bg": "#9933cc",
+        "--hermes-highlight-bg": "#9933cc",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#9933cc",
+        "--hermes-link-hover-color": "#7a2999",
+        "--hermes-text-shadow": "0 0 3px rgba(153,51,204,0.5)",
+        "--hermes-line-height": "1.4",
+    },
+    redBlueWhite: {
+        "--hermes-bg": "#f5f6f5",
+        "--hermes-text": "#1c2526",
+        "--hermes-border": "#c1c2c1",
+        "--hermes-button-bg": "#c1c2c1",
+        "--hermes-button-text": "#1c2526",
+        "--hermes-button-hover-bg": "#a1a2a1",
+        "--hermes-panel-bg": "#ffffff",
+        "--hermes-panel-text": "#1c2526",
+        "--hermes-panel-border": "#c1c2c1",
+        "--hermes-input-bg": "#ffffff",
+        "--hermes-input-text": "#1c2526",
+        "--hermes-input-border": "#c1c2c1",
+        "--hermes-accent-bar-bg": "#c1c2c1",
+        "--hermes-highlight-bg": "#0033a0",
+        "--hermes-highlight-text": "#ffffff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#bf0a30",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#0033a0",
+        "--hermes-link-hover-color": "#002269",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    maple: {
+        "--hermes-bg": "#f5e6e6",
+        "--hermes-text": "#3c1c1c",
+        "--hermes-border": "#cc3333",
+        "--hermes-button-bg": "#e6b2b2",
+        "--hermes-button-text": "#3c1c1c",
+        "--hermes-button-hover-bg": "#cc3333",
+        "--hermes-panel-bg": "#fff0f0",
+        "--hermes-panel-text": "#3c1c1c",
+        "--hermes-panel-border": "#cc3333",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#3c1c1c",
+        "--hermes-input-border": "#cc3333",
+        "--hermes-accent-bar-bg": "#cc3333",
+        "--hermes-highlight-bg": "#cc3333",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#cc3333",
+        "--hermes-link-hover-color": "#991a1a",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    lilac: {
+        "--hermes-bg": "#f0e6ff",
+        "--hermes-text": "#3c2f4d",
+        "--hermes-border": "#9966cc",
+        "--hermes-button-bg": "#d9c2ff",
+        "--hermes-button-text": "#3c2f4d",
+        "--hermes-button-hover-bg": "#9966cc",
+        "--hermes-panel-bg": "#f9f2ff",
+        "--hermes-panel-text": "#3c2f4d",
+        "--hermes-panel-border": "#9966cc",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#3c2f4d",
+        "--hermes-input-border": "#9966cc",
+        "--hermes-accent-bar-bg": "#9966cc",
+        "--hermes-highlight-bg": "#9966cc",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#9966cc",
+        "--hermes-link-hover-color": "#7a5299",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    desert: {
+        "--hermes-bg": "#f5e6cc",
+        "--hermes-text": "#3c2f1c",
+        "--hermes-border": "#cc9966",
+        "--hermes-button-bg": "#e6c2a3",
+        "--hermes-button-text": "#3c2f1c",
+        "--hermes-button-hover-bg": "#cc9966",
+        "--hermes-panel-bg": "#fff5e6",
+        "--hermes-panel-text": "#3c2f1c",
+        "--hermes-panel-border": "#cc9966",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#3c2f1c",
+        "--hermes-input-border": "#cc9966",
+        "--hermes-accent-bar-bg": "#cc9966",
+        "--hermes-highlight-bg": "#cc9966",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#cc9966",
+        "--hermes-link-hover-color": "#99734d",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    brick: {
+        "--hermes-bg": "#3c1c1c",
+        "--hermes-text": "#e6b2b2",
+        "--hermes-border": "#cc6666",
+        "--hermes-button-bg": "#662222",
+        "--hermes-button-text": "#e6b2b2",
+        "--hermes-button-hover-bg": "#cc6666",
+        "--hermes-panel-bg": "#4d2a2a",
+        "--hermes-panel-text": "#e6b2b2",
+        "--hermes-panel-border": "#cc6666",
+        "--hermes-input-bg": "#662222",
+        "--hermes-input-text": "#e6b2b2",
+        "--hermes-input-border": "#cc6666",
+        "--hermes-accent-bar-bg": "#cc6666",
+        "--hermes-highlight-bg": "#cc6666",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#f5c6cb",
+        "--hermes-success-text": "#c3e6cb",
+        "--hermes-warning-text": "#ffeeba",
+        "--hermes-info-text": "#bee5eb",
+        "--hermes-link-color": "#cc6666",
+        "--hermes-link-hover-color": "#994d4d",
+        "--hermes-text-shadow": "0 0 3px rgba(204,102,102,0.5)",
+        "--hermes-line-height": "1.4",
+    },
+    sunset: {
+        "--hermes-bg": "#ffe0b3",
+        "--hermes-text": "#3d1f00",
+        "--hermes-border": "#ff6600",
+        "--hermes-button-bg": "#ffcc80",
+        "--hermes-button-text": "#3d1f00",
+        "--hermes-button-hover-bg": "#ff9933",
+        "--hermes-panel-bg": "#fff2e0",
+        "--hermes-panel-text": "#3d1f00",
+        "--hermes-panel-border": "#ff6600",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#3d1f00",
+        "--hermes-input-border": "#ff6600",
+        "--hermes-accent-bar-bg": "#ff6600",
+        "--hermes-highlight-bg": "#ff6600",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#ff6600",
+        "--hermes-link-hover-color": "#cc5200",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    forest: {
+        "--hermes-bg": "#e6ffe6",
+        "--hermes-text": "#003300",
+        "--hermes-border": "#339966",
+        "--hermes-button-bg": "#b3ffb3",
+        "--hermes-button-text": "#003300",
+        "--hermes-button-hover-bg": "#339966",
+        "--hermes-panel-bg": "#f0fff0",
+        "--hermes-panel-text": "#003300",
+        "--hermes-panel-border": "#339966",
+        "--hermes-input-bg": "#fff",
+        "--hermes-input-text": "#003300",
+        "--hermes-input-border": "#339966",
+        "--hermes-accent-bar-bg": "#339966",
+        "--hermes-highlight-bg": "#339966",
+        "--hermes-highlight-text": "#fff",
+        "--hermes-disabled-text": "#777",
+        "--hermes-error-text": "#dc3545",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#339966",
+        "--hermes-link-hover-color": "#26734d",
+        "--hermes-text-shadow": "none",
+        "--hermes-line-height": "1.4",
+    },
+    neon: {
+        "--hermes-bg": "#000000",
+        "--hermes-text": "#39ff14",
+        "--hermes-border": "#39ff14",
+        "--hermes-button-bg": "#000000",
+        "--hermes-button-text": "#39ff14",
+        "--hermes-button-hover-bg": "#1a1a1a",
+        "--hermes-panel-bg": "#0d0d0d",
+        "--hermes-panel-text": "#39ff14",
+        "--hermes-panel-border": "#39ff14",
+        "--hermes-input-bg": "#0d0d0d",
+        "--hermes-input-text": "#39ff14",
+        "--hermes-input-border": "#39ff14",
+        "--hermes-accent-bar-bg": "#39ff14",
+        "--hermes-highlight-bg": "#39ff14",
+        "--hermes-highlight-text": "#000",
+        "--hermes-disabled-text": "#555",
+        "--hermes-error-text": "#ff073a",
+        "--hermes-success-text": "#28a745",
+        "--hermes-warning-text": "#ffc107",
+        "--hermes-info-text": "#17a2b8",
+        "--hermes-link-color": "#39ff14",
+        "--hermes-link-hover-color": "#26bf0e",
+        "--hermes-text-shadow": "0 0 6px #39ff14",
+        "--hermes-line-height": "1.4",
+    },
+};
+
+
+// --- THEME OPTIONS (Generated from themes object, for 'refactor' branch compatibility) ---
+
+/**
+ * An array of theme options suitable for use in a dropdown menu.
+ * This was originally an import in the 'refactor' branch.
+ */
+export const themeOptions = Object.keys(themes).map(name => ({
+    value: name,
+    label: name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+}));
+
+
+// --- CORE FUNCTIONS (Merged Logic) ---
+
+/**
+ * Applies a theme by injecting CSS variables into the document head or a Shadow DOM root.
+ * This function combines the Shadow DOM logic from the 'refactor' branch with the
+ * additional component styles from the 'main' branch.
+ * @param name The name of the theme to apply (e.g., 'dark', 'phoenix').
+ */
 export function applyTheme(name: string) {
-    const vars = themes[name] || themes['dark'];
+    const vars = themes[name] || themes['dark']; // Fallback to 'dark' theme if name is invalid
     const root = getRoot();
     let style: HTMLStyleElement | null;
+
+    // Additional specific CSS rules from the 'main' branch to be included with the theme.
+    const additionalCss = `
+        .hermes-button {
+            background: var(--hermes-button-bg);
+            color: var(--hermes-button-text);
+            border: 1px solid var(--hermes-border);
+            border-radius: 4px;
+            padding: 4px 6px;
+            cursor: pointer;
+        }
+        .hermes-button:hover {
+            background: var(--hermes-button-hover-bg);
+        }
+        #hermes-ui-container, #hermes-minimized-container {
+            border: 1px solid var(--hermes-border);
+        }
+    `;
+
+    // Combine theme variables into a single CSS string.
+    const variablesCss = Object.entries(vars).reduce((acc, [key, value]) => `${acc}${key}:${value};`, '');
+
+    // Apply styles differently depending on whether we are in a Shadow DOM or the main document.
     if (root instanceof ShadowRoot) {
         style = root.getElementById('hermes-theme-style') as HTMLStyleElement | null;
         if (!style) {
@@ -13,10 +784,8 @@ export function applyTheme(name: string) {
             style.id = 'hermes-theme-style';
             root.appendChild(style);
         }
-        let css = ':host{';
-        Object.entries(vars).forEach(([k, v]) => { css += `${k}:${v};`; });
-        css += '}';
-        style.textContent = css;
+        // In Shadow DOM, variables are scoped to the host element.
+        style.textContent = `:host{${variablesCss}} ${additionalCss}`;
     } else {
         style = document.getElementById('hermes-theme-style') as HTMLStyleElement | null;
         if (!style) {
@@ -24,13 +793,16 @@ export function applyTheme(name: string) {
             style.id = 'hermes-theme-style';
             document.head.appendChild(style);
         }
-        let css = ':root{';
-        Object.entries(vars).forEach(([k, v]) => { css += `${k}:${v};`; });
-        css += '}';
-        style.textContent = css;
+        // In the main document, variables are applied to the :root.
+        style.textContent = `:root{${variablesCss}} ${additionalCss}`;
     }
 }
 
+/**
+ * Returns the available theme options, allowing a UI to build a theme selector.
+ * This function was originally an import in the 'refactor' branch.
+ * @returns An array of objects with 'value' and 'label' for each theme.
+ */
 export function getThemeOptions() {
     return themeOptions;
 }

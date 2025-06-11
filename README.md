@@ -116,6 +116,29 @@ scroll sizes and the viewport dimensions.  A scaffolded JSON file is then saved
 to the `_Configs` folder of this repository via the GitHub API so you can refine
 it later.
 
+### GitHub Settings
+
+The extension expects the URLs for the remote config repository to be provided
+via Chrome storage or build-time environment variables.
+
+- **`github_raw_base`** – Base URL for raw config files
+- **`github_api_base`** – API endpoint for creating/updating configs
+- **`github_token`** – Personal token for write access (optional)
+
+You can set these at runtime with:
+
+```javascript
+chrome.storage.local.set({
+  github_raw_base: 'https://raw.githubusercontent.com/USER/REPO/main/_Configs/',
+  github_api_base: 'https://api.github.com/repos/USER/REPO/contents/_Configs/',
+  github_token: 'ghp_xxx' // optional
+});
+```
+
+Alternatively, define the environment variables `GITHUB_RAW_BASE`,
+`GITHUB_API_BASE`, and `GITHUB_TOKEN` when running `npm run build` to embed them
+in the bundle.
+
 ---
 
 ## 💻 Installation
@@ -183,6 +206,58 @@ Check the status of a macro or fill operation returned by the above calls.
 curl http://localhost:3000/api/status/<id>
 ```
 
+
+## ⏰ Macro Scheduling
+
+Hermes lets you trigger macros at a future date or on a repeating schedule.
+Start the server and visit [http://localhost:3000/schedule](http://localhost:3000/schedule) to use the visual scheduler.
+The page lists available macros with checkboxes and provides date and time pickers alongside simple recurrence options.
+
+1. **Select macros** – tick the checkboxes for any macros you want to run.
+2. **Choose a date** – pick the starting day from the calendar widget.
+3. **Set a time** – specify the exact time the macro should start.
+4. **Repeat** – run once or choose Daily, Weekly or Monthly.
+
+Press **Schedule Macro** to save. Scheduled jobs can be viewed or cancelled via the `/api/schedule` endpoints.
+
+---
+
+## 🚀 Development Setup & Testing
+
+Install dependencies for both the server and extension with the included script
+before running tests:
+
+```bash
+./setup.sh
+```
+
+This runs `npm install` inside the `server/` and `hermes-extension/` folders.
+Afterwards you can execute the test suites individually:
+
+```bash
+cd server && npm test
+cd ../hermes-extension && npm test
+```
+
+---
+
+## 🚀 Development Setup & Testing
+
+Install dependencies for both the server and extension with the included script
+before running tests:
+
+```bash
+./setup.sh
+```
+
+This runs `npm install` inside the `server/` and `hermes-extension/` folders.
+Afterwards you can execute the test suites individually:
+
+```bash
+cd server && npm test
+cd ../hermes-extension && npm test
+```
+
 ---
 
 ## 📬 Feedback / Contributions
@@ -208,7 +283,6 @@ Proprietary License — all rights reserved. Contact the author for permissions.
 
 ## 🌐 Coming Soon
 
-- Macro scheduling
 - AI-assisted field mapping suggestions
 
 For a full list of ideas and potential enhancements, see [TODO.md](TODO.md).
