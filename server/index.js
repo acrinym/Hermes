@@ -10,6 +10,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 let macros = [
   { id: 'demo', name: 'Example Macro' }
 ];
+let macrosData = { demo: [] };
+let profile = {};
 let operations = {};
 let schedules = {};
 let scheduleCounter = 0;
@@ -85,6 +87,29 @@ app.delete('/api/schedule/:id', (req, res) => {
 // GET /api/macros
 app.get('/api/macros', (req, res) => {
   res.json(macros);
+});
+
+// GET /api/macros/data
+app.get('/api/macros/data', (req, res) => {
+  res.json(macrosData);
+});
+
+// POST /api/macros/data
+app.post('/api/macros/data', (req, res) => {
+  macrosData = req.body || {};
+  macros = Object.keys(macrosData).map(id => ({ id, name: id }));
+  res.json({ ok: true });
+});
+
+// GET /api/profile
+app.get('/api/profile', (req, res) => {
+  res.json(profile);
+});
+
+// POST /api/profile
+app.post('/api/profile', (req, res) => {
+  profile = req.body || {};
+  res.json({ ok: true });
 });
 
 // POST /api/fill
