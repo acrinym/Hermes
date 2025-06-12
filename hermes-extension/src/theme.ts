@@ -21,6 +21,8 @@ const themes: Record<string, Record<string, string>> = {
     }
 };
 
+export const themeNames = Object.keys(themes);
+
 export function applyTheme(name: string) {
     const vars = themes[name] || themes.dark;
     const style = document.getElementById('hermes-theme-style') || document.createElement('style');

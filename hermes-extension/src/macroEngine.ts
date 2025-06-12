@@ -27,11 +27,15 @@ export class MacroEngine {
     private recordMouseMoves = false;
     private mouseMoveInterval = 200;
     private lastMouseMove = 0;
+    private useCoordinateFallback = false;
 
     async init() {
         const data = await getInitialData();
         if (data && data.macros) {
             this.macros = data.macros;
+        }
+        if (data && data.settings) {
+            this.useCoordinateFallback = !!data.settings.macro?.useCoordinateFallback;
         }
         console.log('Hermes: macro engine ready');
     }
@@ -72,7 +76,7 @@ export class MacroEngine {
             if (idx >= macro.length) return;
             const ev = macro[idx];
             let el: Element | null = ev.selector ? document.querySelector(ev.selector) : null;
-            if (!el && ev.path) {
+            if (!el && this.useCoordinateFallback && ev.path) {
                 let cur: Element | null = document.body;
                 for (const i of ev.path) {
                     if (!cur || !cur.children[i]) { cur = null; break; }
@@ -80,7 +84,7 @@ export class MacroEngine {
                 }
                 el = cur;
             }
-            if (!el && ev.clientX !== null && ev.clientY !== null) {
+            if (!el && this.useCoordinateFallback && ev.clientX !== null && ev.clientY !== null) {
                 el = document.elementFromPoint(ev.clientX!, ev.clientY!);
             }
             if (el) {
