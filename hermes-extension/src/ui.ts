@@ -3,7 +3,8 @@
 import { macroEngine } from './macroEngine.ts';
 import { fillForm } from './formFiller.ts';
 import { runHeuristicTrainerSession } from './trainer.ts';
-import { applyTheme, themeOptions } from './theme.ts';
+import { applyTheme } from './theme.ts';
+import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { getInitialData, saveDataToBackground } from './storage/index.ts';
 import { startSnowflakes, startLasers, stopEffects, setEffect } from './effectsEngine.ts';
@@ -18,6 +19,7 @@ import {
   stopMutationObserver
 } from './debug.ts';
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
+import { toggleOverlays, initOverlays } from './overlays.ts';
 
 // Shadow DOM root globals
 let shadowHost: HTMLDivElement;
@@ -118,7 +120,7 @@ export async function initUI() {
 
   // Overlay button
   overlayBtn = createButton('Overlay', () => {
-    overlaysManager.toggleOverlays();
+    toggleOverlays();
     overlayBtn.style.background = overlayBtn.style.background ? '' : 'lightgreen';
   });
   if (data.showOverlays) overlayBtn.style.background = 'lightgreen';
@@ -161,7 +163,7 @@ export async function initUI() {
   // --- Init theme/effects
   applyTheme(theme);
   if (data.effectsMode) setEffect(data.effectsMode);
-  overlaysManager.initOverlays(!!data.showOverlays);
+  initOverlays(!!data.showOverlays);
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
 

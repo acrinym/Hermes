@@ -90,6 +90,8 @@ export const defaultSettings = {
     "_comment_recordMouseMoves": "Record mousemove events while recording macros. Default: false.",
     "mouseMoveInterval": 200,
     "_comment_mouseMoveInterval": "Minimum time in ms between recorded mousemove events. Default: 200.",
+    "relativeCoordinates": true,
+    "_comment_relativeCoordinates": "Adjust recorded coordinates based on current element position.",
     "useCoordinateFallback": false,
     "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
     "similarityThreshold": 0.5,

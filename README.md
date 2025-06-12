@@ -161,7 +161,7 @@ Hermes works in any Chromium-based browser and Firefox 109+. The same build can 
 ## 📜 Developer Notes
 
 - Built with vanilla JS and Manifest V3 APIs.
-- UI styles are encapsulated in a Shadow DOM.
+- All panels and menus render inside a single Shadow DOM host for complete cross-site isolation.
 - Background service worker stores data in Chrome storage.
 - Modular design—fork or extend as desired.
 

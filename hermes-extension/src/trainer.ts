@@ -3,7 +3,7 @@ import { ProfileData, SkippedField } from './heuristics.ts';
 import { saveDataToBackground } from './storage/index.ts';
 
 export async function runHeuristicTrainerSession(profile: ProfileData) {
-    const skipped: SkippedField[] = fillForm(profile, true);
+    const skipped: SkippedField[] = await fillForm(profile);
     for (const s of skipped) {
         const chosen = prompt(`Profile key for field "${s.label}"`, s.guess || '');
         if (chosen) {
