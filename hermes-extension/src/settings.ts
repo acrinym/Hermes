@@ -10,6 +10,10 @@ export interface Settings {
 let currentSettings: Settings = {};
 let settingsPanel: HTMLElement | null = null;
 
+export function getSettings(): Settings {
+    return currentSettings;
+}
+
 export async function loadSettings(): Promise<Settings> {
     const data = await getInitialData();
     currentSettings = { ...defaultSettings, ...(data.settings || {}) };

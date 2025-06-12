@@ -71,3 +71,7 @@ export function toggleHelpPanel(show: boolean) {
         root.appendChild(helpPanel);
     }
 }
+
+export function showHelp() {
+    toggleHelpPanel(true);
+}
