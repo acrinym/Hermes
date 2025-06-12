@@ -326,13 +326,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 const fileUrl = `${GITHUB_API_BASE}${payload.site}.json`;
                 const content = btoa(JSON.stringify(payload.config, null, 2));
                 const body = { message: `Add config for ${payload.site}`, content };
+                const headers = { 'Content-Type': 'application/json' };
+                if (GITHUB_TOKEN) headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+                try {
+                    const existingRes = await fetch(fileUrl, { headers });
+                    if (existingRes.ok) {
+                        const info = await existingRes.json();
+                        body.message = `Update config for ${payload.site}`;
+                        body.sha = info.sha;
+                    }
+                } catch (err) { }
                 try {
                     const res = await fetch(fileUrl, {
                         method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': GITHUB_TOKEN ? `token ${GITHUB_TOKEN}` : undefined
-                        },
+                        headers,
                         body: JSON.stringify(body)
                     });
                     if (!res.ok) throw new Error(`HTTP ${res.status}`);
