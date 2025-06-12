@@ -5,6 +5,7 @@ let ctx: CanvasRenderingContext2D | null = null;
 let flakes: { x: number; y: number; r: number; s: number }[] = [];
 let lasers: { x: number; y: number; len: number; s: number }[] = [];
 let running = false;
+let mode: 'none' | 'snow' | 'lasers' = 'none';
 
 function initCanvas() {
     if (!canvas) {
@@ -45,21 +46,33 @@ export function startSnowflakes() {
         running = true;
         loop();
     }
+    mode = 'snow';
 }
 
 export function startLasers() {
     initCanvas();
     lasers = [];
-    if (!running) {
-        running = true;
-        loop();
-    }
+
+    if (!running) { running = true; loop(); }
+    mode = 'lasers';
 }
 
 export function stopEffects() {
     running = false;
     lasers = [];
+    flakes = [];
     if (canvas) canvas.style.display = 'none';
+    mode = 'none';
+}
+
+export function setEffect(newMode: 'none' | 'snow' | 'lasers') {
+    if (newMode === 'none') { stopEffects(); return; }
+    if (newMode === 'snow') { startSnowflakes(); return; }
+    if (newMode === 'lasers') { startLasers(); return; }
+}
+
+export function getEffect() {
+    return mode;
 }
 
 function loop() {

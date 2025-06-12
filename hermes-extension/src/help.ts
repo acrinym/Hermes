@@ -41,11 +41,20 @@ function createHelpPanel(): HTMLElement {
             <li>Check the <strong>Settings (⚙️)</strong> panel for advanced customization of UI appearance and effect parameters.</li>
         </ul>
     `;
-
     const root = getRoot();
-    return createModal(root instanceof ShadowRoot ? root : document.body, 'hermes-help-panel', 'Hermes Help', contentHtml, '600px');
+    return createModal(
+        root instanceof ShadowRoot ? root : document.body,
+        'hermes-help-panel',
+        'Hermes Help',
+        contentHtml,
+        '600px'
+    );
 }
 
+/**
+ * Show or hide the Hermes help panel.
+ * @param show - true to show, false to hide
+ */
 export function toggleHelpPanel(show: boolean) {
     const root = getRoot();
 
@@ -57,7 +66,7 @@ export function toggleHelpPanel(show: boolean) {
     saveDataToBackground('hermes_help_panel_state_ext', show)
         .catch(e => console.error('Hermes CS: Failed to persist help state', e));
 
-    // ensure appended to the correct DOM root
+    // Append if not already in DOM (works for shadow or document)
     if (!root.contains(helpPanel)) {
         root.appendChild(helpPanel);
     }

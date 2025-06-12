@@ -729,27 +729,34 @@ export const themes: Record<string, Record<string, string>> = {
     },
 };
 
+import { themes } from './themeDefs'; // make sure themes is actually imported
 
-// --- THEME OPTIONS (Generated from themes object, for 'refactor' branch compatibility) ---
+// — Theme Name Array —
+export const themeNames = Object.keys(themes);
 
+// — Theme Option Dropdown (Label Beautifier) —
 /**
  * An array of theme options suitable for use in a dropdown menu.
- * This was originally an import in the 'refactor' branch.
  */
 export const themeOptions = Object.keys(themes).map(name => ({
     value: name,
-    label: name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+    label: name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
 }));
 
-
-// --- CORE FUNCTIONS (Merged Logic) ---
+// --- CORE FUNCTIONS (You can define applyTheme here or in another module) ---
 
 /**
  * Applies a theme by injecting CSS variables into the document head or a Shadow DOM root.
- * This function combines the Shadow DOM logic from the 'refactor' branch with the
- * additional component styles from the 'main' branch.
+ * This function should combine shadow DOM logic with optional component styling.
  * @param name The name of the theme to apply (e.g., 'dark', 'phoenix').
  */
+// export function applyTheme(name: string, root: HTMLElement | ShadowRoot = document.documentElement) {
+//     const vars = themes[name] || themes['dark'];
+//     for (const [k, v] of Object.entries(vars)) {
+//         root.style.setProperty(k, v);
+//     }
+// }
+
 export function applyTheme(name: string) {
     const vars = themes[name] || themes['dark']; // Fallback to 'dark' theme if name is invalid
     const root = getRoot();

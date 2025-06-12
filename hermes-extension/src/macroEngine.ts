@@ -34,14 +34,13 @@ export class MacroEngine {
         useCoordinateFallback: false,
         relativeCoordinates: true
     };
-    private recordMouseMoves = false;
-    private mouseMoveInterval = 200;
     private lastMouseMove = 0;
 
     async init() {
         const data = await getInitialData();
-        if (data && data.macros) {
-            this.macros = data.macros;
+        if (data?.macros) this.macros = data.macros;
+        if (data?.settings) {
+            this.settings.useCoordinateFallback = !!data.settings.macro?.useCoordinateFallback;
         }
         console.log('Hermes: macro engine ready');
     }
@@ -54,12 +53,11 @@ export class MacroEngine {
         this.name = name || `macro_${Date.now()}`;
         this.events = [];
         this.recording = true;
-        this.recordMouseMoves = opts.recordMouseMoves ?? this.settings.recordMouseMoves;
-        this.mouseMoveInterval = opts.mouseMoveInterval ?? this.settings.mouseMoveInterval;
+        this.settings = { ...this.settings, ...opts };
         this.lastMouseMove = 0;
 
         const types = ['click','input','change','mousedown','mouseup','keydown','keyup','focusin','focusout','submit'];
-        if (this.recordMouseMoves) types.push('mousemove');
+        if (this.settings.recordMouseMoves) types.push('mousemove');
         for (const t of types) document.addEventListener(t, this.handleEvent, true);
 
         addDebugLog('macro_start', null, { name: this.name });
@@ -68,7 +66,7 @@ export class MacroEngine {
     stopRecording() {
         if (!this.recording) return;
         const types = ['click','input','change','mousedown','mouseup','keydown','keyup','focusin','focusout','submit'];
-        if (this.recordMouseMoves) types.push('mousemove');
+        if (this.settings.recordMouseMoves) types.push('mousemove');
         for (const t of types) document.removeEventListener(t, this.handleEvent, true);
         this.recording = false;
         if (this.events.length) {
@@ -85,6 +83,7 @@ export class MacroEngine {
 
         let idx = 0;
         let last = macro[0]?.timestamp || Date.now();
+
         const run = () => {
             if (idx >= macro.length) return;
             const ev = macro[idx];
@@ -265,7 +264,7 @@ export class MacroEngine {
 
         if (e.type === 'mousemove') {
             const now = Date.now();
-            if (now - this.lastMouseMove < this.mouseMoveInterval) return;
+            if (now - this.lastMouseMove < this.settings.mouseMoveInterval) return;
             this.lastMouseMove = now;
         }
 
