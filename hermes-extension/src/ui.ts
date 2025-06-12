@@ -184,8 +184,20 @@ export async function initUI() {
 
 // === Macro Submenu Contents ===
 function updateMacroSubmenuContents(menu: HTMLElement) {
+  const existing = menu.querySelector('input.hermes-macro-filter') as HTMLInputElement | null;
+  const filter = existing?.value.toLowerCase() || '';
   menu.innerHTML = '';
-  const names = macroEngine.list();
+  const search = document.createElement('input');
+  search.type = 'text';
+  search.placeholder = 'Search macros...';
+  search.className = 'hermes-macro-filter';
+  search.style.cssText = 'width:100%;margin-bottom:4px;';
+  search.value = existing?.value || '';
+  search.oninput = () => updateMacroSubmenuContents(menu);
+  menu.appendChild(search);
+
+  const allNames = macroEngine.list();
+  const names = allNames.filter(n => n.toLowerCase().includes(filter));
   const createSubButton = (text: string, handler: (e: MouseEvent) => void) => {
     const btn = document.createElement('button');
     btn.className = 'hermes-button';
@@ -226,11 +238,18 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
     menu.appendChild(hr);
   } else {
     menu.innerHTML = `<div style="padding: 5px; color: var(--hermes-disabled-text);">${t('NO_MACROS')}</div>`;
+    const msg = allNames.length ? 'No macros found.' : 'No macros recorded.';
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:5px;color:var(--hermes-disabled-text);';
+    div.textContent = msg;
+    menu.appendChild(div);
   }
   const importBtn = createSubButton(t('IMPORT_MACROS'), () => importMacrosFromFile());
   menu.appendChild(importBtn);
   if (names.length) {
     const exportBtn = createSubButton(t('EXPORT_MACROS'), () => exportMacros());
+  if (allNames.length) {
+    const exportBtn = createSubButton('Export All Macros...', () => exportMacros());
     menu.appendChild(exportBtn);
   }
 }

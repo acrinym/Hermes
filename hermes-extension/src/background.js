@@ -23,6 +23,7 @@ const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
 let debugLogs = [];
 
 const builtInThemes = {
+    system: { name: 'System', emoji: '💻' },
     light: { name: 'Light', emoji: '☀️' },
     dark: { name: 'Dark', emoji: '🌙' },
     phoenix: { name: 'Phoenix', emoji: '🦅' },

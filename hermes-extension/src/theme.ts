@@ -63,26 +63,14 @@ export const themeOptions = Object.keys(themes).map(name => ({
     label: name.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
 }));
 
-// --- CORE FUNCTIONS (You can define applyTheme here or in another module) ---
+let systemMedia: MediaQueryList | null = null;
+let systemHandler: ((e: MediaQueryListEvent) => void) | null = null;
 
-/**
- * Applies a theme by injecting CSS variables into the document head or a Shadow DOM root.
- * This function should combine shadow DOM logic with optional component styling.
- * @param name The name of the theme to apply (e.g., 'dark', 'phoenix').
- */
-// export function applyTheme(name: string, root: HTMLElement | ShadowRoot = document.documentElement) {
-//     const vars = themes[name] || themes['dark'];
-//     for (const [k, v] of Object.entries(vars)) {
-//         root.style.setProperty(k, v);
-//     }
-// }
-
-export function applyTheme(name: string) {
-    const vars = themes[name] || themes['dark']; // Fallback to 'dark' theme if name is invalid
+function applyVars(themeName: string) {
+    const vars = themes[themeName] || themes['dark'];
     const root = getRoot();
     let style: HTMLStyleElement | null;
 
-    // Additional specific CSS rules from the 'main' branch to be included with the theme.
     const additionalCss = `
         .hermes-button {
             background: var(--hermes-button-bg);
@@ -100,10 +88,8 @@ export function applyTheme(name: string) {
         }
     `;
 
-    // Combine theme variables into a single CSS string.
     const variablesCss = Object.entries(vars).reduce((acc, [key, value]) => `${acc}${key}:${value};`, '');
 
-    // Apply styles differently depending on whether we are in a Shadow DOM or the main document.
     if (root instanceof ShadowRoot) {
         style = root.getElementById('hermes-theme-style') as HTMLStyleElement | null;
         if (!style) {
@@ -111,7 +97,6 @@ export function applyTheme(name: string) {
             style.id = 'hermes-theme-style';
             root.appendChild(style);
         }
-        // In Shadow DOM, variables are scoped to the host element.
         style.textContent = `:host{${variablesCss}} ${additionalCss}`;
     } else {
         style = document.getElementById('hermes-theme-style') as HTMLStyleElement | null;
@@ -120,9 +105,42 @@ export function applyTheme(name: string) {
             style.id = 'hermes-theme-style';
             document.head.appendChild(style);
         }
-        // In the main document, variables are applied to the :root.
         style.textContent = `:root{${variablesCss}} ${additionalCss}`;
     }
+}
+
+// --- CORE FUNCTIONS (You can define applyTheme here or in another module) ---
+
+/**
+ * Applies a theme by injecting CSS variables into the document head or a Shadow DOM root.
+ * This function should combine shadow DOM logic with optional component styling.
+ * @param name The name of the theme to apply (e.g., 'dark', 'phoenix').
+ */
+// export function applyTheme(name: string, root: HTMLElement | ShadowRoot = document.documentElement) {
+//     const vars = themes[name] || themes['dark'];
+//     for (const [k, v] of Object.entries(vars)) {
+//         root.style.setProperty(k, v);
+//     }
+// }
+
+export function applyTheme(name: string) {
+    if (name === 'system') {
+        if (!systemMedia) {
+            systemMedia = window.matchMedia('(prefers-color-scheme: dark)');
+            systemHandler = (e: MediaQueryListEvent) => applyVars(e.matches ? 'dark' : 'light');
+            systemMedia.addEventListener('change', systemHandler);
+        }
+        applyVars(systemMedia.matches ? 'dark' : 'light');
+        return;
+    }
+
+    if (systemMedia && systemHandler) {
+        systemMedia.removeEventListener('change', systemHandler);
+        systemMedia = null;
+        systemHandler = null;
+    }
+
+    applyVars(name);
 }
 
 /**

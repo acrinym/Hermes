@@ -1,4 +1,8 @@
 export const themeOptions = {
+  "system": {
+    "name": "System",
+    "emoji": "\ud83d\udcbb"
+  },
   "light": {
     "name": "Light",
     "emoji": "\u2600\ufe0f"
