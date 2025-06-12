@@ -220,6 +220,10 @@ The page lists available macros with checkboxes and provides date and time picke
 
 Press **Schedule Macro** to save. Scheduled jobs can be viewed or cancelled via the `/api/schedule` endpoints.
 
+## 🤖 Automation & Scheduler UI
+
+In addition to manual playback, Hermes exposes a local automation API under `/api`.  Macros and form fills can be triggered remotely or chained from other tools.  When the extension scans a new site it automatically saves a configuration file back to your GitHub repository so later automation runs consistently.  The web UI at `/schedule` provides a simple calendar view for creating one‑off or recurring jobs using those saved macros.
+
 ---
 
 ## 🚀 Development Setup & Testing

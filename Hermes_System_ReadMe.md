@@ -1,4 +1,4 @@
-# Hermes System Userscript (v2.9.7)
+# Hermes System Userscript (v3.2.0)
 
 **Hermes System** is a powerful, extensible Tampermonkey userscript that serves as:
 
@@ -27,16 +27,21 @@ Use Hermes to:
 ## 🌟 Features Overview
 
 ### ✏️ Form Filler
-- Autodetects fields across any form using label-text heuristic scoring  
-- Uses JSON-based profile data  
-- Supports custom mappings per domain and field ID/name  
-- Optional visual overlays (border highlight) to indicate filled fields  
+- Autodetects fields across any form using label-text heuristic scoring
+- Uses JSON-based profile data
+- Supports custom mappings per domain and field ID/name
+- Optional visual overlays (border highlight) to indicate filled fields
+- Import or export profiles from the settings panel
 
 ### 📽️ Macro Recorder + Player
-- Record user interactions (clicks, inputs, changes)  
-- Save named macros with timestamps  
-- Replay macros with built-in delays  
-- Supports deletion and selection from dropdown  
+- Record user interactions (clicks, inputs, changes)
+- Save named macros with timestamps
+- Replay macros with built-in delays
+- Supports deletion and selection from dropdown
+- Captures network requests for accurate replay
+- Open macros in an editor to tweak individual steps
+- Import or export macros as JSON for sharing or backups
+- Schedule recorded macros for later execution
 
 ### 🧠 Heuristic Trainer
 - Tracks skipped or unmapped fields  
@@ -66,9 +71,15 @@ Use Hermes to:
 - Persistent between sessions via GM storage  
 
 ### 🔒 Domain Whitelist
-- Manage whitelisted domains from the GUI  
-- Hermes minimizes to emoji mode when not on an approved domain  
-- Add/remove domains dynamically  
+- Manage whitelisted domains from the GUI
+- Hermes minimizes to emoji mode when not on an approved domain
+- Add/remove domains dynamically
+- Automatically saves new site configs to your GitHub repo
+
+### ⚙️ Settings Panel
+- Click the **⚙️ Settings** button to open the editor.
+- Modify JSON options or toggle features like hotkeys and auto sync.
+- Use **Save & Apply** to persist or **Load Defaults** to reset.
 
 ---
 
@@ -92,7 +103,16 @@ Hermes uses the following persistent keys in GM storage:
 
 1. Install [Tampermonkey](https://tampermonkey.net/) in your browser.  
 2. Click [**this link**](#) to install the script (or paste it manually).  
-3. Click the Hermes panel on any website to start filling forms, recording macros, or customizing settings.  
+3. Click the Hermes panel on any website to start filling forms, recording macros, or customizing settings.
+
+---
+
+## ✏️ Macro Editor & Import/Export
+
+1. Open the **Macro** dropdown from the Hermes toolbar.
+2. Click the **✏️** icon next to a macro to open the editor and adjust individual steps.
+3. Use **Import Macros** to load a JSON file or **Export Macros** to save your collection.
+4. The same menu lets you schedule a macro using the **Schedule** button.
 
 ---
 
@@ -121,9 +141,7 @@ Proprietary License — all rights reserved. Contact the author for permissions.
 
 ## 🌐 Coming Soon
 
-- Profile import/export  
-- Macro scheduling  
-- AI-assisted field mapping suggestions  
+- AI-assisted field mapping suggestions
 
 ---
 
