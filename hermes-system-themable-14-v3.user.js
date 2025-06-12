@@ -1167,9 +1167,22 @@
 
     function updateMacroSubmenuContents(macroSubmenuEl) {
         if (!macroSubmenuEl) return;
+        const existing = macroSubmenuEl.querySelector('input.hermes-macro-filter');
+        const filter = existing ? existing.value.toLowerCase() : '';
         macroSubmenuEl.innerHTML = '';
-        if (Object.keys(macros).length > 0) {
-            Object.keys(macros).forEach((name) => {
+        const search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'hermes-macro-filter';
+        search.placeholder = 'Search macros...';
+        search.style.marginBottom = '5px';
+        if (existing) search.value = existing.value;
+        search.oninput = () => updateMacroSubmenuContents(macroSubmenuEl);
+        macroSubmenuEl.appendChild(search);
+
+        const allNames = Object.keys(macros);
+        const names = allNames.filter(n => n.toLowerCase().includes(filter));
+        if (names.length > 0) {
+            names.forEach((name) => {
                 const macroItemContainer = document.createElement('div');
                 macroItemContainer.className = 'hermes-submenu-item-container';
 
@@ -1194,7 +1207,7 @@
         } else {
             const noMacrosMsg = document.createElement('div');
             noMacrosMsg.className = 'hermes-submenu-empty-message';
-            noMacrosMsg.textContent = 'No macros recorded.';
+            noMacrosMsg.textContent = allNames.length ? 'No macros found.' : 'No macros recorded.';
             macroSubmenuEl.appendChild(noMacrosMsg);
         }
     }

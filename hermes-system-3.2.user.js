@@ -29,6 +29,7 @@
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
     const FIRST_RUN_KEY = 'hermes_first_run';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
+    const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -66,6 +67,23 @@
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
+let activeRequests = 0;
+const originalFetch = window.fetch;
+if (originalFetch) {
+    window.fetch = function(...args) {
+        activeRequests++;
+        return originalFetch.apply(this, args).finally(() => { activeRequests--; });
+    };
+}
+const originalXhrSend = XMLHttpRequest.prototype.send;
+XMLHttpRequest.prototype.send = function(...args) {
+    activeRequests++;
+    this.addEventListener('loadend', () => { activeRequests--; }, { once: true });
+    return originalXhrSend.apply(this, args);
+};
+
+let scheduleSettings = {};
+
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -114,6 +132,7 @@
         helpButton: { emoji: '❓', text: 'Help', bunchedText: 'Hlp', title: 'Show help panel' },
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
+        scheduleButton: { emoji: '⏰', text: 'Schedule', bunchedText: 'Sch', title: 'Schedule macro execution' },
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' } // New settings button
     };
 
@@ -231,7 +250,11 @@
             "useCoordinateFallback": false,
             "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
             "similarityThreshold": 0.5,
-            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5.",
+            "selectorWaitTimeout": 5000,
+            "_comment_selectorWaitTimeout": "Default timeout in ms for waitForSelector events. Default: 5000.",
+            "networkIdleTimeout": 2000,
+            "_comment_networkIdleTimeout": "Default timeout in ms for waitForNetworkIdle events. Default: 2000."
         }
     };
     let currentSettings = {};
@@ -801,6 +824,27 @@
         });
     }
 
+    const defaultScheduleSettings = { selected: [], date: '', time: '', recurrence: 'once' };
+    function loadScheduleSettings() {
+        try {
+            const json = GM_getValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(defaultScheduleSettings));
+            scheduleSettings = JSON.parse(json);
+        } catch (e) {
+            scheduleSettings = { ...defaultScheduleSettings };
+        }
+        return scheduleSettings;
+    }
+    function saveScheduleSettings(data) {
+        try {
+            GM_setValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(data));
+            scheduleSettings = data;
+            return true;
+        } catch (e) {
+            console.error('Hermes: Error saving schedule settings:', e);
+            return false;
+        }
+    }
+
     // =================== Core Logic ===================
     function matchProfileKey(context, fieldType, field) {
         let bestKey = null;
@@ -930,7 +974,32 @@
 
     // =================== Macro Engine ===================
     function recordEvent(e) {
-        if (!isRecording || !e.target) return;
+        if (!isRecording) return;
+        if (e.type === 'hermesWaitForSelector') {
+            const selector = e.detail && e.detail.selector;
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForSelector',
+                selector,
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: selector, details: ev });
+            return;
+        }
+        if (e.type === 'hermesWaitForNetworkIdle') {
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForNetworkIdle',
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: 'networkIdle', details: ev });
+            return;
+        }
+        if (!e.target) return;
         if (e.target.closest('#hermes-shadow-host')) return;
         const selector = getRobustSelector(e.target);
         if (!selector) return;
@@ -968,7 +1037,7 @@
         if (!currentMacroName) {
             isRecording = false; return;
         }
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.addEventListener(type, recordEvent, true);
@@ -981,7 +1050,7 @@
     function stopRecording() {
         if (!isRecording) return;
         isRecording = false;
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.removeEventListener(type, recordEvent, true);
@@ -1018,6 +1087,41 @@
                 return;
             }
             const eventDetail = macroToPlay[index];
+            if (eventDetail.type === 'waitForSelector') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000;
+                const poll = () => {
+                    if (document.querySelector(eventDetail.selector)) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForSelector timeout:', eventDetail.selector);
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(poll, 100);
+                    }
+                };
+                poll();
+                return;
+            } else if (eventDetail.type === 'waitForNetworkIdle') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000;
+                const check = () => {
+                    if (activeRequests === 0) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForNetworkIdle timeout');
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+                return;
+            }
             let element = document.querySelector(eventDetail.selector);
             if (!element && currentSettings.macro && currentSettings.macro.useCoordinateFallback) {
                 if (eventDetail.path && Array.isArray(eventDetail.path)) {
@@ -1111,6 +1215,13 @@
             console.log('Hermes: Macro deleted:', macroName);
         }
     }
+
+    window.hermesAddWaitForSelector = (selector, timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForSelector', { detail: { selector, timeout } }));
+    };
+    window.hermesAddWaitForNetworkIdle = (timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForNetworkIdle', { detail: { timeout } }));
+    };
 
     // =================== Visual Overlays ===================
     function removeVisualOverlays() {
@@ -1243,9 +1354,22 @@
 
     function updateMacroSubmenuContents(macroSubmenuEl) {
         if (!macroSubmenuEl) return;
+        const existing = macroSubmenuEl.querySelector('input.hermes-macro-filter');
+        const filter = existing ? existing.value.toLowerCase() : '';
         macroSubmenuEl.innerHTML = '';
-        if (Object.keys(macros).length > 0) {
-            Object.keys(macros).forEach((name) => {
+        const search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'hermes-macro-filter';
+        search.placeholder = 'Search macros...';
+        search.style.marginBottom = '5px';
+        if (existing) search.value = existing.value;
+        search.oninput = () => updateMacroSubmenuContents(macroSubmenuEl);
+        macroSubmenuEl.appendChild(search);
+
+        const allNames = Object.keys(macros);
+        const names = allNames.filter(n => n.toLowerCase().includes(filter));
+        if (names.length > 0) {
+            names.forEach((name) => {
                 const macroItemContainer = document.createElement('div');
                 macroItemContainer.className = 'hermes-submenu-item-container';
 
@@ -1278,17 +1402,19 @@
             importBtn.textContent = 'Import Macros';
             importBtn.style.marginTop = '5px';
             importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
-            const exportBtn = document.createElement('button');
-            exportBtn.className = 'hermes-button hermes-submenu-button';
-            exportBtn.textContent = 'Export Macros';
-            exportBtn.style.marginTop = '5px';
-            exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
             macroSubmenuEl.appendChild(importBtn);
-            macroSubmenuEl.appendChild(exportBtn);
+            if (allNames.length > 0) {
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'hermes-button hermes-submenu-button';
+                exportBtn.textContent = 'Export Macros';
+                exportBtn.style.marginTop = '5px';
+                exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
+                macroSubmenuEl.appendChild(exportBtn);
+            }
         } else {
             const noMacrosMsg = document.createElement('div');
             noMacrosMsg.className = 'hermes-submenu-empty-message';
-            noMacrosMsg.textContent = 'No macros recorded.';
+            noMacrosMsg.textContent = allNames.length ? 'No macros found.' : 'No macros recorded.';
             macroSubmenuEl.appendChild(noMacrosMsg);
             const importBtn = document.createElement('button');
             importBtn.className = 'hermes-button hermes-submenu-button';
@@ -1296,6 +1422,14 @@
             importBtn.style.marginTop = '5px';
             importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
             macroSubmenuEl.appendChild(importBtn);
+            if (allNames.length > 0) {
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'hermes-button hermes-submenu-button';
+                exportBtn.textContent = 'Export Macros';
+                exportBtn.style.marginTop = '5px';
+                exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
+                macroSubmenuEl.appendChild(exportBtn);
+            }
         }
     }
 
@@ -1717,27 +1851,116 @@
         }
     }
 
-    function showFirstRunModal() {
-        if (!shadowRoot) return;
-        const panelId = 'hermes-first-run-modal';
-        const contentHtml = `
-            <p>Welcome to <strong>Hermes</strong>! Here's a quick overview:</p>
-            <ul style="list-style:disc;padding-left:20px;">
-                <li><strong>Fill</strong> - auto-fill forms using your profile.</li>
-                <li><strong>Edit</strong> - edit your profile data.</li>
-                <li><strong>Record/Save</strong> - capture macros for later use.</li>
-                <li><strong>Overlay</strong> - highlight fields to fill.</li>
-                <li><strong>Help</strong> - open detailed instructions anytime.</li>
-            </ul>
-            <p>Drag the ☰ handle to move the toolbar. Use <strong>Bunch</strong> to compact the layout.</p>`;
-        createModal(panelId, 'Hermes Quick Start', contentHtml, '450px');
-        const panel = shadowRoot.querySelector(`#${panelId}`);
-        if (panel) {
-            panel.style.display = 'block';
-            const closeBtn = panel.querySelector('.hermes-panel-close');
-            if (closeBtn) closeBtn.addEventListener('click', () => GM_setValue(FIRST_RUN_KEY, false));
-        } else {
-            GM_setValue(FIRST_RUN_KEY, false);
+function showFirstRunModal() {
+    if (!shadowRoot) return;
+    const panelId = 'hermes-first-run-modal';
+    const contentHtml = `
+        <p>Welcome to <strong>Hermes</strong>! Here's a quick overview:</p>
+        <ul style="list-style:disc;padding-left:20px;">
+            <li><strong>Fill</strong> - auto-fill forms using your profile.</li>
+            <li><strong>Edit</strong> - edit your profile data.</li>
+            <li><strong>Record/Save</strong> - capture macros for later use.</li>
+            <li><strong>Overlay</strong> - highlight fields to fill.</li>
+            <li><strong>Help</strong> - open detailed instructions anytime.</li>
+        </ul>
+        <p>Drag the ☰ handle to move the toolbar. Use <strong>Bunch</strong> to compact the layout.</p>`;
+    createModal(panelId, 'Hermes Quick Start', contentHtml, '450px');
+    const panel = shadowRoot.querySelector(`#${panelId}`);
+    if (panel) {
+        panel.style.display = 'block';
+        const closeBtn = panel.querySelector('.hermes-panel-close');
+        if (closeBtn) closeBtn.addEventListener('click', () => GM_setValue(FIRST_RUN_KEY, false));
+    } else {
+        GM_setValue(FIRST_RUN_KEY, false);
+    }
+}
+
+function createSchedulePanel() {
+    const panelId = 'hermes-schedule-panel';
+    if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+
+    const contentHtml = `
+        <form id="hermes-schedule-form">
+            <fieldset style="margin-bottom:10px;">
+                <legend>Select Macros</legend>
+                <div id="hermes-schedule-macro-list" style="max-height:30vh;overflow-y:auto;"></div>
+            </fieldset>
+            <div style="margin-bottom:8px;"><label>Date: <input type="date" id="hermes-schedule-date" required></label></div>
+            <div style="margin-bottom:8px;"><label>Time: <input type="time" id="hermes-schedule-time" required></label></div>
+            <fieldset style="margin-bottom:8px;">
+                <legend>Repeat</legend>
+                <label><input type="radio" name="hermes-schedule-repeat" value="once"> Once</label>
+                <label><input type="radio" name="hermes-schedule-repeat" value="daily"> Daily</label>
+                <label><input type="radio" name="hermes-schedule-repeat" value="weekly"> Weekly</label>
+                <label><input type="radio" name="hermes-schedule-repeat" value="monthly"> Monthly</label>
+            </fieldset>
+        </form>`;
+    const buttonsHtml = `<button id="hermes-schedule-submit" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Schedule</button>`;
+
+    createModal(panelId, 'Schedule Macros', contentHtml, '600px', buttonsHtml);
+
+    const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+    if (!panel) return;
+
+    const macroListDiv = panel.querySelector('#hermes-schedule-macro-list');
+    const dateInput = panel.querySelector('#hermes-schedule-date');
+    const timeInput = panel.querySelector('#hermes-schedule-time');
+    const repeatRadios = panel.querySelectorAll('input[name="hermes-schedule-repeat"]');
+
+    const applySaved = () => {
+        dateInput.value = scheduleSettings.date || '';
+        timeInput.value = scheduleSettings.time || '';
+        repeatRadios.forEach(r => { r.checked = r.value === (scheduleSettings.recurrence || 'once'); });
+    };
+
+    fetch('/api/macros').then(r => r.json()).then(list => {
+        macroListDiv.innerHTML = '';
+        list.forEach(m => {
+            const label = document.createElement('label');
+            label.style.display = 'block';
+            label.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.name}`;
+            const cb = label.querySelector('input');
+            if (scheduleSettings.selected && scheduleSettings.selected.includes(m.id)) cb.checked = true;
+            macroListDiv.appendChild(label);
+        });
+    }).catch(err => {
+        macroListDiv.textContent = 'Error loading macros';
+        console.error('Hermes: Failed loading macros for schedule panel', err);
+    }).finally(applySaved);
+
+    const submitBtn = panel.querySelector('#hermes-schedule-submit');
+    if (submitBtn) submitBtn.onclick = async (e) => {
+        e.preventDefault();
+        const ids = Array.from(macroListDiv.querySelectorAll('input:checked')).map(el => el.value);
+        const date = dateInput.value;
+        const time = timeInput.value;
+        const recurrence = panel.querySelector('input[name="hermes-schedule-repeat"]:checked').value;
+
+        const newSettings = { selected: ids, date, time, recurrence };
+        saveScheduleSettings(newSettings);
+
+        for (const id of ids) {
+            try {
+                await fetch('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, date, time, recurrence }) });
+            } catch (err) {
+                console.error('Hermes: Error scheduling macro', err);
+            }
+        }
+        if (statusIndicator) { statusIndicator.textContent = 'Macro(s) scheduled'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+        panel.style.display = 'none';
+    };
+}
+
+function toggleSchedulePanel(show) {
+    if (!shadowRoot) return;
+    let panel = shadowRoot.querySelector('#hermes-schedule-panel');
+    if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
+    if (panel) {
+        if (show) { panel.style.display = 'block'; applyTheme(); }
+        else panel.style.display = 'none';
+    }
+}
+
         }
     }
 
@@ -3311,6 +3534,13 @@
             }
         };
 
+        // Schedule Button
+        const scheduleButtonElement = document.createElement('button');
+        scheduleButtonElement.id = 'hermes-schedule-button';
+        updateButtonAppearance(scheduleButtonElement, 'scheduleButton', isBunched);
+        scheduleButtonElement.onclick = () => { closeAllSubmenus(); toggleSchedulePanel(true); };
+        uiContainer.appendChild(scheduleButtonElement);
+
         // View Log Button (Debug Mode)
         viewLogButton = document.createElement('button');
         updateButtonAppearance(viewLogButton, 'viewLog', isBunched);
@@ -3587,6 +3817,7 @@
         loadMacros();
         loadCustomMappings();
         loadSettings(); // Load settings early
+        loadScheduleSettings();
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             if(document.body){ // Ensure body exists
