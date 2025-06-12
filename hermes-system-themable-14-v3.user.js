@@ -27,6 +27,7 @@
     const BUNCHED_STATE_KEY = 'hermes_bunched_state';
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
+    const FIRST_RUN_KEY = 'hermes_first_run';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
 
     // =================== State Variables ===================
@@ -48,6 +49,7 @@
     let effectsButton = null;
     let helpButton = null;
     let settingsButton = null; // New settings button
+    let isFirstRun = GM_getValue(FIRST_RUN_KEY, null) === null;
 
     let isRecording = false;
     let recordedEvents = [];
@@ -1517,6 +1519,30 @@
         if (helpPanel) {
             if (show) { helpPanel.style.display = 'block'; GM_setValue(HELP_PANEL_OPEN_KEY, true); applyTheme(); }
             else { helpPanel.style.display = 'none'; GM_setValue(HELP_PANEL_OPEN_KEY, false); }
+        }
+    }
+
+    function showFirstRunModal() {
+        if (!shadowRoot) return;
+        const panelId = 'hermes-first-run-modal';
+        const contentHtml = `
+            <p>Welcome to <strong>Hermes</strong>! Here's a quick overview:</p>
+            <ul style="list-style:disc;padding-left:20px;">
+                <li><strong>Fill</strong> - auto-fill forms using your profile.</li>
+                <li><strong>Edit</strong> - edit your profile data.</li>
+                <li><strong>Record/Save</strong> - capture macros for later use.</li>
+                <li><strong>Overlay</strong> - highlight fields to fill.</li>
+                <li><strong>Help</strong> - open detailed instructions anytime.</li>
+            </ul>
+            <p>Drag the ☰ handle to move the toolbar. Use <strong>Bunch</strong> to compact the layout.</p>`;
+        createModal(panelId, 'Hermes Quick Start', contentHtml, '450px');
+        const panel = shadowRoot.querySelector(`#${panelId}`);
+        if (panel) {
+            panel.style.display = 'block';
+            const closeBtn = panel.querySelector('.hermes-panel-close');
+            if (closeBtn) closeBtn.addEventListener('click', () => GM_setValue(FIRST_RUN_KEY, false));
+        } else {
+            GM_setValue(FIRST_RUN_KEY, false);
         }
     }
 
@@ -3159,6 +3185,11 @@
         setupEffectsCanvas(); // Initialize canvas for effects
         applyTheme();         // Apply current theme and settings-based styles
         setupDragging();      // Enable UI dragging
+
+        if (isFirstRun) {
+            showFirstRunModal();
+            isFirstRun = false;
+        }
 
         // Initial UI state (minimized or full)
         if (isWhitelisted()) {
