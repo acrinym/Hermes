@@ -32,4 +32,20 @@ describe('API endpoints', () => {
     const list = await request(app).get('/api/schedule');
     expect(list.body.find(s => s.id === res.body.scheduleId)).toBeTruthy();
   });
+
+  test('profile upload and download', async () => {
+    const profile = { first: 'John' };
+    const up = await request(app).post('/api/profile').send(profile);
+    expect(up.status).toBe(200);
+    const res = await request(app).get('/api/profile');
+    expect(res.body).toEqual(profile);
+  });
+
+  test('macros upload and download', async () => {
+    const data = { demo: [{ type: 'click' }] };
+    const up = await request(app).post('/api/macros/data').send(data);
+    expect(up.status).toBe(200);
+    const res = await request(app).get('/api/macros/data');
+    expect(res.body).toEqual(data);
+  });
 });

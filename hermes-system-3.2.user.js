@@ -29,6 +29,8 @@
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
     const SELECTED_MACRO_KEY = 'hermes_selected_macro';
+    const SYNC_URL = 'http://localhost:3000';
+    const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -50,6 +52,8 @@
     let helpButton = null;
     let settingsButton = null; // New settings button
 
+    let autoSyncTimer = null;
+
     let isRecording = false;
     let recordedEvents = [];
     let lastMouseMoveTime = 0;
@@ -66,8 +70,26 @@
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
-    let recordHotkeyParsed = null;
-    let playMacroHotkeyParsed = null;
+let recordHotkeyParsed = null;
+let playMacroHotkeyParsed = null;
+
+let activeRequests = 0;
+const originalFetch = window.fetch;
+if (originalFetch) {
+    window.fetch = function(...args) {
+        activeRequests++;
+        return originalFetch.apply(this, args).finally(() => { activeRequests--; });
+    };
+}
+const originalXhrSend = XMLHttpRequest.prototype.send;
+XMLHttpRequest.prototype.send = function(...args) {
+    activeRequests++;
+    this.addEventListener('loadend', () => { activeRequests--; }, { once: true });
+    return originalXhrSend.apply(this, args);
+};
+
+let scheduleSettings = {};
+
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -116,6 +138,7 @@
         helpButton: { emoji: '❓', text: 'Help', bunchedText: 'Hlp', title: 'Show help panel' },
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
+        scheduleButton: { emoji: '⏰', text: 'Schedule', bunchedText: 'Sch', title: 'Schedule macro execution' },
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' } // New settings button
     };
 
@@ -240,7 +263,9 @@
                 "_comment_maxOpacity": "Maximum opacity during strobe. Default: 0.2. Range: 0.0-1.0.",
                 "color": "rgba(255, 255, 255, {alpha})",
                 "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
-            }
+            },
+        "_comment_syncInterval": "Minutes between automatic sync with server. 0 disables.",
+        "syncInterval": 0,
         },
         "_comment_macro": "Settings for macro recording/playback and heuristics.",
         "macro": {
@@ -257,6 +282,13 @@
         "recordHotkey": "Ctrl+Shift+R",
         "_comment_playMacroHotkey": "Key combo to play the selected macro (e.g., Ctrl+Shift+P).",
         "playMacroHotkey": "Ctrl+Shift+P"
+            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5.",
+            "selectorWaitTimeout": 5000,
+            "_comment_selectorWaitTimeout": "Default timeout in ms for waitForSelector events. Default: 5000.",
+            "networkIdleTimeout": 2000,
+            "_comment_networkIdleTimeout": "Default timeout in ms for waitForNetworkIdle events. Default: 2000."
+        }
+
     };
     let currentSettings = {};
 
@@ -280,6 +312,7 @@
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'settings_load', details: { error: error.message } });
         }
         applyCurrentSettings(); // Apply loaded settings
+        startAutoSync(currentSettings.syncInterval);
         return currentSettings;
     }
 
@@ -298,6 +331,7 @@
 
             GM_setValue(SETTINGS_KEY, JSON.stringify(settingsToSave));
             currentSettings = settingsToSave;
+            startAutoSync(currentSettings.syncInterval);
             console.log('Hermes: Settings saved:', settingsToSave);
             debugLogs.push({ timestamp: Date.now(), type: 'settings_save', details: { settingsToSave } });
             updateParsedHotkeys();
@@ -355,6 +389,8 @@
                 <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
                 <label style="display:block;margin-bottom:5px;">Record Hotkey: <input type="text" id="hermes-setting-recordHotkey" style="width:120px;"></label>
                 <label style="display:block;margin-bottom:5px;">Play Macro Hotkey: <input type="text" id="hermes-setting-playHotkey" style="width:120px;"></label>
+                <button id="hermes-sync-now" class="hermes-button" style="margin-top:5px;">Sync Now</button>
+                <label style="display:block;margin-top:5px;">Auto Sync (min): <input type="number" id="hermes-sync-interval" min="0" style="width:60px;"></label>
             </div>
             <h4 style="margin-top:15px; margin-bottom:8px; border-bottom: 1px solid var(--hermes-panel-border); padding-bottom: 5px;">Settings Guide:</h4>
             <div id="hermes-settings-explanations" style="max-height:20vh;overflow-y:auto;padding:5px;background:rgba(0,0,0,0.1);border-radius:4px;">
@@ -378,6 +414,8 @@
             const simValue = panelInRoot.querySelector('#hermes-sim-value');
             const recordHotkeyInput = panelInRoot.querySelector('#hermes-setting-recordHotkey');
             const playHotkeyInput = panelInRoot.querySelector('#hermes-setting-playHotkey');
+            const syncBtn = panelInRoot.querySelector('#hermes-sync-now');
+            const syncInput = panelInRoot.querySelector('#hermes-sync-interval');
 
             if (settingsTextarea) {
                 settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
@@ -394,6 +432,8 @@
             }
             if (recordHotkeyInput) recordHotkeyInput.value = currentSettings.recordHotkey || '';
             if (playHotkeyInput) playHotkeyInput.value = currentSettings.playMacroHotkey || '';
+            if (syncInput) syncInput.value = String(currentSettings.syncInterval || 0);
+            if (syncBtn) syncBtn.onclick = () => syncWithServer();
 
             if (saveBtn) {
                 saveBtn.onclick = () => {
@@ -405,6 +445,7 @@
                         if (simSlider) newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
                         if (recordHotkeyInput) newSettings.recordHotkey = recordHotkeyInput.value.trim();
                         if (playHotkeyInput) newSettings.playMacroHotkey = playHotkeyInput.value.trim();
+                        if (syncInput) newSettings.syncInterval = parseInt(syncInput.value, 10) || 0;
                         if (saveSettings(newSettings)) {
                             if (statusIndicator) { statusIndicator.textContent = 'Settings Saved & Applied'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
                             // toggleSettingsPanel(false); // Optionally close panel on save
@@ -434,6 +475,7 @@
                         }
                         if (recordHotkeyInput) recordHotkeyInput.value = currentSettings.recordHotkey;
                         if (playHotkeyInput) playHotkeyInput.value = currentSettings.playMacroHotkey;
+                        if (syncInput) syncInput.value = String(currentSettings.syncInterval);
                         if (statusIndicator) { statusIndicator.textContent = 'Defaults Loaded. Save to apply.'; statusIndicator.style.color = 'var(--hermes-warning-text)'; setTimeout(resetStatusIndicator, 2000); }
                     }
                 };
@@ -455,6 +497,11 @@
             const simValue = settingsPanel.querySelector('#hermes-sim-value');
             const recordHotkeyInput = settingsPanel.querySelector('#hermes-setting-recordHotkey');
             const playHotkeyInput = settingsPanel.querySelector('#hermes-setting-playHotkey');
+            const syncInput = settingsPanel.querySelector('#hermes-sync-interval');
+             const recordMouseCb = settingsPanel.querySelector('#hermes-setting-recordMouse');
+
+             
+
              if(settingsTextarea) {
                  settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
                     if (key.startsWith('_comment')) return undefined;
@@ -469,6 +516,7 @@
              }
              if (recordHotkeyInput) recordHotkeyInput.value = currentSettings.recordHotkey;
              if (playHotkeyInput) playHotkeyInput.value = currentSettings.playMacroHotkey;
+             if (syncInput) syncInput.value = String(currentSettings.syncInterval || 0);
         }
 
         if (settingsPanel) {
@@ -844,6 +892,27 @@
         });
     }
 
+    const defaultScheduleSettings = { selected: [], date: '', time: '', recurrence: 'once' };
+    function loadScheduleSettings() {
+        try {
+            const json = GM_getValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(defaultScheduleSettings));
+            scheduleSettings = JSON.parse(json);
+        } catch (e) {
+            scheduleSettings = { ...defaultScheduleSettings };
+        }
+        return scheduleSettings;
+    }
+    function saveScheduleSettings(data) {
+        try {
+            GM_setValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(data));
+            scheduleSettings = data;
+            return true;
+        } catch (e) {
+            console.error('Hermes: Error saving schedule settings:', e);
+            return false;
+        }
+    }
+
     // =================== Core Logic ===================
     function matchProfileKey(context, fieldType, field) {
         let bestKey = null;
@@ -973,7 +1042,32 @@
 
     // =================== Macro Engine ===================
     function recordEvent(e) {
-        if (!isRecording || !e.target) return;
+        if (!isRecording) return;
+        if (e.type === 'hermesWaitForSelector') {
+            const selector = e.detail && e.detail.selector;
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForSelector',
+                selector,
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: selector, details: ev });
+            return;
+        }
+        if (e.type === 'hermesWaitForNetworkIdle') {
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForNetworkIdle',
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: 'networkIdle', details: ev });
+            return;
+        }
+        if (!e.target) return;
         if (e.target.closest('#hermes-shadow-host')) return;
         const selector = getRobustSelector(e.target);
         if (!selector) return;
@@ -1011,7 +1105,7 @@
         if (!currentMacroName) {
             isRecording = false; return;
         }
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.addEventListener(type, recordEvent, true);
@@ -1024,7 +1118,7 @@
     function stopRecording() {
         if (!isRecording) return;
         isRecording = false;
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.removeEventListener(type, recordEvent, true);
@@ -1063,6 +1157,41 @@
                 return;
             }
             const eventDetail = macroToPlay[index];
+            if (eventDetail.type === 'waitForSelector') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000;
+                const poll = () => {
+                    if (document.querySelector(eventDetail.selector)) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForSelector timeout:', eventDetail.selector);
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(poll, 100);
+                    }
+                };
+                poll();
+                return;
+            } else if (eventDetail.type === 'waitForNetworkIdle') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000;
+                const check = () => {
+                    if (activeRequests === 0) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForNetworkIdle timeout');
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+                return;
+            }
             let element = document.querySelector(eventDetail.selector);
             if (!element && currentSettings.macro && currentSettings.macro.useCoordinateFallback) {
                 if (eventDetail.path && Array.isArray(eventDetail.path)) {
@@ -1156,6 +1285,13 @@
             console.log('Hermes: Macro deleted:', macroName);
         }
     }
+
+    window.hermesAddWaitForSelector = (selector, timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForSelector', { detail: { selector, timeout } }));
+    };
+    window.hermesAddWaitForNetworkIdle = (timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForNetworkIdle', { detail: { timeout } }));
+    };
 
     // =================== Visual Overlays ===================
     function removeVisualOverlays() {
@@ -1314,9 +1450,22 @@
 
     function updateMacroSubmenuContents(macroSubmenuEl) {
         if (!macroSubmenuEl) return;
+        const existing = macroSubmenuEl.querySelector('input.hermes-macro-filter');
+        const filter = existing ? existing.value.toLowerCase() : '';
         macroSubmenuEl.innerHTML = '';
-        if (Object.keys(macros).length > 0) {
-            Object.keys(macros).forEach((name) => {
+        const search = document.createElement('input');
+        search.type = 'text';
+        search.className = 'hermes-macro-filter';
+        search.placeholder = 'Search macros...';
+        search.style.marginBottom = '5px';
+        if (existing) search.value = existing.value;
+        search.oninput = () => updateMacroSubmenuContents(macroSubmenuEl);
+        macroSubmenuEl.appendChild(search);
+
+        const allNames = Object.keys(macros);
+        const names = allNames.filter(n => n.toLowerCase().includes(filter));
+        if (names.length > 0) {
+            names.forEach((name) => {
                 const macroItemContainer = document.createElement('div');
                 macroItemContainer.className = 'hermes-submenu-item-container';
 
@@ -1349,17 +1498,19 @@
             importBtn.textContent = 'Import Macros';
             importBtn.style.marginTop = '5px';
             importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
-            const exportBtn = document.createElement('button');
-            exportBtn.className = 'hermes-button hermes-submenu-button';
-            exportBtn.textContent = 'Export Macros';
-            exportBtn.style.marginTop = '5px';
-            exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
             macroSubmenuEl.appendChild(importBtn);
-            macroSubmenuEl.appendChild(exportBtn);
+            if (allNames.length > 0) {
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'hermes-button hermes-submenu-button';
+                exportBtn.textContent = 'Export Macros';
+                exportBtn.style.marginTop = '5px';
+                exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
+                macroSubmenuEl.appendChild(exportBtn);
+            }
         } else {
             const noMacrosMsg = document.createElement('div');
             noMacrosMsg.className = 'hermes-submenu-empty-message';
-            noMacrosMsg.textContent = 'No macros recorded.';
+            noMacrosMsg.textContent = allNames.length ? 'No macros found.' : 'No macros recorded.';
             macroSubmenuEl.appendChild(noMacrosMsg);
             const importBtn = document.createElement('button');
             importBtn.className = 'hermes-button hermes-submenu-button';
@@ -1367,6 +1518,14 @@
             importBtn.style.marginTop = '5px';
             importBtn.onclick = (e) => { e.stopPropagation(); importMacrosFromFile(); closeAllSubmenus(); };
             macroSubmenuEl.appendChild(importBtn);
+            if (allNames.length > 0) {
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'hermes-button hermes-submenu-button';
+                exportBtn.textContent = 'Export Macros';
+                exportBtn.style.marginTop = '5px';
+                exportBtn.onclick = (e) => { e.stopPropagation(); exportMacros(); closeAllSubmenus(); };
+                macroSubmenuEl.appendChild(exportBtn);
+            }
         }
     }
 
@@ -1617,7 +1776,7 @@
         } catch (e) { console.error('Hermes: Error exporting macros', e); }
     }
 
-    function importMacrosFromFile() {
+function importMacrosFromFile() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json,application/json';
@@ -1632,7 +1791,40 @@
                     if (saveMacros(macros)) {
                         updateMacroDropdown();
                         if (statusIndicator) { statusIndicator.textContent = 'Macros imported'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
-                    }
+}
+
+    async function syncWithServer() {
+        try {
+            await fetch(`${SYNC_URL}/api/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loadProfileData())
+            });
+            await fetch(`${SYNC_URL}/api/macros/data`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loadMacros())
+            });
+            const pRes = await fetch(`${SYNC_URL}/api/profile`);
+            const newProfile = await pRes.json();
+            saveProfileData(newProfile);
+            const mRes = await fetch(`${SYNC_URL}/api/macros/data`);
+            const newMacros = await mRes.json();
+            macros = newMacros;
+            saveMacros(macros);
+            updateMacroDropdown();
+            if (statusIndicator) { statusIndicator.textContent = 'Synced'; setTimeout(resetStatusIndicator, 2000); }
+        } catch (e) {
+            console.error('Hermes: Sync failed', e);
+        }
+    }
+
+    function startAutoSync(minutes) {
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        if (minutes && minutes > 0) {
+            autoSyncTimer = setInterval(syncWithServer, minutes * 60000);
+        }
+    }
                 } catch (err) {
                     console.error('Hermes: Invalid macro JSON', err);
                     alert('Invalid macro file');
@@ -1785,6 +1977,92 @@
         if (helpPanel) {
             if (show) { helpPanel.style.display = 'block'; GM_setValue(HELP_PANEL_OPEN_KEY, true); applyTheme(); }
             else { helpPanel.style.display = 'none'; GM_setValue(HELP_PANEL_OPEN_KEY, false); }
+        }
+    }
+
+    function createSchedulePanel() {
+        const panelId = 'hermes-schedule-panel';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+
+        const contentHtml = `
+            <form id="hermes-schedule-form">
+                <fieldset style="margin-bottom:10px;">
+                    <legend>Select Macros</legend>
+                    <div id="hermes-schedule-macro-list" style="max-height:30vh;overflow-y:auto;"></div>
+                </fieldset>
+                <div style="margin-bottom:8px;"><label>Date: <input type="date" id="hermes-schedule-date" required></label></div>
+                <div style="margin-bottom:8px;"><label>Time: <input type="time" id="hermes-schedule-time" required></label></div>
+                <fieldset style="margin-bottom:8px;">
+                    <legend>Repeat</legend>
+                    <label><input type="radio" name="hermes-schedule-repeat" value="once"> Once</label>
+                    <label><input type="radio" name="hermes-schedule-repeat" value="daily"> Daily</label>
+                    <label><input type="radio" name="hermes-schedule-repeat" value="weekly"> Weekly</label>
+                    <label><input type="radio" name="hermes-schedule-repeat" value="monthly"> Monthly</label>
+                </fieldset>
+            </form>`;
+        const buttonsHtml = `<button id="hermes-schedule-submit" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Schedule</button>`;
+
+        createModal(panelId, 'Schedule Macros', contentHtml, '600px', buttonsHtml);
+
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (!panel) return;
+
+        const macroListDiv = panel.querySelector('#hermes-schedule-macro-list');
+        const dateInput = panel.querySelector('#hermes-schedule-date');
+        const timeInput = panel.querySelector('#hermes-schedule-time');
+        const repeatRadios = panel.querySelectorAll('input[name="hermes-schedule-repeat"]');
+
+        const applySaved = () => {
+            dateInput.value = scheduleSettings.date || '';
+            timeInput.value = scheduleSettings.time || '';
+            repeatRadios.forEach(r => { r.checked = r.value === (scheduleSettings.recurrence || 'once'); });
+        };
+
+        fetch('/api/macros').then(r => r.json()).then(list => {
+            macroListDiv.innerHTML = '';
+            list.forEach(m => {
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                label.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.name}`;
+                const cb = label.querySelector('input');
+                if (scheduleSettings.selected && scheduleSettings.selected.includes(m.id)) cb.checked = true;
+                macroListDiv.appendChild(label);
+            });
+        }).catch(err => {
+            macroListDiv.textContent = 'Error loading macros';
+            console.error('Hermes: Failed loading macros for schedule panel', err);
+        }).finally(applySaved);
+
+        const submitBtn = panel.querySelector('#hermes-schedule-submit');
+        if (submitBtn) submitBtn.onclick = async (e) => {
+            e.preventDefault();
+            const ids = Array.from(macroListDiv.querySelectorAll('input:checked')).map(el => el.value);
+            const date = dateInput.value;
+            const time = timeInput.value;
+            const recurrence = panel.querySelector('input[name="hermes-schedule-repeat"]:checked').value;
+
+            const newSettings = { selected: ids, date, time, recurrence };
+            saveScheduleSettings(newSettings);
+
+            for (const id of ids) {
+                try {
+                    await fetch('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, date, time, recurrence }) });
+                } catch (err) {
+                    console.error('Hermes: Error scheduling macro', err);
+                }
+            }
+            if (statusIndicator) { statusIndicator.textContent = 'Macro(s) scheduled'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+            panel.style.display = 'none';
+        };
+    }
+
+    function toggleSchedulePanel(show) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-schedule-panel');
+        if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
+        if (panel) {
+            if (show) { panel.style.display = 'block'; applyTheme(); }
+            else panel.style.display = 'none';
         }
     }
 
@@ -3358,6 +3636,13 @@
             }
         };
 
+        // Schedule Button
+        const scheduleButtonElement = document.createElement('button');
+        scheduleButtonElement.id = 'hermes-schedule-button';
+        updateButtonAppearance(scheduleButtonElement, 'scheduleButton', isBunched);
+        scheduleButtonElement.onclick = () => { closeAllSubmenus(); toggleSchedulePanel(true); };
+        uiContainer.appendChild(scheduleButtonElement);
+
         // View Log Button (Debug Mode)
         viewLogButton = document.createElement('button');
         updateButtonAppearance(viewLogButton, 'viewLog', isBunched);
@@ -3629,6 +3914,7 @@
         loadMacros();
         loadCustomMappings();
         loadSettings(); // Load settings early
+        loadScheduleSettings();
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             if(document.body){ // Ensure body exists
