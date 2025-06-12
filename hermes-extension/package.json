@@ -4,6 +4,7 @@
   "description": "",
   "main": "dist/background.js",
   "scripts": {
+    "prebuild": "npm install",
     "build": "webpack --mode=production",
     "test": "jest"
   },

@@ -10,13 +10,13 @@ export function setupUI(root: HTMLElement = document.body) {
 
     container = document.createElement('div');
     container.id = 'hermes-ui-container';
-    container.style.cssText = 'position:fixed;top:10px;left:10px;display:flex;gap:4px;background:var(--hermes-bg);color:var(--hermes-text);padding:4px;border:1px solid #999;z-index:2147483647;';
+    container.style.cssText = 'position:fixed;top:10px;left:10px;display:flex;gap:4px;background:var(--hermes-bg);color:var(--hermes-text);padding:4px;border:1px solid var(--hermes-border);z-index:2147483647;';
     root.appendChild(container);
 
     minimized = document.createElement('div');
     minimized.id = 'hermes-minimized-container';
     minimized.textContent = '🛠️';
-    minimized.style.cssText = 'display:none;position:fixed;top:10px;left:10px;cursor:pointer;padding:2px;z-index:2147483647;background:var(--hermes-bg);border:1px solid #999;color:var(--hermes-text);';
+    minimized.style.cssText = 'display:none;position:fixed;top:10px;left:10px;cursor:pointer;padding:2px;z-index:2147483647;background:var(--hermes-bg);border:1px solid var(--hermes-border);color:var(--hermes-text);';
     minimized.onclick = () => toggleMinimizedUI(false);
     root.appendChild(minimized);
 
@@ -28,6 +28,7 @@ export function setupUI(root: HTMLElement = document.body) {
     setupDragging(dragHandle);
 
     const bunchBtn = document.createElement('button');
+    bunchBtn.className = 'hermes-button';
     bunchBtn.id = 'hermes-bunch-button';
     bunchBtn.textContent = 'Bunch';
     bunchBtn.onclick = () => {
@@ -37,6 +38,7 @@ export function setupUI(root: HTMLElement = document.body) {
     container.appendChild(bunchBtn);
 
     const minBtn = document.createElement('button');
+    minBtn.className = 'hermes-button';
     minBtn.id = 'hermes-minimize-button';
     minBtn.textContent = '_';
     minBtn.onclick = () => toggleMinimizedUI(true);
@@ -58,6 +60,7 @@ export function setupUI(root: HTMLElement = document.body) {
     ];
     snapData.forEach(d => {
         const b = document.createElement('button');
+        b.className = 'hermes-button';
         b.textContent = d.label;
         b.onclick = () => snapToEdge(d.edge);
         snapContainer.appendChild(b);

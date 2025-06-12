@@ -53,8 +53,8 @@ let logPanel: HTMLElement | null = null;
 function createLogViewer(): HTMLElement {
     const panel = document.createElement('div');
     panel.id = 'hermes-log-viewer';
-    panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);width:90%;max-width:600px;max-height:70vh;background:#fff;border:1px solid #ccc;padding:10px;z-index:2147483647;overflow:auto;font-family:sans-serif';
-    panel.innerHTML = '<h2 style="margin-top:0">Hermes Logs</h2><table style="width:100%;border-collapse:collapse"><thead><tr><th>Time</th><th>Type</th><th>Target</th><th>Details</th></tr></thead><tbody id="hermes-log-body"></tbody></table><div style="margin-top:10px;text-align:right"><button id="hermes-log-clear">Clear</button> <button id="hermes-log-close">Close</button></div>';
+    panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);width:90%;max-width:600px;max-height:70vh;background:var(--hermes-panel-bg);border:1px solid var(--hermes-panel-border);color:var(--hermes-panel-text);padding:10px;z-index:2147483647;overflow:auto;font-family:sans-serif';
+    panel.innerHTML = '<h2 style="margin-top:0">Hermes Logs</h2><table style="width:100%;border-collapse:collapse"><thead><tr><th>Time</th><th>Type</th><th>Target</th><th>Details</th></tr></thead><tbody id="hermes-log-body"></tbody></table><div style="margin-top:10px;text-align:right"><button id="hermes-log-clear" class="hermes-button">Clear</button> <button id="hermes-log-close" class="hermes-button">Close</button></div>';
     document.body.appendChild(panel);
     panel.querySelector('#hermes-log-close')!.addEventListener('click', () => panel.style.display = 'none');
     panel.querySelector('#hermes-log-clear')!.addEventListener('click', async () => { await clearDebugLogs(); await populateLogViewer(); });
@@ -73,7 +73,7 @@ async function populateLogViewer() {
     }
     for (const log of logs) {
         const row = document.createElement('tr');
-        row.style.borderBottom = '1px solid #ccc';
+        row.style.borderBottom = '1px solid var(--hermes-panel-border)';
         row.innerHTML = `<td style="padding:4px">${new Date(log.timestamp).toLocaleTimeString()}</td><td style="padding:4px">${log.type}</td><td style="padding:4px">${log.target || ''}</td><td style="padding:4px;word-break:break-all"><pre style="margin:0;font-family:monospace">${JSON.stringify(log.details, null, 2)}</pre></td>`;
         body.appendChild(row);
     }
