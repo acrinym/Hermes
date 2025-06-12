@@ -28,7 +28,9 @@
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
+    const SYNC_URL = 'http://localhost:3000';
     const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
+
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -49,6 +51,8 @@
     let effectsButton = null;
     let helpButton = null;
     let settingsButton = null; // New settings button
+
+    let autoSyncTimer = null;
 
     let isRecording = false;
     let recordedEvents = [];
@@ -237,7 +241,9 @@ let scheduleSettings = {};
                 "_comment_maxOpacity": "Maximum opacity during strobe. Default: 0.2. Range: 0.0-1.0.",
                 "color": "rgba(255, 255, 255, {alpha})",
                 "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
-            }
+            },
+        "_comment_syncInterval": "Minutes between automatic sync with server. 0 disables.",
+        "syncInterval": 0,
         },
         "_comment_macro": "Settings for macro recording/playback and heuristics.",
         "macro": {
@@ -275,6 +281,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'settings_load', details: { error: error.message } });
         }
         applyCurrentSettings(); // Apply loaded settings
+        startAutoSync(currentSettings.syncInterval);
         return currentSettings;
     }
 
@@ -293,6 +300,7 @@ let scheduleSettings = {};
 
             GM_setValue(SETTINGS_KEY, JSON.stringify(settingsToSave));
             currentSettings = settingsToSave;
+            startAutoSync(currentSettings.syncInterval);
             console.log('Hermes: Settings saved:', settingsToSave);
             debugLogs.push({ timestamp: Date.now(), type: 'settings_save', details: { settingsToSave } });
             applyCurrentSettings();
@@ -345,6 +353,8 @@ let scheduleSettings = {};
                 <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-useCoords"> Use coordinate fallback</label>
                 <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-recordMouse"> Record mouse movements</label>
                 <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
+                <button id="hermes-sync-now" class="hermes-button" style="margin-top:5px;">Sync Now</button>
+                <label style="display:block;margin-top:5px;">Auto Sync (min): <input type="number" id="hermes-sync-interval" min="0" style="width:60px;"></label>
             </div>
             <h4 style="margin-top:15px; margin-bottom:8px; border-bottom: 1px solid var(--hermes-panel-border); padding-bottom: 5px;">Settings Guide:</h4>
             <div id="hermes-settings-explanations" style="max-height:20vh;overflow-y:auto;padding:5px;background:rgba(0,0,0,0.1);border-radius:4px;">
@@ -366,6 +376,8 @@ let scheduleSettings = {};
             const recordMouseCb = panelInRoot.querySelector('#hermes-setting-recordMouse');
             const simSlider = panelInRoot.querySelector('#hermes-setting-similarity');
             const simValue = panelInRoot.querySelector('#hermes-sim-value');
+            const syncBtn = panelInRoot.querySelector('#hermes-sync-now');
+            const syncInput = panelInRoot.querySelector('#hermes-sync-interval');
 
             if (settingsTextarea) {
                 settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
@@ -380,6 +392,8 @@ let scheduleSettings = {};
                 if (simValue) simValue.textContent = simSlider.value;
                 simSlider.oninput = () => { if (simValue) simValue.textContent = simSlider.value; };
             }
+            if (syncInput) syncInput.value = String(currentSettings.syncInterval || 0);
+            if (syncBtn) syncBtn.onclick = () => syncWithServer();
 
             if (saveBtn) {
                 saveBtn.onclick = () => {
@@ -389,6 +403,7 @@ let scheduleSettings = {};
                         if (useCoordsCb) newSettings.macro.useCoordinateFallback = useCoordsCb.checked;
                         if (recordMouseCb) newSettings.macro.recordMouseMoves = recordMouseCb.checked;
                         if (simSlider) newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
+                        if (syncInput) newSettings.syncInterval = parseInt(syncInput.value, 10) || 0;
                         if (saveSettings(newSettings)) {
                             if (statusIndicator) { statusIndicator.textContent = 'Settings Saved & Applied'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
                             // toggleSettingsPanel(false); // Optionally close panel on save
@@ -416,6 +431,7 @@ let scheduleSettings = {};
                             simSlider.value = currentSettings.macro.similarityThreshold;
                             if (simValue) simValue.textContent = simSlider.value;
                         }
+                        if (syncInput) syncInput.value = String(currentSettings.syncInterval);
                         if (statusIndicator) { statusIndicator.textContent = 'Defaults Loaded. Save to apply.'; statusIndicator.style.color = 'var(--hermes-warning-text)'; setTimeout(resetStatusIndicator, 2000); }
                     }
                 };
@@ -435,6 +451,7 @@ let scheduleSettings = {};
              const recordMouseCb = settingsPanel.querySelector('#hermes-setting-recordMouse');
              const simSlider = settingsPanel.querySelector('#hermes-setting-similarity');
              const simValue = settingsPanel.querySelector('#hermes-sim-value');
+             const syncInput = settingsPanel.querySelector('#hermes-sync-interval');
              if(settingsTextarea) {
                  settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
                     if (key.startsWith('_comment')) return undefined;
@@ -447,6 +464,7 @@ let scheduleSettings = {};
                  simSlider.value = currentSettings.macro.similarityThreshold;
                  if (simValue) simValue.textContent = simSlider.value;
              }
+             if (syncInput) syncInput.value = String(currentSettings.syncInterval || 0);
         }
 
         if (settingsPanel) {
@@ -1678,7 +1696,7 @@ let scheduleSettings = {};
         } catch (e) { console.error('Hermes: Error exporting macros', e); }
     }
 
-    function importMacrosFromFile() {
+function importMacrosFromFile() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json,application/json';
@@ -1693,7 +1711,40 @@ let scheduleSettings = {};
                     if (saveMacros(macros)) {
                         updateMacroDropdown();
                         if (statusIndicator) { statusIndicator.textContent = 'Macros imported'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
-                    }
+}
+
+    async function syncWithServer() {
+        try {
+            await fetch(`${SYNC_URL}/api/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loadProfileData())
+            });
+            await fetch(`${SYNC_URL}/api/macros/data`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loadMacros())
+            });
+            const pRes = await fetch(`${SYNC_URL}/api/profile`);
+            const newProfile = await pRes.json();
+            saveProfileData(newProfile);
+            const mRes = await fetch(`${SYNC_URL}/api/macros/data`);
+            const newMacros = await mRes.json();
+            macros = newMacros;
+            saveMacros(macros);
+            updateMacroDropdown();
+            if (statusIndicator) { statusIndicator.textContent = 'Synced'; setTimeout(resetStatusIndicator, 2000); }
+        } catch (e) {
+            console.error('Hermes: Sync failed', e);
+        }
+    }
+
+    function startAutoSync(minutes) {
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        if (minutes && minutes > 0) {
+            autoSyncTimer = setInterval(syncWithServer, minutes * 60000);
+        }
+    }
                 } catch (err) {
                     console.error('Hermes: Invalid macro JSON', err);
                     alert('Invalid macro file');
