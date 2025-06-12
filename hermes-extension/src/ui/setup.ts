@@ -1,3 +1,5 @@
+import { t } from '../../i18n.js';
+
 let container: HTMLDivElement | null = null;
 let minimized: HTMLDivElement | null = null;
 let isMinimized = false;
@@ -30,7 +32,7 @@ export function setupUI(root: HTMLElement = document.body) {
     const bunchBtn = document.createElement('button');
     bunchBtn.className = 'hermes-button';
     bunchBtn.id = 'hermes-bunch-button';
-    bunchBtn.textContent = 'Bunch';
+    bunchBtn.textContent = t('BUNCH');
     bunchBtn.onclick = () => {
         isBunched = !isBunched;
         if (container) container.classList.toggle('hermes-bunched', isBunched);

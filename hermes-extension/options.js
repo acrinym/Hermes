@@ -6,6 +6,13 @@ const exportBtn = document.getElementById('exportThemes');
 const importBtn = document.getElementById('importThemes');
 const importFile = document.getElementById('importFile');
 
+// Apply translations
+document.title = t('HERMES_OPTIONS');
+document.querySelector('h1').textContent = t('HERMES_OPTIONS');
+document.querySelector('label').childNodes[0].nodeValue = t('THEME_LABEL');
+exportBtn.textContent = t('EXPORT_THEMES');
+importBtn.textContent = t('IMPORT_THEMES');
+
 function populateThemes(builtIn, custom, current) {
     themeSelect.innerHTML = '';
     const allThemes = { ...builtIn, ...custom };
