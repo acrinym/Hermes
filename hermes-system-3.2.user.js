@@ -65,7 +65,23 @@
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
-    let scheduleSettings = {};
+let activeRequests = 0;
+const originalFetch = window.fetch;
+if (originalFetch) {
+    window.fetch = function(...args) {
+        activeRequests++;
+        return originalFetch.apply(this, args).finally(() => { activeRequests--; });
+    };
+}
+const originalXhrSend = XMLHttpRequest.prototype.send;
+XMLHttpRequest.prototype.send = function(...args) {
+    activeRequests++;
+    this.addEventListener('loadend', () => { activeRequests--; }, { once: true });
+    return originalXhrSend.apply(this, args);
+};
+
+let scheduleSettings = {};
+
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -232,7 +248,11 @@
             "useCoordinateFallback": false,
             "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
             "similarityThreshold": 0.5,
-            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5.",
+            "selectorWaitTimeout": 5000,
+            "_comment_selectorWaitTimeout": "Default timeout in ms for waitForSelector events. Default: 5000.",
+            "networkIdleTimeout": 2000,
+            "_comment_networkIdleTimeout": "Default timeout in ms for waitForNetworkIdle events. Default: 2000."
         }
     };
     let currentSettings = {};
@@ -952,7 +972,32 @@
 
     // =================== Macro Engine ===================
     function recordEvent(e) {
-        if (!isRecording || !e.target) return;
+        if (!isRecording) return;
+        if (e.type === 'hermesWaitForSelector') {
+            const selector = e.detail && e.detail.selector;
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForSelector',
+                selector,
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: selector, details: ev });
+            return;
+        }
+        if (e.type === 'hermesWaitForNetworkIdle') {
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForNetworkIdle',
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: 'networkIdle', details: ev });
+            return;
+        }
+        if (!e.target) return;
         if (e.target.closest('#hermes-shadow-host')) return;
         const selector = getRobustSelector(e.target);
         if (!selector) return;
@@ -990,7 +1035,7 @@
         if (!currentMacroName) {
             isRecording = false; return;
         }
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.addEventListener(type, recordEvent, true);
@@ -1003,7 +1048,7 @@
     function stopRecording() {
         if (!isRecording) return;
         isRecording = false;
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.removeEventListener(type, recordEvent, true);
@@ -1040,6 +1085,41 @@
                 return;
             }
             const eventDetail = macroToPlay[index];
+            if (eventDetail.type === 'waitForSelector') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000;
+                const poll = () => {
+                    if (document.querySelector(eventDetail.selector)) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForSelector timeout:', eventDetail.selector);
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(poll, 100);
+                    }
+                };
+                poll();
+                return;
+            } else if (eventDetail.type === 'waitForNetworkIdle') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000;
+                const check = () => {
+                    if (activeRequests === 0) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForNetworkIdle timeout');
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+                return;
+            }
             let element = document.querySelector(eventDetail.selector);
             if (!element && currentSettings.macro && currentSettings.macro.useCoordinateFallback) {
                 if (eventDetail.path && Array.isArray(eventDetail.path)) {
@@ -1133,6 +1213,13 @@
             console.log('Hermes: Macro deleted:', macroName);
         }
     }
+
+    window.hermesAddWaitForSelector = (selector, timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForSelector', { detail: { selector, timeout } }));
+    };
+    window.hermesAddWaitForNetworkIdle = (timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForNetworkIdle', { detail: { timeout } }));
+    };
 
     // =================== Visual Overlays ===================
     function removeVisualOverlays() {
