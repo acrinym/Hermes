@@ -20,6 +20,7 @@ import {
 } from './debug.ts';
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { toggleOverlays, initOverlays } from './overlays.ts';
+import { t } from '../i18n.js';
 
 // Shadow DOM root globals
 let shadowHost: HTMLDivElement;
@@ -86,13 +87,13 @@ export async function initUI() {
   };
 
   // ----- Main Button Row -----
-  createButton('Fill', () => fillForm(profile));
-  createButton('Train', () => runHeuristicTrainerSession(profile));
-  createButton('Rec', () => macroEngine.startRecording());
-  createButton('Stop', () => macroEngine.stopRecording());
+  createButton(t('FILL'), () => fillForm(profile));
+  createButton(t('TRAIN'), () => runHeuristicTrainerSession(profile));
+  createButton(t('REC'), () => macroEngine.startRecording());
+  createButton(t('STOP'), () => macroEngine.stopRecording());
 
   // Macros button with panel
-  macrosBtn = createButton('Macros ▼', (e) => {
+  macrosBtn = createButton(t('MACROS_MENU'), (e) => {
     e.stopPropagation();
     const vis = macroMenu.style.display === 'block';
     closeAllSubmenus(macroMenu);
@@ -101,7 +102,7 @@ export async function initUI() {
   });
 
   // Theme button
-  themeBtn = createButton('Theme ▼', (e) => {
+  themeBtn = createButton(t('THEME_MENU'), (e) => {
     e.stopPropagation();
     const vis = themeMenu.style.display === 'block';
     closeAllSubmenus(themeMenu);
@@ -110,7 +111,7 @@ export async function initUI() {
   });
 
   // Effects button
-  effectsBtn = createButton('FX ▼', (e) => {
+  effectsBtn = createButton(t('FX_MENU'), (e) => {
     e.stopPropagation();
     const vis = effectsMenu.style.display === 'block';
     closeAllSubmenus(effectsMenu);
@@ -119,27 +120,27 @@ export async function initUI() {
   });
 
   // Overlay button
-  overlayBtn = createButton('Overlay', () => {
+  overlayBtn = createButton(t('OVERLAY'), () => {
     toggleOverlays();
     overlayBtn.style.background = overlayBtn.style.background ? '' : 'lightgreen';
   });
   if (data.showOverlays) overlayBtn.style.background = 'lightgreen';
 
   // Settings
-  settingsBtn = createButton('Settings', () => toggleSettingsPanel(true));
+  settingsBtn = createButton(t('SETTINGS'), () => toggleSettingsPanel(true));
 
   // Help
-  helpBtn = createButton('?', () => showHelp());
+  helpBtn = createButton(t('HELP'), () => showHelp());
 
   // Logs
-  createButton('Logs', () => toggleLogViewer(true));
+  createButton(t('LOGS'), () => toggleLogViewer(true));
 
   // Allowlist
-  allowBtn = createButton('Allowlist', () => toggleAllowPanel(true));
+  allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
 
   // Debug
   let debugEnabled = !!data.debugMode;
-  debugBtn = createButton('Debug', () => {
+  debugBtn = createButton(t('DEBUG'), () => {
     debugEnabled = !debugEnabled;
     debugEnabled
       ? startMutationObserver(() => addDebugLog('mutation', 'dom', {}))
@@ -150,7 +151,7 @@ export async function initUI() {
 
   // Learn Mode
   let learning = !!data.learningMode;
-  learnBtn = createButton('Learn', () => {
+  learnBtn = createButton(t('LEARN'), () => {
     learning = !learning;
     saveDataToBackground('hermes_learning_state_ext', learning);
     addDebugLog('learning_toggle', null, { enabled: learning });
@@ -236,14 +237,17 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
     hr.style.cssText = 'border: none; border-top: 1px solid var(--hermes-border); margin: 5px 0;';
     menu.appendChild(hr);
   } else {
+    menu.innerHTML = `<div style="padding: 5px; color: var(--hermes-disabled-text);">${t('NO_MACROS')}</div>`;
     const msg = allNames.length ? 'No macros found.' : 'No macros recorded.';
     const div = document.createElement('div');
     div.style.cssText = 'padding:5px;color:var(--hermes-disabled-text);';
     div.textContent = msg;
     menu.appendChild(div);
   }
-  const importBtn = createSubButton('Import Macros...', () => importMacrosFromFile());
+  const importBtn = createSubButton(t('IMPORT_MACROS'), () => importMacrosFromFile());
   menu.appendChild(importBtn);
+  if (names.length) {
+    const exportBtn = createSubButton(t('EXPORT_MACROS'), () => exportMacros());
   if (allNames.length) {
     const exportBtn = createSubButton('Export All Macros...', () => exportMacros());
     menu.appendChild(exportBtn);
@@ -260,7 +264,7 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
       <textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
     `;
     const buttonsHtml = `<button id="hermes-macro-edit-save">Save Macro</button>`;
-    panelContainer = createModal(shadowRoot, panelId, 'Macro Editor', contentHtml, '700px', buttonsHtml);
+    panelContainer = createModal(shadowRoot, panelId, t('MACRO_EDITOR'), contentHtml, '700px', buttonsHtml);
     const panel = panelContainer.querySelector(`#${panelId}`) as HTMLElement;
     const selectEl = panel.querySelector('#hermes-macro-edit-select') as HTMLSelectElement;
     const textArea = panel.querySelector('#hermes-macro-edit-text') as HTMLTextAreaElement;
@@ -284,7 +288,7 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
         updateMacroSubmenuContents(macroMenu);
         panelContainer.style.display = 'none';
       } catch (e: any) {
-        const errContainer = createModal(shadowRoot, 'json-error-modal', 'Invalid JSON', `<p>${e.message}</p>`, '300px', '<button id="err-ok-btn">OK</button>');
+        const errContainer = createModal(shadowRoot, 'json-error-modal', t('INVALID_JSON'), `<p>${e.message}</p>`, '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
         errContainer.style.display = 'flex';
         (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
       }
@@ -307,7 +311,7 @@ function updateThemeSubmenu(menu: HTMLElement) {
       e.stopPropagation();
       applyTheme(key);
       saveDataToBackground('hermes_theme_ext', key);
-      themeBtn.textContent = `Theme ▼`;
+      themeBtn.textContent = t('THEME_MENU');
       menu.style.display = 'none';
     };
     menu.appendChild(btn);
@@ -343,8 +347,8 @@ function updateEffectsSubmenu(menu: HTMLElement) {
 // === Allowlist Panel ===
 async function createAllowPanel() {
   const list = await loadWhitelist();
-  const html = `<input id="hermes-allow-input" style="width:70%"> <button id="hermes-allow-add">Add</button><ul id="hermes-allow-list"></ul>`;
-  allowPanel = createModal(shadowRoot, 'hermes-allow-panel', 'Allowed Domains', html, '400px');
+  const html = `<input id="hermes-allow-input" style="width:70%"> <button id="hermes-allow-add">${t('ADD')}</button><ul id="hermes-allow-list"></ul>`;
+  allowPanel = createModal(shadowRoot, 'hermes-allow-panel', t('ALLOWED_DOMAINS'), html, '400px');
   const input = allowPanel.querySelector('#hermes-allow-input') as HTMLInputElement;
   const addBtn = allowPanel.querySelector('#hermes-allow-add') as HTMLButtonElement;
   const listEl = allowPanel.querySelector('#hermes-allow-list') as HTMLUListElement;
@@ -400,7 +404,7 @@ function importMacrosFromFile() {
       if (ok) {
         updateMacroSubmenuContents(macroMenu);
       } else {
-        const errContainer = createModal(shadowRoot, 'import-error-modal', 'Import Failed', '<p>The selected file was not a valid Hermes macro file.</p>', '300px', '<button id="err-ok-btn">OK</button>');
+        const errContainer = createModal(shadowRoot, 'import-error-modal', t('IMPORT_FAILED'), '<p>The selected file was not a valid Hermes macro file.</p>', '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
         errContainer.style.display = 'flex';
         (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
       }

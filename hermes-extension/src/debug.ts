@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 declare const chrome: any;
 
 export function addDebugLog(type: string, target: string | null = null, details: any = {}): void {
@@ -54,7 +55,7 @@ function createLogViewer(): HTMLElement {
     const panel = document.createElement('div');
     panel.id = 'hermes-log-viewer';
     panel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);width:90%;max-width:600px;max-height:70vh;background:var(--hermes-panel-bg);border:1px solid var(--hermes-panel-border);color:var(--hermes-panel-text);padding:10px;z-index:2147483647;overflow:auto;font-family:sans-serif';
-    panel.innerHTML = '<h2 style="margin-top:0">Hermes Logs</h2><table style="width:100%;border-collapse:collapse"><thead><tr><th>Time</th><th>Type</th><th>Target</th><th>Details</th></tr></thead><tbody id="hermes-log-body"></tbody></table><div style="margin-top:10px;text-align:right"><button id="hermes-log-clear" class="hermes-button">Clear</button> <button id="hermes-log-close" class="hermes-button">Close</button></div>';
+    panel.innerHTML = `<h2 style="margin-top:0">${t('HERMES_LOGS')}</h2><table style="width:100%;border-collapse:collapse"><thead><tr><th>Time</th><th>Type</th><th>Target</th><th>Details</th></tr></thead><tbody id="hermes-log-body"></tbody></table><div style="margin-top:10px;text-align:right"><button id="hermes-log-clear" class="hermes-button">${t('CLEAR')}</button> <button id="hermes-log-close" class="hermes-button">${t('CLOSE')}</button></div>`;
     document.body.appendChild(panel);
     panel.querySelector('#hermes-log-close')!.addEventListener('click', () => panel.style.display = 'none');
     panel.querySelector('#hermes-log-clear')!.addEventListener('click', async () => { await clearDebugLogs(); await populateLogViewer(); });
@@ -68,7 +69,7 @@ async function populateLogViewer() {
     body.innerHTML = '';
     const logs = await getDebugLogs();
     if (!logs.length) {
-        body.innerHTML = '<tr><td colspan="4" style="text-align:center">No logs</td></tr>';
+        body.innerHTML = `<tr><td colspan="4" style="text-align:center">${t('NO_LOGS')}</td></tr>`;
         return;
     }
     for (const log of logs) {
