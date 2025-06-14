@@ -13,6 +13,16 @@
 - ❓ **Help panel** and detailed **settings editor**
 - 📤 **Profile import/export** via JSON
 - 🔍 **Debug toolkit** with logs and mutation detection
+- ⏰ **Macro scheduling UI**
+- ⌨️ **Configurable hotkeys**
+- 🔎 **Macro search/filter**
+- 🕒 **Wait steps for reliable playback**
+- ☁️ **Optional cloud sync**
+- 🖥 **System theme detection**
+- 🌐 **Localization support**
+- 📋 **First-run onboarding overlay**
+- 🛰 **Network request capture**
+- 📁 **Auto-generated domain configs**
 
 ---
 
@@ -32,6 +42,11 @@
 - Delete or select macros from a dropdown
 - Edit recorded steps in a dedicated macro editor
 - Import or export macros as JSON files
+- Capture and replay network requests
+- Add wait-for-element or network-idle steps
+- Search macros by name
+- Trigger recording or playback via hotkeys
+- Schedule macros from the built-in UI
 
 ### 🧠 Heuristic Trainer
 - Tracks skipped or unmapped fields
@@ -42,10 +57,12 @@
 - Built‑in log viewer for errors and DOM mutations
 - Help panel summarizing all controls
 - Auto‑reinjects the UI if removed from the page
+- Optional onboarding overlay for first‑time users
 
 ### 🎛️ UI Control Panel
 - Draggable floating window with resize handles
 - Snap buttons to quickly align UI to edges or corners
+- Dock to the top or bottom of the page without covering content
 - "Bunch" toggle for compact layout
 - Displays status messages for actions
 
@@ -58,6 +75,7 @@
 - Light ☀️, Dark 🌙, Phoenix 🦅, Sea Green 🐢, Aurora Glow 🌠, Crimson Ember 🔥, Slate Storm ⛈️ and many more including new Sunset 🌇, Forest 🌳 and Neon 💡 themes
 - CSS variables make themes easily customizable
 - Theme choice persists across sessions
+- Optionally follow the system dark/light preference
 - Themes can be exported or imported via the Options page
 
 ### 🔒 Domain Allowlist
@@ -69,6 +87,8 @@
 - JSON editor for advanced options such as border thickness or effect density
 - Settings are merged with safe defaults and validated
 - Dedicated Options page available from Chrome's extension settings
+- Manual or periodic cloud sync of profiles and macros
+- Interface localized based on browser language
 
 ---
 
@@ -160,7 +180,8 @@ Hermes works in any Chromium-based browser and Firefox 109+. The same build can 
 
 ## 📜 Developer Notes
 
-- Built with vanilla JS and Manifest V3 APIs.
+- Source files live under `hermes-extension/src` and are written in TypeScript.
+- Bundled with Webpack to a Manifest V3 extension.
 - All panels and menus render inside a single Shadow DOM host for complete cross-site isolation.
 - Background service worker stores data in Chrome storage.
 - Modular design—fork or extend as desired.

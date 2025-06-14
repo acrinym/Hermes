@@ -31,6 +31,7 @@
     const SELECTED_MACRO_KEY = 'hermes_selected_macro';
     const SYNC_URL = 'http://localhost:3000';
     const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
+    const DOCK_MODE_KEY = 'hermes_dock_mode';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -89,6 +90,8 @@ XMLHttpRequest.prototype.send = function(...args) {
 };
 
 let scheduleSettings = {};
+
+    let dockMode = GM_getValue(DOCK_MODE_KEY, 'none');
 
 
     const themeOptions = {
@@ -3400,8 +3403,43 @@ function importMacrosFromFile() {
     }
 
     // =================== UI Dragging & Snapping ===================
+    function applyDockMode() {
+        if (!uiContainer || !minimizedContainer) return;
+        const container = isMinimized ? minimizedContainer : uiContainer;
+        const height = container.getBoundingClientRect().height + 10;
+        if (dockMode === 'top') {
+            uiContainer.style.top = '0px';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.top = '0px';
+            minimizedContainer.style.bottom = '';
+            document.body.style.marginTop = `${height}`;
+            document.body.style.marginBottom = '';
+        } else if (dockMode === 'bottom') {
+            uiContainer.style.bottom = '0px';
+            uiContainer.style.top = '';
+            minimizedContainer.style.bottom = '0px';
+            minimizedContainer.style.top = '';
+            document.body.style.marginBottom = `${height}`;
+            document.body.style.marginTop = '';
+        } else {
+            document.body.style.marginTop = '';
+            document.body.style.marginBottom = '';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.bottom = '';
+            uiContainer.style.top = `${state.position.top}px`;
+            minimizedContainer.style.top = `${state.position.top}px`;
+        }
+    }
+
+    function dockToPage(position) {
+        dockMode = position;
+        GM_setValue(DOCK_MODE_KEY, dockMode);
+        applyDockMode();
+    }
+
     function snapToEdge(edge) {
         if (!uiContainer || !minimizedContainer) return;
+        dockToPage('none');
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         const uiRect = uiContainer.getBoundingClientRect();
@@ -3528,6 +3566,7 @@ function importMacrosFromFile() {
                 uiContainer.style.left = `${state.position.left !== null ? state.position.left + 'px' : '10px'}`;
 
             }
+            applyDockMode();
             updateEffectsRendering(); // Crucial to stop/start animations
             debugLogs.push({
                 timestamp: Date.now(),
@@ -3781,8 +3820,31 @@ function importMacrosFromFile() {
             snapButtonsContainer.style.flexDirection = 'row'; // Or 'column' if preferred for bunched
             snapButtonsContainer.style.justifyContent = 'center';
         }
-        const snapButtonsData = [ /* ... as before ... */ ];
-        snapButtonsData.forEach(data => { /* ... as before ... */ });
+        const snapButtonsData = [
+            { edge: 'top-left', label: '↖' },
+            { edge: 'top', label: '↑' },
+            { edge: 'top-right', label: '↗' },
+            { edge: 'left', label: '←' },
+            { edge: 'right', label: '→' },
+            { edge: 'bottom-left', label: '↙' },
+            { edge: 'bottom', label: '↓' },
+            { edge: 'bottom-right', label: '↘' },
+            { edge: 'dock-top', label: '⤒' },
+            { edge: 'dock-bottom', label: '⤓' }
+        ];
+        snapButtonsData.forEach(data => {
+            const btn = document.createElement('button');
+            btn.className = 'hermes-button hermes-snap-button';
+            btn.textContent = data.label;
+            btn.title = data.edge;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (data.edge === 'dock-top') dockToPage('top');
+                else if (data.edge === 'dock-bottom') dockToPage('bottom');
+                else snapToEdge(data.edge);
+            };
+            snapButtonsContainer.appendChild(btn);
+        });
         uiContainer.appendChild(snapButtonsContainer);
 
 
@@ -3795,6 +3857,7 @@ function importMacrosFromFile() {
         // Finalize UI Setup
         setupEffectsCanvas(); // Initialize canvas for effects
         applyTheme();         // Apply current theme and settings-based styles
+        applyDockMode();      // Adjust page margins if docked
         setupDragging();      // Enable UI dragging
 
         // Initial UI state (minimized or full)
