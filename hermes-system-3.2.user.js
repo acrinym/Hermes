@@ -27,6 +27,7 @@
     const BUNCHED_STATE_KEY = 'hermes_bunched_state';
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
+    const FIRST_RUN_KEY = 'hermes_first_run';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
     const SELECTED_MACRO_KEY = 'hermes_selected_macro';
     const SYNC_URL = 'http://localhost:3000';
@@ -52,6 +53,7 @@
     let effectsButton = null;
     let helpButton = null;
     let settingsButton = null; // New settings button
+    let isFirstRun = GM_getValue(FIRST_RUN_KEY, null) === null;
 
     let autoSyncTimer = null;
 
@@ -1983,89 +1985,116 @@ function importMacrosFromFile() {
         }
     }
 
-    function createSchedulePanel() {
-        const panelId = 'hermes-schedule-panel';
-        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
-
-        const contentHtml = `
-            <form id="hermes-schedule-form">
-                <fieldset style="margin-bottom:10px;">
-                    <legend>Select Macros</legend>
-                    <div id="hermes-schedule-macro-list" style="max-height:30vh;overflow-y:auto;"></div>
-                </fieldset>
-                <div style="margin-bottom:8px;"><label>Date: <input type="date" id="hermes-schedule-date" required></label></div>
-                <div style="margin-bottom:8px;"><label>Time: <input type="time" id="hermes-schedule-time" required></label></div>
-                <fieldset style="margin-bottom:8px;">
-                    <legend>Repeat</legend>
-                    <label><input type="radio" name="hermes-schedule-repeat" value="once"> Once</label>
-                    <label><input type="radio" name="hermes-schedule-repeat" value="daily"> Daily</label>
-                    <label><input type="radio" name="hermes-schedule-repeat" value="weekly"> Weekly</label>
-                    <label><input type="radio" name="hermes-schedule-repeat" value="monthly"> Monthly</label>
-                </fieldset>
-            </form>`;
-        const buttonsHtml = `<button id="hermes-schedule-submit" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Schedule</button>`;
-
-        createModal(panelId, 'Schedule Macros', contentHtml, '600px', buttonsHtml);
-
-        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
-        if (!panel) return;
-
-        const macroListDiv = panel.querySelector('#hermes-schedule-macro-list');
-        const dateInput = panel.querySelector('#hermes-schedule-date');
-        const timeInput = panel.querySelector('#hermes-schedule-time');
-        const repeatRadios = panel.querySelectorAll('input[name="hermes-schedule-repeat"]');
-
-        const applySaved = () => {
-            dateInput.value = scheduleSettings.date || '';
-            timeInput.value = scheduleSettings.time || '';
-            repeatRadios.forEach(r => { r.checked = r.value === (scheduleSettings.recurrence || 'once'); });
-        };
-
-        fetch('/api/macros').then(r => r.json()).then(list => {
-            macroListDiv.innerHTML = '';
-            list.forEach(m => {
-                const label = document.createElement('label');
-                label.style.display = 'block';
-                label.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.name}`;
-                const cb = label.querySelector('input');
-                if (scheduleSettings.selected && scheduleSettings.selected.includes(m.id)) cb.checked = true;
-                macroListDiv.appendChild(label);
-            });
-        }).catch(err => {
-            macroListDiv.textContent = 'Error loading macros';
-            console.error('Hermes: Failed loading macros for schedule panel', err);
-        }).finally(applySaved);
-
-        const submitBtn = panel.querySelector('#hermes-schedule-submit');
-        if (submitBtn) submitBtn.onclick = async (e) => {
-            e.preventDefault();
-            const ids = Array.from(macroListDiv.querySelectorAll('input:checked')).map(el => el.value);
-            const date = dateInput.value;
-            const time = timeInput.value;
-            const recurrence = panel.querySelector('input[name="hermes-schedule-repeat"]:checked').value;
-
-            const newSettings = { selected: ids, date, time, recurrence };
-            saveScheduleSettings(newSettings);
-
-            for (const id of ids) {
-                try {
-                    await fetch('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, date, time, recurrence }) });
-                } catch (err) {
-                    console.error('Hermes: Error scheduling macro', err);
-                }
-            }
-            if (statusIndicator) { statusIndicator.textContent = 'Macro(s) scheduled'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
-            panel.style.display = 'none';
-        };
+function showFirstRunModal() {
+    if (!shadowRoot) return;
+    const panelId = 'hermes-first-run-modal';
+    const contentHtml = `
+        <p>Welcome to <strong>Hermes</strong>! Here's a quick overview:</p>
+        <ul style="list-style:disc;padding-left:20px;">
+            <li><strong>Fill</strong> - auto-fill forms using your profile.</li>
+            <li><strong>Edit</strong> - edit your profile data.</li>
+            <li><strong>Record/Save</strong> - capture macros for later use.</li>
+            <li><strong>Overlay</strong> - highlight fields to fill.</li>
+            <li><strong>Help</strong> - open detailed instructions anytime.</li>
+        </ul>
+        <p>Drag the ☰ handle to move the toolbar. Use <strong>Bunch</strong> to compact the layout.</p>`;
+    createModal(panelId, 'Hermes Quick Start', contentHtml, '450px');
+    const panel = shadowRoot.querySelector(`#${panelId}`);
+    if (panel) {
+        panel.style.display = 'block';
+        const closeBtn = panel.querySelector('.hermes-panel-close');
+        if (closeBtn) closeBtn.addEventListener('click', () => GM_setValue(FIRST_RUN_KEY, false));
+    } else {
+        GM_setValue(FIRST_RUN_KEY, false);
     }
+}
 
-    function toggleSchedulePanel(show) {
-        if (!shadowRoot) return;
-        let panel = shadowRoot.querySelector('#hermes-schedule-panel');
-        if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
-        if (panel) {
-            if (show) { panel.style.display = 'block'; applyTheme(); }
-            else panel.style.display = 'none';
+function createSchedulePanel() {
+    const panelId = 'hermes-schedule-panel';
+    if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+
+    const contentHtml = `
+        <form id="hermes-schedule-form">
+            <fieldset style="margin-bottom:10px;">
+                <legend>Select Macros</legend>
+                <div id="hermes-schedule-macro-list" style="max-height:30vh;overflow-y:auto;"></div>
+            </fieldset>
+            <div style="margin-bottom:8px;"><label>Date: <input type="date" id="hermes-schedule-date" required></label></div>
+            <div style="margin-bottom:8px;"><label>Time: <input type="time" id="hermes-schedule-time" required></label></div>
+            <fieldset style="margin-bottom:8px;">
+                <legend>Repeat</legend>
+                <label><input type="radio" name="hermes-schedule-repeat" value="once"> Once</label>
+                <label><input type="radio" name="hermes-schedule-repeat" value="daily"> Daily</label>
+                <label><input type="radio" name="hermes-schedule-repeat" value="weekly"> Weekly</label>
+                <label><input type="radio" name="hermes-schedule-repeat" value="monthly"> Monthly</label>
+            </fieldset>
+        </form>`;
+    const buttonsHtml = `<button id="hermes-schedule-submit" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Schedule</button>`;
+
+    createModal(panelId, 'Schedule Macros', contentHtml, '600px', buttonsHtml);
+
+    const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+    if (!panel) return;
+
+    const macroListDiv = panel.querySelector('#hermes-schedule-macro-list');
+    const dateInput = panel.querySelector('#hermes-schedule-date');
+    const timeInput = panel.querySelector('#hermes-schedule-time');
+    const repeatRadios = panel.querySelectorAll('input[name="hermes-schedule-repeat"]');
+
+    const applySaved = () => {
+        dateInput.value = scheduleSettings.date || '';
+        timeInput.value = scheduleSettings.time || '';
+        repeatRadios.forEach(r => { r.checked = r.value === (scheduleSettings.recurrence || 'once'); });
+    };
+
+    fetch('/api/macros').then(r => r.json()).then(list => {
+        macroListDiv.innerHTML = '';
+        list.forEach(m => {
+            const label = document.createElement('label');
+            label.style.display = 'block';
+            label.innerHTML = `<input type="checkbox" value="${m.id}"> ${m.name}`;
+            const cb = label.querySelector('input');
+            if (scheduleSettings.selected && scheduleSettings.selected.includes(m.id)) cb.checked = true;
+            macroListDiv.appendChild(label);
+        });
+    }).catch(err => {
+        macroListDiv.textContent = 'Error loading macros';
+        console.error('Hermes: Failed loading macros for schedule panel', err);
+    }).finally(applySaved);
+
+    const submitBtn = panel.querySelector('#hermes-schedule-submit');
+    if (submitBtn) submitBtn.onclick = async (e) => {
+        e.preventDefault();
+        const ids = Array.from(macroListDiv.querySelectorAll('input:checked')).map(el => el.value);
+        const date = dateInput.value;
+        const time = timeInput.value;
+        const recurrence = panel.querySelector('input[name="hermes-schedule-repeat"]:checked').value;
+
+        const newSettings = { selected: ids, date, time, recurrence };
+        saveScheduleSettings(newSettings);
+
+        for (const id of ids) {
+            try {
+                await fetch('/api/schedule', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, date, time, recurrence }) });
+            } catch (err) {
+                console.error('Hermes: Error scheduling macro', err);
+            }
+        }
+        if (statusIndicator) { statusIndicator.textContent = 'Macro(s) scheduled'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
+        panel.style.display = 'none';
+    };
+}
+
+function toggleSchedulePanel(show) {
+    if (!shadowRoot) return;
+    let panel = shadowRoot.querySelector('#hermes-schedule-panel');
+    if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
+    if (panel) {
+        if (show) { panel.style.display = 'block'; applyTheme(); }
+        else panel.style.display = 'none';
+    }
+}
+
         }
     }
 
@@ -3859,6 +3888,11 @@ function importMacrosFromFile() {
         applyTheme();         // Apply current theme and settings-based styles
         applyDockMode();      // Adjust page margins if docked
         setupDragging();      // Enable UI dragging
+
+        if (isFirstRun) {
+            showFirstRunModal();
+            isFirstRun = false;
+        }
 
         // Initial UI state (minimized or full)
         if (isWhitelisted()) {
