@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
+import { AffirmationToggle } from './productivity.tsx';
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
@@ -73,6 +74,7 @@ function OptionsApp() {
         <input id="importFile" type="file" accept="application/json" style={{ display: 'none' }} onChange={e => importThemes(e.target.files)} />
         <button onClick={() => document.getElementById('importFile')!.click()} id="importThemes">{t('IMPORT_THEMES')}</button>
       </div>
+      <AffirmationToggle />
     </div>
   );
 }

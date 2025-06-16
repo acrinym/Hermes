@@ -8,6 +8,7 @@ const PROFILE_KEY_EXT = 'hermes_profile_ext';
 const MACRO_KEY_EXT = 'hermes_macros_ext';
 const MAPPING_KEY_EXT = 'hermes_mappings_ext';
 const OVERLAY_STATE_KEY_EXT = 'hermes_overlay_state_ext';
+const AFFIRM_STATE_KEY_EXT = 'hermes_affirmations_state_ext';
 const LEARNING_STATE_KEY_EXT = 'hermes_learning_state_ext';
 const DEBUG_MODE_KEY_EXT = 'hermes_debug_mode_ext';
 const POSITION_KEY_EXT = 'hermes_position_ext';
@@ -86,6 +87,7 @@ let hermesState = {
     isBunched: false,
     effectsMode: 'none',
     showOverlays: true,
+    showAffirmations: false,
     learningMode: false,
     debugMode: false,
     uiPosition: { top: null, left: null },
@@ -217,6 +219,7 @@ async function initializeHermesState() {
         [BUNCHED_STATE_KEY_EXT]: false,
         [EFFECTS_STATE_KEY_EXT]: 'none',
         [OVERLAY_STATE_KEY_EXT]: true,
+        [AFFIRM_STATE_KEY_EXT]: false,
         [LEARNING_STATE_KEY_EXT]: false,
         [DEBUG_MODE_KEY_EXT]: false,
         [POSITION_KEY_EXT]: JSON.stringify({ top: null, left: null }),
@@ -254,6 +257,7 @@ async function initializeHermesState() {
         hermesState.isBunched = storedData[BUNCHED_STATE_KEY_EXT];
         hermesState.effectsMode = storedData[EFFECTS_STATE_KEY_EXT];
         hermesState.showOverlays = storedData[OVERLAY_STATE_KEY_EXT];
+        hermesState.showAffirmations = storedData[AFFIRM_STATE_KEY_EXT];
         hermesState.learningMode = storedData[LEARNING_STATE_KEY_EXT];
         hermesState.debugMode = storedData[DEBUG_MODE_KEY_EXT];
 
@@ -372,6 +376,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 case BUNCHED_STATE_KEY_EXT: hermesState.isBunched = value; break;
                 case EFFECTS_STATE_KEY_EXT: hermesState.effectsMode = value; break;
                 case OVERLAY_STATE_KEY_EXT: hermesState.showOverlays = value; break;
+                case AFFIRM_STATE_KEY_EXT: hermesState.showAffirmations = value; break;
                 case LEARNING_STATE_KEY_EXT: hermesState.learningMode = value; break;
                 case DEBUG_MODE_KEY_EXT: hermesState.debugMode = value; break;
                 case POSITION_KEY_EXT: hermesState.uiPosition = value; break;

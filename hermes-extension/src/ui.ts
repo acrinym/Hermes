@@ -20,6 +20,7 @@ import {
 } from './debug.ts';
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { toggleOverlays, initOverlays } from './overlays.ts';
+import { initAffirmations } from './productivity.tsx';
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -165,6 +166,7 @@ export async function initUI() {
   applyTheme(theme);
   if (data.effectsMode) setEffect(data.effectsMode);
   initOverlays(!!data.showOverlays);
+  initAffirmations(!!data.showAffirmations);
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
 
