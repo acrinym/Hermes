@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
+import { AffirmationToggle } from './productivity.tsx';
 
 declare const chrome: any;
 
@@ -76,6 +77,7 @@ function OptionsApp() {
         <input id="importFile" type="file" accept="application/json" style={{ display: 'none' }} onChange={e => importThemes(e.target.files)} />
         <button onClick={() => document.getElementById('importFile')!.click()} id="importThemes">{t('IMPORT_THEMES')}</button>
       </div>
+      <AffirmationToggle />
     </div>
   );
 }
