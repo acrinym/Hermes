@@ -9,7 +9,10 @@ declare const chrome: any;
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
 
-interface ThemeInfo { name: string; emoji: string; }
+interface ThemeInfo {
+  name: string;
+  emoji: string;
+}
 
 function OptionsApp() {
   const [builtIn, setBuiltIn] = useState<Record<string, ThemeInfo>>({});

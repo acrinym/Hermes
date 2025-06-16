@@ -10,21 +10,21 @@ declare const chrome: any;
 
 function getSelector(el: Element): string {
   if ((el as HTMLElement).id) {
-    return `#${(el as HTMLElement).id}`;
+  return `#${(el as HTMLElement).id}`;
   }
   let selector = el.tagName.toLowerCase();
   const nameAttr = el.getAttribute('name');
   if (nameAttr) {
-    selector += `[name="${nameAttr}"]`;
-    return selector;
+  selector += `[name="${nameAttr}"]`;
+  return selector;
   }
   if (el.classList.length > 0) {
-    selector += `.${el.classList[0]}`;
+  selector += `.${el.classList[0]}`;
   }
   const parent = el.parentElement;
   if (parent) {
-    const index = Array.from(parent.children).indexOf(el) + 1;
-    selector = `${parent.tagName.toLowerCase()} > ${selector}:nth-child(${index})`;
+  const index = Array.from(parent.children).indexOf(el) + 1;
+  selector = `${parent.tagName.toLowerCase()} > ${selector}:nth-child(${index})`;
   }
   return selector;
 }
@@ -37,19 +37,19 @@ export function scanDOM(): SiteConfig {
   const buttons = Array.from(buttonElements).map(getSelector);
 
   const scroll = {
-    x: window.scrollX,
-    y: window.scrollY,
-    width: document.documentElement.scrollWidth,
-    height: document.documentElement.scrollHeight
+  x: window.scrollX,
+  y: window.scrollY,
+  width: document.documentElement.scrollWidth,
+  height: document.documentElement.scrollHeight
   };
   const viewport = { width: window.innerWidth, height: window.innerHeight };
 
   return {
-    fields,
-    buttons,
-    scroll,
-    viewport,
-    lastUpdated: new Date().toISOString()
+  fields,
+  buttons,
+  scroll,
+  viewport,
+  lastUpdated: new Date().toISOString()
   };
 }
 
@@ -60,6 +60,6 @@ export async function ensureSiteConfig() {
   const config = scanDOM();
   const result = await chrome.runtime.sendMessage({ type: 'SAVE_SITE_CONFIG', payload: { site, config } });
   if (result && result.success) {
-    alert(`Hermes: Config saved for ${site}`);
+  alert(`Hermes: Config saved for ${site}`);
   }
 }
