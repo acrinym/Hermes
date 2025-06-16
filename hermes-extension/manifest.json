@@ -2,14 +2,14 @@
   "manifest_version": 3,
   "name": "Hermes System Extension",
   "version": "3.8.0",
-
   "description": "Advanced form filler, macro recorder, and heuristic trainer with comprehensive CSS variable theming, draggable UI, whitelist, bunchable layout, edge and corner snapping, effects, help panel, and detailed settings.",
   "permissions": [
     "storage",
     "tabs",
     "scripting",
     "activeTab",
-    "identity"
+    "identity",
+    "contextMenus"
   ],
   "host_permissions": [
     "*://*/*",

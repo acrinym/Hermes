@@ -20,6 +20,7 @@ const BUNCHED_STATE_KEY_EXT = 'hermes_bunched_state_ext';
 const EFFECTS_STATE_KEY_EXT = 'hermes_effects_state_ext';
 const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
 const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
+const DISABLED_HOSTS_KEY_EXT = 'hermes_disabled_hosts_ext';
 
 // --- Debug Log Storage ---
 let debugLogs = [];
@@ -94,6 +95,7 @@ let hermesState = {
     debugMode: false,
     uiPosition: { top: null, left: null },
     whitelist: [],
+    disabledHosts: [],
     helpPanelOpen: false,
     configs: {}
 };
@@ -227,7 +229,8 @@ async function initializeHermesState() {
         [DEBUG_MODE_KEY_EXT]: false,
         [POSITION_KEY_EXT]: JSON.stringify({ top: null, left: null }),
         [WHITELIST_KEY_EXT]: JSON.stringify([]),
-        [HELP_PANEL_OPEN_KEY_EXT]: false
+        [HELP_PANEL_OPEN_KEY_EXT]: false,
+        [DISABLED_HOSTS_KEY_EXT]: JSON.stringify([])
     };
 
     try {
@@ -272,6 +275,9 @@ async function initializeHermesState() {
         try { hermesState.whitelist = JSON.parse(storedData[WHITELIST_KEY_EXT]); }
         catch (e) { console.error("Hermes BG: Error parsing whitelist JSON.", e); hermesState.whitelist = []; }
 
+        try { hermesState.disabledHosts = JSON.parse(storedData[DISABLED_HOSTS_KEY_EXT]); }
+        catch (e) { console.error("Hermes BG: Error parsing disabled hosts JSON.", e); hermesState.disabledHosts = []; }
+
         hermesState.helpPanelOpen = storedData[HELP_PANEL_OPEN_KEY_EXT];
 
         chrome.storage.local.set({
@@ -292,6 +298,42 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 initializeHermesState();
+
+chrome.contextMenus.create({
+    id: 'toggle-hermes',
+    title: 'Disable Hermes on this site',
+    contexts: ['page']
+});
+
+function updateContextMenu(tab) {
+    if (!tab || !tab.url) return;
+    const host = new URL(tab.url).hostname;
+    const disabled = hermesState.disabledHosts.includes(host);
+    chrome.contextMenus.update('toggle-hermes', {
+        title: disabled ? 'Enable Hermes on this site' : 'Disable Hermes on this site'
+    });
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId !== 'toggle-hermes' || !tab || !tab.id || !tab.url) return;
+    const host = new URL(tab.url).hostname;
+    const list = hermesState.disabledHosts;
+    const idx = list.indexOf(host);
+    const enable = idx > -1;
+    if (enable) list.splice(idx, 1); else list.push(host);
+    chrome.storage.local.set({ [DISABLED_HOSTS_KEY_EXT]: JSON.stringify(list) });
+    updateContextMenu(tab);
+    chrome.tabs.sendMessage(tab.id, { type: 'SET_ENABLED', payload: { enabled: enable } });
+});
+
+chrome.tabs.onActivated.addListener(async info => {
+    const tab = await chrome.tabs.get(info.tabId);
+    updateContextMenu(tab);
+});
+
+chrome.tabs.onUpdated.addListener((id, change, tab) => {
+    if (change.status === 'complete') updateContextMenu(tab);
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const { type, payload } = message;
@@ -387,6 +429,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 case DEBUG_MODE_KEY_EXT: hermesState.debugMode = value; break;
                 case POSITION_KEY_EXT: hermesState.uiPosition = value; break;
                 case WHITELIST_KEY_EXT: hermesState.whitelist = value; break;
+                case DISABLED_HOSTS_KEY_EXT: hermesState.disabledHosts = value; break;
                 case CUSTOM_THEMES_KEY_EXT: hermesState.customThemes = value; break;
                 case HELP_PANEL_OPEN_KEY_EXT: hermesState.helpPanelOpen = value; break;
                 default:
