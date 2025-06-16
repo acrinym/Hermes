@@ -5,14 +5,15 @@ module.exports = {
   mode: 'production',
   entry: {
     background: './src/background.js',
-    content: './src/content.js'
+    content: './src/content.js',
+    options: './src/options.tsx'
   },
   output: {
     filename: '[name].js',
     path: path.resolve(__dirname, 'dist')
   },
   resolve: {
-    extensions: ['.ts', '.js']
+    extensions: ['.ts', '.tsx', '.js', '.jsx']
   },
   module: {
     rules: [
@@ -22,7 +23,7 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env', '@babel/preset-typescript']
+            presets: ['@babel/preset-env', '@babel/preset-typescript', '@babel/preset-react']
           }
         }
       },
@@ -32,7 +33,7 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env']
+            presets: ['@babel/preset-env', '@babel/preset-react']
           }
         }
       }

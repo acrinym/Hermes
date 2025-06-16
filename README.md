@@ -7,7 +7,7 @@
 - 🔁 **Form filler** with intelligent field detection
 - 📼 **Macro recorder** and playback engine
 - 🧠 **Heuristic trainer** that learns from skipped fields
-- 🎨 **Theming engine** with draggable and bunchable UI
+- 🎨 **Theming engine** with draggable UI that stacks vertically when dragged to page edges
 - ✨ **Visual effects** like lasers, snowflakes and strobes
 - 🧩 **Domain allowlist** with minimize-on-unlisted mode
 - ❓ **Help panel** and detailed **settings editor**
@@ -67,8 +67,8 @@
 - Displays status messages for actions
 
 ### ✨ Visual Effects
-- Snowflake, Laser (classic & simple) and Strobe modes
-- Canvas based rendering that can be toggled on/off
+- Snowflake, Laser (classic & simple), Strobe and new **Cube 3D** modes
+- Canvas or WebGL based rendering that can be toggled on/off
 - Effect parameters editable in the settings panel
 
 ### 🎨 Theme Engine
@@ -82,6 +82,7 @@
 - Manage allowed domains from the GUI
 - When visiting unlisted domains the UI collapses to a small emoji
 - Add or remove domains without leaving the page
+- Right-click to temporarily disable or re-enable Hermes on the current site
 
 ### ⚙️ Settings Panel
 - JSON editor for advanced options such as border thickness or effect density
@@ -182,6 +183,7 @@ Hermes works in any Chromium-based browser and Firefox 109+. The same build can 
 
 - Source files live under `hermes-extension/src` and are written in TypeScript.
 - Bundled with Webpack to a Manifest V3 extension.
+- UI built with React and effects powered by Three.js.
 - All panels and menus render inside a single Shadow DOM host for complete cross-site isolation.
 - Background service worker stores data in Chrome storage.
 - Modular design—fork or extend as desired.

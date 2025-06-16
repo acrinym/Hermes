@@ -7,7 +7,7 @@ import { applyTheme } from './theme.ts';
 import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { getInitialData, saveDataToBackground } from './storage/index.ts';
-import { startSnowflakes, startLasers, stopEffects, setEffect } from './effectsEngine.ts';
+import { startSnowflakes, startLasers, startCube, stopEffects, setEffect } from './effectsEngine.ts';
 import { showHelp } from './help.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
@@ -324,6 +324,7 @@ function updateEffectsSubmenu(menu: HTMLElement) {
     { mode: 'none', name: 'None' },
     { mode: 'snow', name: 'Snowflakes' },
     { mode: 'laser', name: 'Lasers' },
+    { mode: 'cube', name: 'Cube 3D' }
   ];
   opts.forEach(opt => {
     const btn = document.createElement('button');
@@ -336,6 +337,7 @@ function updateEffectsSubmenu(menu: HTMLElement) {
       currentEffect = opt.mode;
       if (opt.mode === 'snow') startSnowflakes();
       else if (opt.mode === 'laser') startLasers();
+      else if (opt.mode === 'cube') startCube();
       else stopEffects();
       saveDataToBackground('hermes_effects_state_ext', opt.mode);
       menu.style.display = 'none';

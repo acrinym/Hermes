@@ -5,7 +5,8 @@
     "allowJs": true,
     "checkJs": false,
     "outDir": "dist",
-    "allowImportingTsExtensions": true
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*"]
 }
