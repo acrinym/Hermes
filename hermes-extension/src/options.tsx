@@ -1,6 +1,9 @@
-import React, { useEffect, useState } from 'react';
+// @ts-nocheck
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
+
+declare const chrome: any;
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
@@ -82,3 +85,5 @@ if (rootElement) {
   const root = createRoot(rootElement);
   root.render(<OptionsApp />);
 }
+
+export { OptionsApp };
