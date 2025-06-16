@@ -67,8 +67,8 @@
 - Displays status messages for actions
 
 ### ✨ Visual Effects
-- Snowflake, Laser (classic & simple) and Strobe modes
-- Canvas based rendering that can be toggled on/off
+- Snowflake, Laser (classic & simple), Strobe and new **Cube 3D** modes
+- Canvas or WebGL based rendering that can be toggled on/off
 - Effect parameters editable in the settings panel
 
 ### 🎨 Theme Engine
@@ -182,6 +182,7 @@ Hermes works in any Chromium-based browser and Firefox 109+. The same build can 
 
 - Source files live under `hermes-extension/src` and are written in TypeScript.
 - Bundled with Webpack to a Manifest V3 extension.
+- UI built with React and effects powered by Three.js.
 - All panels and menus render inside a single Shadow DOM host for complete cross-site isolation.
 - Background service worker stores data in Chrome storage.
 - Modular design—fork or extend as desired.

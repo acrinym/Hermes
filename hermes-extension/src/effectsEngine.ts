@@ -1,11 +1,18 @@
 import { getRoot } from './root.ts';
+import * as THREE from 'three';
 
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let flakes: { x: number; y: number; r: number; s: number }[] = [];
 let lasers: { x: number; y: number; len: number; s: number }[] = [];
 let running = false;
-let mode: 'none' | 'snow' | 'lasers' = 'none';
+let mode: 'none' | 'snow' | 'lasers' | 'cube' = 'none';
+
+// three.js objects for cube effect
+let renderer: THREE.WebGLRenderer | null = null;
+let scene: THREE.Scene | null = null;
+let camera: THREE.PerspectiveCamera | null = null;
+let cube: THREE.Mesh | null = null;
 
 function initCanvas() {
     if (!canvas) {
@@ -57,18 +64,63 @@ export function startLasers() {
     mode = 'lasers';
 }
 
+function initCube() {
+    if (!renderer) {
+        const root = getRoot();
+        renderer = new THREE.WebGLRenderer({ alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.domElement.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483640;';
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 5;
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+        if (root instanceof ShadowRoot) {
+            root.appendChild(renderer.domElement);
+        } else {
+            document.body.appendChild(renderer.domElement);
+        }
+        window.addEventListener('resize', () => {
+            if (!renderer || !camera) return;
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        });
+    }
+}
+
+export function startCube() {
+    initCube();
+    mode = 'cube';
+    if (!running) {
+        running = true;
+        cubeLoop();
+    }
+}
+
 export function stopEffects() {
     running = false;
     lasers = [];
     flakes = [];
+    if (renderer) {
+        renderer.domElement.remove();
+        renderer.dispose();
+        renderer = null;
+        scene = null;
+        camera = null;
+        cube = null;
+    }
     if (canvas) canvas.style.display = 'none';
     mode = 'none';
 }
 
-export function setEffect(newMode: 'none' | 'snow' | 'lasers') {
+export function setEffect(newMode: 'none' | 'snow' | 'lasers' | 'cube') {
     if (newMode === 'none') { stopEffects(); return; }
     if (newMode === 'snow') { startSnowflakes(); return; }
     if (newMode === 'lasers') { startLasers(); return; }
+    if (newMode === 'cube') { startCube(); return; }
 }
 
 export function getEffect() {
@@ -111,4 +163,13 @@ function loop() {
     lasers = lasers.filter(l => l.y < canvas!.height);
 
     if (running) requestAnimationFrame(loop);
+}
+
+function cubeLoop() {
+    if (!renderer || !scene || !camera || !cube) return;
+    renderer.domElement.style.display = 'block';
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    renderer.render(scene, camera);
+    if (running && mode === 'cube') requestAnimationFrame(cubeLoop);
 }
