@@ -56,8 +56,6 @@ const builtInThemes = {
 };
 
 // --- GitHub configuration for remote site configs ---
-// These values can be stored in chrome.storage under the keys below or
-// provided as environment variables at build time.
 const GITHUB_RAW_BASE_KEY = 'github_raw_base';
 const GITHUB_API_BASE_KEY = 'github_api_base';
 const GITHUB_TOKEN_KEY = 'github_token';
@@ -100,7 +98,7 @@ let hermesState = {
   configs: {}
 };
 
-// `defaultSettings` object extracted from your "hermes-system-themable-14.user.js"
+// `defaultSettings` object extracted from a userscript
 const defaultSettingsFromUserscript = {
   "_comment_main_ui": "Settings for the main Hermes UI appearance.",
   "hermesBorderThickness": "1px",
@@ -110,105 +108,65 @@ const defaultSettingsFromUserscript = {
     "_comment_lasers_v13": "Settings for the 'Classic Laser' effect.",
     "lasersV13": {
       "lineThickness": 2,
-      "_comment_lineThickness": "Thickness of each laser line in pixels. Default: 2. Range: 1-10.",
       "transparency": 0.3,
-      "_comment_transparency": "Opacity of laser lines. Default: 0.3. Range: 0.1-1.0.",
       "colors": ["rgba(255,0,0,{alpha})", "rgba(0,255,0,{alpha})", "rgba(0,0,255,{alpha})"],
-      "_comment_colors": "Array of colors for laser lines. Use RGBA format with '{alpha}' for transparency. Default: Red, Green, Blue. Example: ['rgba(255,0,0,{alpha})'].",
-      "numLines": 3,
-      "_comment_numLines": "Number of laser lines on screen. Default: 3. Range: 1-10 (more can impact performance)."
+      "numLines": 3
     },
     "_comment_snowflakes_v13": "Settings for the 'Snowflake' effect.",
     "snowflakesV13": {
       "density": 50,
-      "_comment_density": "Number of snowflakes. Default: 50. Range: 10-200 (higher values impact performance).",
       "baseColor": "rgba(240, 240, 240, {alpha})",
-      "_comment_baseColor": "Base color for snowflakes. Use RGBA with '{alpha}'. Default: 'rgba(240, 240, 240, {alpha})'.",
       "emoji": "❄️",
-      "_comment_emoji": "Emoji(s) to use for snowflakes. Default: '❄️'. Paste your preferred emoji or a list like ['❄️', '❅', '❆']. If using text/emoji, set baseColor alpha to 0 or use an emoji font that renders well.",
       "useEmojiOrShape": "emoji",
-      "_comment_useEmojiOrShape": "Determines if snowflakes are rendered as 'emoji' or 'shape' (using baseColor). Default: 'emoji'.",
       "minSize": 1,
-      "_comment_minSize": "Minimum size of snowflakes (pixels for shape, arbitrary unit for emoji). Default: 1. Range: 1-5.",
       "maxSize": 3,
-      "_comment_maxSize": "Maximum size of snowflakes. Default: 3. Range: 1-10.",
       "minSpeed": 0.5,
-      "_comment_minSpeed": "Minimum falling speed. Default: 0.5. Range: 0.1-5.",
       "maxSpeed": 1.5,
-      "_comment_maxSpeed": "Maximum falling speed. Default: 1.5. Range: 0.1-5.",
       "opacityMin": 0.3,
-      "_comment_opacityMin": "Minimum opacity for snowflake shapes. Default: 0.3. Range: 0.1-1.0.",
       "opacityMax": 0.8,
-      "_comment_opacityMax": "Maximum opacity for snowflake shapes. Default: 0.8. Range: 0.1-1.0.",
-      "font": "1em sans-serif",
-      "_comment_font": "Font used for rendering emoji snowflakes. Adjust size with min/maxSize. Default: '1em sans-serif'."
+      "font": "1em sans-serif"
     },
     "_comment_lasers_v14": "Settings for the 'Simple Laser' (falling rain) effect.",
     "lasersV14": {
       "density": 0.05,
-      "_comment_density": "Chance (0.0 to 1.0) to spawn a new laser each frame. Default: 0.05. Range: 0.01-0.2.",
       "maxLength": 70,
-      "_comment_maxLength": "Maximum length of a laser line. Default: 70. Range: 10-200.",
       "minLength": 20,
-      "_comment_minLength": "Minimum length of a laser line. Default: 20. Range: 5-100.",
       "maxSpeed": 15,
-      "_comment_maxSpeed": "Maximum falling speed. Default: 15. Range: 1-50.",
       "minSpeed": 5,
-      "_comment_minSpeed": "Minimum falling speed. Default: 5. Range: 1-30.",
       "color": "rgba(255, 0, 0, 0.7)",
-      "_comment_color": "Color of the V14 lasers. Default: 'rgba(255, 0, 0, 0.7)'.",
-      "lineWidth": 2,
-      "_comment_lineWidth": "Line width for V14 lasers. Default: 2. Range: 1-5."
+      "lineWidth": 2
     },
     "_comment_strobe_v13": "Settings for the 'Classic Strobe' effect.",
     "strobeV13": {
       "speed": 0.1,
-      "_comment_speed": "Speed of color transition/strobe pulse. Default: 0.1. Range: 0.01-0.5.",
       "minOpacity": 0.4,
-      "_comment_minOpacity": "Minimum opacity during strobe. Default: 0.4. Range: 0.0-1.0.",
       "maxOpacityFactor": 0.3,
-      "_comment_maxOpacityFactor": "Factor determining peak opacity from base. Default: 0.3. Range: 0.0-1.0.",
       "color1": "rgba(255, 0, 0, {alpha})",
-      "_comment_color1": "First color for the strobe. Default: 'rgba(255, 0, 0, {alpha})'.",
-      "color2": "rgba(0, 0, 255, {alpha})",
-      "_comment_color2": "Second color for the strobe. Default: 'rgba(0, 0, 255, {alpha})'."
+      "color2": "rgba(0, 0, 255, {alpha})"
     },
     "_comment_strobe_v14": "Settings for the 'Simple Strobe' effect.",
     "strobeV14": {
       "speed": 0.1,
-      "_comment_speed": "Speed of opacity pulse. Default: 0.1. Range: 0.01-0.5.",
       "maxOpacity": 0.2,
-      "_comment_maxOpacity": "Maximum opacity during strobe. Default: 0.2. Range: 0.0-1.0.",
-      "color": "rgba(255, 255, 255, {alpha})",
-      "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
+      "color": "rgba(255, 255, 255, {alpha})"
     }
   },
   "_comment_macro": "Settings for macro recording/playback and heuristics.",
   "macro": {
     "recordMouseMoves": false,
-    "_comment_recordMouseMoves": "Record mousemove events while recording macros. Default: false.",
     "mouseMoveInterval": 200,
-    "_comment_mouseMoveInterval": "Minimum time in ms between recorded mousemove events. Default: 200.",
     "useCoordinateFallback": false,
-    "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
     "relativeCoordinates": true,
-    "_comment_relativeCoordinates": "Adjust recorded coordinates based on current element position.",
-    "similarityThreshold": 0.5,
-    "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+    "similarityThreshold": 0.5
   }
 };
+
 async function initializeHermesState() {
   console.log("Hermes BG: Initializing Hermes state from chrome.storage.local...");
-
   await loadGithubSettings();
 
   if (!defaultSettingsFromUserscript || Object.keys(defaultSettingsFromUserscript).length === 0) {
-    console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     console.error("Hermes BG: `defaultSettingsFromUserscript` IS EMPTY OR UNDEFINED.");
-    console.error("This usually means the settings object was not correctly pasted from the userscript.");
-    console.error("Please ensure the full `defaultSettings` object is assigned to `defaultSettingsFromUserscript`.");
-    console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    // Fallback to a very minimal structure to prevent further errors, but this is not ideal.
     hermesState.settings = { effects: {} };
   }
 
@@ -241,7 +199,7 @@ async function initializeHermesState() {
     try {
       loadedSettings = JSON.parse(storedData[SETTINGS_KEY_EXT]);
     } catch (e) {
-      console.error("Hermes BG: Error parsing stored settings JSON, using default from userscript.", e);
+      console.error("Hermes BG: Error parsing stored settings JSON, using default.", e);
       loadedSettings = defaultSettingsFromUserscript;
     }
 
@@ -259,6 +217,7 @@ async function initializeHermesState() {
     hermesState.theme = storedData[THEME_KEY_EXT];
     try { hermesState.customThemes = JSON.parse(storedData[CUSTOM_THEMES_KEY_EXT]); }
     catch (e) { console.error("Hermes BG: Error parsing custom themes JSON.", e); hermesState.customThemes = {}; }
+
     hermesState.builtInThemes = builtInThemes;
     hermesState.isBunched = storedData[BUNCHED_STATE_KEY_EXT];
     hermesState.effectsMode = storedData[EFFECTS_STATE_KEY_EXT];
@@ -266,6 +225,7 @@ async function initializeHermesState() {
     hermesState.showAffirmations = storedData[AFFIRM_STATE_KEY_EXT];
     try { hermesState.scratchNotes = JSON.parse(storedData[SCRATCH_KEY_EXT]); }
     catch (e) { console.error("Hermes BG: Error parsing scratch notes JSON.", e); hermesState.scratchNotes = []; }
+
     hermesState.learningMode = storedData[LEARNING_STATE_KEY_EXT];
     hermesState.debugMode = storedData[DEBUG_MODE_KEY_EXT];
 
@@ -284,19 +244,18 @@ async function initializeHermesState() {
       hermes_built_in_themes: JSON.stringify(builtInThemes)
     });
 
-    console.log("Hermes BG: State initialization complete. Current learningMode:", hermesState.learningMode, "debugMode:", hermesState.debugMode);
-
+    console.log("Hermes BG: State initialization complete.");
   } catch (error) {
     console.error("Hermes BG: CRITICAL error initializing Hermes state:", error);
   }
 }
-
 
 chrome.runtime.onInstalled.addListener((details) => {
   console.log("Hermes BG: Extension event -", details.reason);
   initializeHermesState();
 });
 
+// Initialize state on startup as well
 initializeHermesState();
 
 chrome.contextMenus.create({
@@ -307,11 +266,15 @@ chrome.contextMenus.create({
 
 function updateContextMenu(tab) {
   if (!tab || !tab.url) return;
-  const host = new URL(tab.url).hostname;
-  const disabled = hermesState.disabledHosts.includes(host);
-  chrome.contextMenus.update('toggle-hermes', {
-    title: disabled ? 'Enable Hermes on this site' : 'Disable Hermes on this site'
-  });
+  try {
+    const host = new URL(tab.url).hostname;
+    const disabled = hermesState.disabledHosts.includes(host);
+    chrome.contextMenus.update('toggle-hermes', {
+      title: disabled ? 'Enable Hermes on this site' : 'Disable Hermes on this site'
+    });
+  } catch (e) {
+    // Ignore invalid URLs like chrome://extensions
+  }
 }
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -320,19 +283,29 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   const list = hermesState.disabledHosts;
   const idx = list.indexOf(host);
   const enable = idx > -1;
-  if (enable) list.splice(idx, 1); else list.push(host);
+  if (enable) {
+    list.splice(idx, 1);
+  } else {
+    list.push(host);
+  }
   chrome.storage.local.set({ [DISABLED_HOSTS_KEY_EXT]: JSON.stringify(list) });
   updateContextMenu(tab);
   chrome.tabs.sendMessage(tab.id, { type: 'SET_ENABLED', payload: { enabled: enable } });
 });
 
-chrome.tabs.onActivated.addListener(async info => {
-  const tab = await chrome.tabs.get(info.tabId);
-  updateContextMenu(tab);
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    updateContextMenu(tab);
+  } catch (e) {
+    console.warn(`Hermes BG: Could not get tab for onActivated event:`, e.message);
+  }
 });
 
-chrome.tabs.onUpdated.addListener((id, change, tab) => {
-  if (change.status === 'complete') updateContextMenu(tab);
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete') {
+    updateContextMenu(tab);
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -357,13 +330,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const localUrl = chrome.runtime.getURL(`configs/${site}.json`);
         fetch(localUrl)
           .then(r => { if (!r.ok) throw new Error('local'); return r.json(); })
-          .then(cfg => { hermesState.configs[site] = cfg; sendResponse({ success: true, config: cfg }); })
+          .then(cfg => {
+            hermesState.configs[site] = cfg;
+            sendResponse({ success: true, config: cfg });
+          })
           .catch(() => {
             const remoteUrl = `${GITHUB_RAW_BASE}${site}.json`;
             fetch(remoteUrl)
               .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-              .then(cfg => { hermesState.configs[site] = cfg; sendResponse({ success: true, config: cfg }); })
-              .catch(err => { console.warn(`Hermes BG: Config for ${site} not found`, err); sendResponse({ success: false, error: err.toString() }); });
+              .then(cfg => {
+                hermesState.configs[site] = cfg;
+                sendResponse({ success: true, config: cfg });
+              })
+              .catch(err => {
+                console.warn(`Hermes BG: Config for ${site} not found`, err);
+                sendResponse({ success: false, error: err.toString() });
+              });
           });
       }
       return true;
@@ -386,7 +368,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             body.message = `Update config for ${payload.site}`;
             body.sha = info.sha;
           }
-        } catch (err) { }
+        } catch (err) {
+          // Ignore if file doesn't exist
+        }
         try {
           const res = await fetch(fileUrl, {
             method: 'PUT',
@@ -404,7 +388,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case "SAVE_HERMES_DATA":
-      if (!payload || typeof payload.key === 'undefined') { // Check if key exists
+      if (!payload || typeof payload.key === 'undefined') {
         console.error("Hermes BG: Invalid SAVE_HERMES_DATA payload. Missing key.", payload);
         sendResponse({ success: false, error: "Missing key in payload" });
         return true;
@@ -451,7 +435,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.error(`Hermes BG: Error saving data for key ${key}:`, chrome.runtime.lastError.message);
             sendResponse({ success: false, error: chrome.runtime.lastError.message });
           } else {
-            console.log(`Hermes BG: Data successfully saved for key ${key}. LearningMode: ${hermesState.learningMode}, DebugMode: ${hermesState.debugMode}`);
+            console.log(`Hermes BG: Data successfully saved for key ${key}.`);
             sendResponse({ success: true });
           }
         });

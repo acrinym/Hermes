@@ -105,8 +105,11 @@ function setupDragging(handle: HTMLElement) {
       container.style.left = `${newLeft}px`;
       container.style.top = `${newTop}px`;
       const nearSide = newLeft < 10 || newLeft > window.innerWidth - cw - 10;
-      if (nearSide) container.classList.add('hermes-bunched');
-      else container.classList.remove('hermes-bunched');
+      if (nearSide) {
+        container.classList.add('hermes-bunched');
+      } else {
+        container.classList.remove('hermes-bunched');
+      }
     }
     if (minimized) {
       minimized.style.left = `${newLeft}px`;
