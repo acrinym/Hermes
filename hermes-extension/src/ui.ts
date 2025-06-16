@@ -78,12 +78,12 @@ export async function initUI() {
 
   // Helper
   const createButton = (text: string, handler: (e: MouseEvent) => void) => {
-    const btn = document.createElement('button');
-    btn.className = 'hermes-button';
-    btn.textContent = text;
-    btn.onclick = handler;
-    container.appendChild(btn);
-    return btn;
+  const btn = document.createElement('button');
+  btn.className = 'hermes-button';
+  btn.textContent = text;
+  btn.onclick = handler;
+  container.appendChild(btn);
+  return btn;
   };
 
   // ----- Main Button Row -----
@@ -94,35 +94,35 @@ export async function initUI() {
 
   // Macros button with panel
   macrosBtn = createButton(t('MACROS_MENU'), (e) => {
-    e.stopPropagation();
-    const vis = macroMenu.style.display === 'block';
-    closeAllSubmenus(macroMenu);
-    macroMenu.style.display = vis ? 'none' : 'block';
-    if (!vis) updateMacroSubmenuContents(macroMenu);
+  e.stopPropagation();
+  const vis = macroMenu.style.display === 'block';
+  closeAllSubmenus(macroMenu);
+  macroMenu.style.display = vis ? 'none' : 'block';
+  if (!vis) updateMacroSubmenuContents(macroMenu);
   });
 
   // Theme button
   themeBtn = createButton(t('THEME_MENU'), (e) => {
-    e.stopPropagation();
-    const vis = themeMenu.style.display === 'block';
-    closeAllSubmenus(themeMenu);
-    themeMenu.style.display = vis ? 'none' : 'block';
-    if (!vis) updateThemeSubmenu(themeMenu);
+  e.stopPropagation();
+  const vis = themeMenu.style.display === 'block';
+  closeAllSubmenus(themeMenu);
+  themeMenu.style.display = vis ? 'none' : 'block';
+  if (!vis) updateThemeSubmenu(themeMenu);
   });
 
   // Effects button
   effectsBtn = createButton(t('FX_MENU'), (e) => {
-    e.stopPropagation();
-    const vis = effectsMenu.style.display === 'block';
-    closeAllSubmenus(effectsMenu);
-    effectsMenu.style.display = vis ? 'none' : 'block';
-    if (!vis) updateEffectsSubmenu(effectsMenu);
+  e.stopPropagation();
+  const vis = effectsMenu.style.display === 'block';
+  closeAllSubmenus(effectsMenu);
+  effectsMenu.style.display = vis ? 'none' : 'block';
+  if (!vis) updateEffectsSubmenu(effectsMenu);
   });
 
   // Overlay button
   overlayBtn = createButton(t('OVERLAY'), () => {
-    toggleOverlays();
-    overlayBtn.style.background = overlayBtn.style.background ? '' : 'lightgreen';
+  toggleOverlays();
+  overlayBtn.style.background = overlayBtn.style.background ? '' : 'lightgreen';
   });
   if (data.showOverlays) overlayBtn.style.background = 'lightgreen';
 
@@ -141,20 +141,20 @@ export async function initUI() {
   // Debug
   let debugEnabled = !!data.debugMode;
   debugBtn = createButton(t('DEBUG'), () => {
-    debugEnabled = !debugEnabled;
-    debugEnabled
-      ? startMutationObserver(() => addDebugLog('mutation', 'dom', {}))
-      : stopMutationObserver();
-    saveDataToBackground('hermes_debug_mode_ext', debugEnabled);
-    addDebugLog('debug_toggle', null, { enabled: debugEnabled });
+  debugEnabled = !debugEnabled;
+  debugEnabled
+    ? startMutationObserver(() => addDebugLog('mutation', 'dom', {}))
+    : stopMutationObserver();
+  saveDataToBackground('hermes_debug_mode_ext', debugEnabled);
+  addDebugLog('debug_toggle', null, { enabled: debugEnabled });
   });
 
   // Learn Mode
   let learning = !!data.learningMode;
   learnBtn = createButton(t('LEARN'), () => {
-    learning = !learning;
-    saveDataToBackground('hermes_learning_state_ext', learning);
-    addDebugLog('learning_toggle', null, { enabled: learning });
+  learning = !learning;
+  saveDataToBackground('hermes_learning_state_ext', learning);
+  addDebugLog('learning_toggle', null, { enabled: learning });
   });
 
   // Panel menu closers
@@ -170,7 +170,7 @@ export async function initUI() {
 
   // --- Allowlist minimized logic
   if (!isAllowed(location.hostname, data.whitelist || [])) {
-    toggleMinimizedUI(true);
+  toggleMinimizedUI(true);
   }
 
   // Debug
@@ -199,58 +199,58 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
   const allNames = macroEngine.list();
   const names = allNames.filter(n => n.toLowerCase().includes(filter));
   const createSubButton = (text: string, handler: (e: MouseEvent) => void) => {
-    const btn = document.createElement('button');
-    btn.className = 'hermes-button';
-    btn.textContent = text;
-    btn.onclick = handler;
-    btn.style.width = 'auto';
-    btn.style.textAlign = 'left';
-    return btn;
+  const btn = document.createElement('button');
+  btn.className = 'hermes-button';
+  btn.textContent = text;
+  btn.onclick = handler;
+  btn.style.width = 'auto';
+  btn.style.textAlign = 'left';
+  return btn;
   };
 
   if (names.length) {
-    names.forEach(name => {
-      const row = document.createElement('div');
-      row.style.display = 'flex';
-      row.style.gap = '4px';
-      row.style.marginBottom = '4px';
-      const playBtn = createSubButton(name, () => { macroEngine.play(name); menu.style.display = 'none'; });
-      playBtn.style.flexGrow = '1';
-      const editBtn = createSubButton('✏️', () => toggleMacroEditor(true, name));
-      const delBtn = createSubButton('🗑️', async () => {
-        createModal(shadowRoot, 'confirm-delete-modal', `Delete "${name}"?`,
-          '<p>This action cannot be undone.</p>', '300px',
-          `<button id="confirm-delete-btn">Delete</button>`
-        );
-        const modal = shadowRoot.querySelector('#confirm-delete-modal-container') as HTMLElement;
-        modal.style.display = 'flex';
-        (modal.querySelector('#confirm-delete-btn') as HTMLElement).onclick = async () => {
-          await macroEngine.delete(name);
-          updateMacroSubmenuContents(menu);
-          modal.style.display = 'none';
-        };
-      });
-      row.append(playBtn, editBtn, delBtn);
-      menu.appendChild(row);
+  names.forEach(name => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.gap = '4px';
+    row.style.marginBottom = '4px';
+    const playBtn = createSubButton(name, () => { macroEngine.play(name); menu.style.display = 'none'; });
+    playBtn.style.flexGrow = '1';
+    const editBtn = createSubButton('✏️', () => toggleMacroEditor(true, name));
+    const delBtn = createSubButton('🗑️', async () => {
+    createModal(shadowRoot, 'confirm-delete-modal', `Delete "${name}"?`,
+      '<p>This action cannot be undone.</p>', '300px',
+      `<button id="confirm-delete-btn">Delete</button>`
+    );
+    const modal = shadowRoot.querySelector('#confirm-delete-modal-container') as HTMLElement;
+    modal.style.display = 'flex';
+    (modal.querySelector('#confirm-delete-btn') as HTMLElement).onclick = async () => {
+      await macroEngine.delete(name);
+      updateMacroSubmenuContents(menu);
+      modal.style.display = 'none';
+    };
     });
-    const hr = document.createElement('hr');
-    hr.style.cssText = 'border: none; border-top: 1px solid var(--hermes-border); margin: 5px 0;';
-    menu.appendChild(hr);
+    row.append(playBtn, editBtn, delBtn);
+    menu.appendChild(row);
+  });
+  const hr = document.createElement('hr');
+  hr.style.cssText = 'border: none; border-top: 1px solid var(--hermes-border); margin: 5px 0;';
+  menu.appendChild(hr);
   } else {
-    menu.innerHTML = `<div style="padding: 5px; color: var(--hermes-disabled-text);">${t('NO_MACROS')}</div>`;
-    const msg = allNames.length ? 'No macros found.' : 'No macros recorded.';
-    const div = document.createElement('div');
-    div.style.cssText = 'padding:5px;color:var(--hermes-disabled-text);';
-    div.textContent = msg;
-    menu.appendChild(div);
+  menu.innerHTML = `<div style="padding: 5px; color: var(--hermes-disabled-text);">${t('NO_MACROS')}</div>`;
+  const msg = allNames.length ? 'No macros found.' : 'No macros recorded.';
+  const div = document.createElement('div');
+  div.style.cssText = 'padding:5px;color:var(--hermes-disabled-text);';
+  div.textContent = msg;
+  menu.appendChild(div);
   }
   const importBtn = createSubButton(t('IMPORT_MACROS'), () => importMacrosFromFile());
   menu.appendChild(importBtn);
   if (names.length) {
-    const exportBtn = createSubButton(t('EXPORT_MACROS'), () => exportMacros());
+  const exportBtn = createSubButton(t('EXPORT_MACROS'), () => exportMacros());
   if (allNames.length) {
-    const exportBtn = createSubButton('Export All Macros...', () => exportMacros());
-    menu.appendChild(exportBtn);
+  const exportBtn = createSubButton('Export All Macros...', () => exportMacros());
+  menu.appendChild(exportBtn);
   }
 }
 
@@ -259,41 +259,41 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
   const panelId = 'hermes-macro-editor';
   let panelContainer = shadowRoot.querySelector(`#${panelId}-container`) as HTMLElement;
   if (show && !panelContainer) {
-    const contentHtml = `
-      <select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>
-      <textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
-    `;
-    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Macro</button>`;
-    panelContainer = createModal(shadowRoot, panelId, t('MACRO_EDITOR'), contentHtml, '700px', buttonsHtml);
-    const panel = panelContainer.querySelector(`#${panelId}`) as HTMLElement;
-    const selectEl = panel.querySelector('#hermes-macro-edit-select') as HTMLSelectElement;
-    const textArea = panel.querySelector('#hermes-macro-edit-text') as HTMLTextAreaElement;
-    const saveBtn = panel.querySelector('#hermes-macro-edit-save') as HTMLButtonElement;
+  const contentHtml = `
+    <select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>
+    <textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
+  `;
+  const buttonsHtml = `<button id="hermes-macro-edit-save">Save Macro</button>`;
+  panelContainer = createModal(shadowRoot, panelId, t('MACRO_EDITOR'), contentHtml, '700px', buttonsHtml);
+  const panel = panelContainer.querySelector(`#${panelId}`) as HTMLElement;
+  const selectEl = panel.querySelector('#hermes-macro-edit-select') as HTMLSelectElement;
+  const textArea = panel.querySelector('#hermes-macro-edit-text') as HTMLTextAreaElement;
+  const saveBtn = panel.querySelector('#hermes-macro-edit-save') as HTMLButtonElement;
 
-    const populate = () => {
-      selectEl.innerHTML = macroEngine.list().map(n => `<option value="${n}">${n}</option>`).join('');
-      if (macroName && macroEngine.get(macroName)) selectEl.value = macroName;
-      textArea.value = selectEl.value ? JSON.stringify(macroEngine.get(selectEl.value) || [], null, 2) : '';
-    };
+  const populate = () => {
+    selectEl.innerHTML = macroEngine.list().map(n => `<option value="${n}">${n}</option>`).join('');
+    if (macroName && macroEngine.get(macroName)) selectEl.value = macroName;
+    textArea.value = selectEl.value ? JSON.stringify(macroEngine.get(selectEl.value) || [], null, 2) : '';
+  };
 
-    selectEl.onchange = () => {
-      textArea.value = JSON.stringify(macroEngine.get(selectEl.value) || [], null, 2);
-    };
+  selectEl.onchange = () => {
+    textArea.value = JSON.stringify(macroEngine.get(selectEl.value) || [], null, 2);
+  };
 
-    saveBtn.onclick = async () => {
-      const name = selectEl.value;
-      try {
-        const arr = JSON.parse(textArea.value);
-        await macroEngine.set(name, arr);
-        updateMacroSubmenuContents(macroMenu);
-        panelContainer.style.display = 'none';
-      } catch (e: any) {
-        const errContainer = createModal(shadowRoot, 'json-error-modal', t('INVALID_JSON'), `<p>${e.message}</p>`, '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
-        errContainer.style.display = 'flex';
-        (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
-      }
-    };
-    populate();
+  saveBtn.onclick = async () => {
+    const name = selectEl.value;
+    try {
+    const arr = JSON.parse(textArea.value);
+    await macroEngine.set(name, arr);
+    updateMacroSubmenuContents(macroMenu);
+    panelContainer.style.display = 'none';
+    } catch (e: any) {
+    const errContainer = createModal(shadowRoot, 'json-error-modal', t('INVALID_JSON'), `<p>${e.message}</p>`, '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
+    errContainer.style.display = 'flex';
+    (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
+    }
+  };
+  populate();
   }
   if (panelContainer) panelContainer.style.display = show ? 'flex' : 'none';
 }
@@ -302,47 +302,47 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
 function updateThemeSubmenu(menu: HTMLElement) {
   menu.innerHTML = '';
   Object.entries(themeOptions).forEach(([key, opt]) => {
-    const btn = document.createElement('button');
-    btn.className = 'hermes-button';
-    btn.textContent = `${opt.emoji} ${opt.name}`;
-    btn.style.width = '100%';
-    btn.style.textAlign = 'left';
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      applyTheme(key);
-      saveDataToBackground('hermes_theme_ext', key);
-      themeBtn.textContent = t('THEME_MENU');
-      menu.style.display = 'none';
-    };
-    menu.appendChild(btn);
+  const btn = document.createElement('button');
+  btn.className = 'hermes-button';
+  btn.textContent = `${opt.emoji} ${opt.name}`;
+  btn.style.width = '100%';
+  btn.style.textAlign = 'left';
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    applyTheme(key);
+    saveDataToBackground('hermes_theme_ext', key);
+    themeBtn.textContent = t('THEME_MENU');
+    menu.style.display = 'none';
+  };
+  menu.appendChild(btn);
   });
 }
 
 function updateEffectsSubmenu(menu: HTMLElement) {
   menu.innerHTML = '';
   const opts = [
-    { mode: 'none', name: 'None' },
-    { mode: 'snow', name: 'Snowflakes' },
-    { mode: 'laser', name: 'Lasers' },
-    { mode: 'cube', name: 'Cube 3D' }
+  { mode: 'none', name: 'None' },
+  { mode: 'snow', name: 'Snowflakes' },
+  { mode: 'laser', name: 'Lasers' },
+  { mode: 'cube', name: 'Cube 3D' }
   ];
   opts.forEach(opt => {
-    const btn = document.createElement('button');
-    btn.className = 'hermes-button';
-    btn.textContent = opt.name;
-    btn.style.width = '100%';
-    btn.style.textAlign = 'left';
-    btn.onclick = (e) => {
-      e.stopPropagation();
-      currentEffect = opt.mode;
-      if (opt.mode === 'snow') startSnowflakes();
-      else if (opt.mode === 'laser') startLasers();
-      else if (opt.mode === 'cube') startCube();
-      else stopEffects();
-      saveDataToBackground('hermes_effects_state_ext', opt.mode);
-      menu.style.display = 'none';
-    };
-    menu.appendChild(btn);
+  const btn = document.createElement('button');
+  btn.className = 'hermes-button';
+  btn.textContent = opt.name;
+  btn.style.width = '100%';
+  btn.style.textAlign = 'left';
+  btn.onclick = (e) => {
+    e.stopPropagation();
+    currentEffect = opt.mode;
+    if (opt.mode === 'snow') startSnowflakes();
+    else if (opt.mode === 'laser') startLasers();
+    else if (opt.mode === 'cube') startCube();
+    else stopEffects();
+    saveDataToBackground('hermes_effects_state_ext', opt.mode);
+    menu.style.display = 'none';
+  };
+  menu.appendChild(btn);
   });
 }
 
@@ -355,22 +355,22 @@ async function createAllowPanel() {
   const addBtn = allowPanel.querySelector('#hermes-allow-add') as HTMLButtonElement;
   const listEl = allowPanel.querySelector('#hermes-allow-list') as HTMLUListElement;
   const render = (arr: string[]) => {
-    listEl.innerHTML = '';
-    arr.forEach(d => {
-      const li = document.createElement('li');
-      const del = document.createElement('button');
-      del.textContent = 'X';
-      del.onclick = async () => {
-        const idx = arr.indexOf(d); if (idx >= 0) arr.splice(idx, 1); await saveWhitelist(arr); render(arr);
-      };
-      li.textContent = d + ' ';
-      li.appendChild(del);
-      listEl.appendChild(li);
-    });
+  listEl.innerHTML = '';
+  arr.forEach(d => {
+    const li = document.createElement('li');
+    const del = document.createElement('button');
+    del.textContent = 'X';
+    del.onclick = async () => {
+    const idx = arr.indexOf(d); if (idx >= 0) arr.splice(idx, 1); await saveWhitelist(arr); render(arr);
+    };
+    li.textContent = d + ' ';
+    li.appendChild(del);
+    listEl.appendChild(li);
+  });
   };
   render(list);
   addBtn.onclick = async () => {
-    if (input.value) { list.push(input.value.trim()); await saveWhitelist(list); input.value = ''; render(list); }
+  if (input.value) { list.push(input.value.trim()); await saveWhitelist(list); input.value = ''; render(list); }
   };
 }
 
@@ -397,21 +397,21 @@ function importMacrosFromFile() {
   input.type = 'file';
   input.accept = '.json,application/json';
   input.onchange = () => {
-    const file = input.files ? input.files[0] : null;
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async () => {
-      if (typeof reader.result !== 'string') return;
-      const ok = await macroEngine.importFromString(reader.result);
-      if (ok) {
-        updateMacroSubmenuContents(macroMenu);
-      } else {
-        const errContainer = createModal(shadowRoot, 'import-error-modal', t('IMPORT_FAILED'), '<p>The selected file was not a valid Hermes macro file.</p>', '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
-        errContainer.style.display = 'flex';
-        (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
-      }
-    };
-    reader.readAsText(file);
+  const file = input.files ? input.files[0] : null;
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    if (typeof reader.result !== 'string') return;
+    const ok = await macroEngine.importFromString(reader.result);
+    if (ok) {
+    updateMacroSubmenuContents(macroMenu);
+    } else {
+    const errContainer = createModal(shadowRoot, 'import-error-modal', t('IMPORT_FAILED'), '<p>The selected file was not a valid Hermes macro file.</p>', '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
+    errContainer.style.display = 'flex';
+    (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
+    }
+  };
+  reader.readAsText(file);
   };
   input.click();
 }
@@ -419,7 +419,7 @@ function importMacrosFromFile() {
 // === Helper: Close All Menus ===
 function closeAllSubmenus(except?: HTMLElement) {
   [macroMenu, themeMenu, effectsMenu].forEach(menu => {
-    if (menu && menu !== except) menu.style.display = 'none';
+  if (menu && menu !== except) menu.style.display = 'none';
   });
 }
 

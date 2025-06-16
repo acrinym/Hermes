@@ -1,15 +1,15 @@
 import { startSnowflakes, startLasers, startCube, stopEffects } from './effectsEngine.ts';
 
 export function initEffects() {
-    startSnowflakes();
+  startSnowflakes();
 }
 
 export function enableLasers() {
-    startLasers();
+  startLasers();
 }
 
 export function enableCube() {
-    startCube();
+  startCube();
 }
 
 export { stopEffects };
