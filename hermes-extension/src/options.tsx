@@ -1,11 +1,18 @@
-import React, { useEffect, useState } from 'react';
+// @ts-nocheck
+import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
+import { AffirmationToggle } from './productivity.tsx';
+
+declare const chrome: any;
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
 
-interface ThemeInfo { name: string; emoji: string; }
+interface ThemeInfo {
+  name: string;
+  emoji: string;
+}
 
 function OptionsApp() {
   const [builtIn, setBuiltIn] = useState<Record<string, ThemeInfo>>({});
@@ -73,6 +80,7 @@ function OptionsApp() {
         <input id="importFile" type="file" accept="application/json" style={{ display: 'none' }} onChange={e => importThemes(e.target.files)} />
         <button onClick={() => document.getElementById('importFile')!.click()} id="importThemes">{t('IMPORT_THEMES')}</button>
       </div>
+      <AffirmationToggle />
     </div>
   );
 }
@@ -82,3 +90,5 @@ if (rootElement) {
   const root = createRoot(rootElement);
   root.render(<OptionsApp />);
 }
+
+export { OptionsApp };

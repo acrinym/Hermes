@@ -1,7 +1,7 @@
 import { macroEngine } from './macroEngine.ts';
 
 export async function initMacros() {
-    await macroEngine.init();
+  await macroEngine.init();
 }
 
 export const startRecording = () => macroEngine.startRecording();
@@ -17,8 +17,8 @@ export const importMacros = (obj: Record<string, any[]>) => macroEngine.import(o
 export const importMacrosFromString = (data: string) => macroEngine.importFromString(data);
 export const exportMacros = (format: 'json' | 'xml' = 'json') => macroEngine.exportMacros(format);
 export const updateMacroSettings = (s: Partial<{
-    recordMouseMoves: boolean;
-    mouseMoveInterval: number;
-    useCoordinateFallback: boolean;
-    relativeCoordinates: boolean;
+  recordMouseMoves: boolean;
+  mouseMoveInterval: number;
+  useCoordinateFallback: boolean;
+  relativeCoordinates: boolean;
 }>) => macroEngine.updateSettings(s);
