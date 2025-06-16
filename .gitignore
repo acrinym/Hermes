@@ -3,6 +3,7 @@ hermes-extension/node_modules/
 hermes-extension/dist/
 # Node dependencies
 server/node_modules/
+hermes-extension/node_modules/
 
 # Logs
 npm-debug.log*

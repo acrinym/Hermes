@@ -47,9 +47,8 @@ function getRoot(): Document | ShadowRoot {
   return document;
 }
 
-
-
-import { themes } from './themeDefs'; // make sure themes is actually imported
+// Assuming 'themes' is defined in this file or imported correctly
+import { themes } from './themeDefs';
 
 // — Theme Name Array —
 export const themeNames = Object.keys(themes);
@@ -79,12 +78,18 @@ function applyVars(themeName: string) {
       border-radius: 4px;
       padding: 4px 6px;
       cursor: pointer;
+      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
     }
     .hermes-button:hover {
       background: var(--hermes-button-hover-bg);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transform: translateY(-1px);
     }
     #hermes-ui-container, #hermes-minimized-container {
       border: 1px solid var(--hermes-border);
+    }
+    #hermes-ui-container.hermes-bunched {
+      flex-direction: column;
     }
   `;
 
@@ -109,20 +114,11 @@ function applyVars(themeName: string) {
   }
 }
 
-// --- CORE FUNCTIONS (You can define applyTheme here or in another module) ---
-
 /**
  * Applies a theme by injecting CSS variables into the document head or a Shadow DOM root.
  * This function should combine shadow DOM logic with optional component styling.
- * @param name The name of the theme to apply (e.g., 'dark', 'phoenix').
+ * @param name The name of the theme to apply (e.g., 'dark', 'phoenix', 'system').
  */
-// export function applyTheme(name: string, root: HTMLElement | ShadowRoot = document.documentElement) {
-//     const vars = themes[name] || themes['dark'];
-//     for (const [k, v] of Object.entries(vars)) {
-//         root.style.setProperty(k, v);
-//     }
-// }
-
 export function applyTheme(name: string) {
   if (name === 'system') {
     if (!systemMedia) {

@@ -8,6 +8,8 @@ const PROFILE_KEY_EXT = 'hermes_profile_ext';
 const MACRO_KEY_EXT = 'hermes_macros_ext';
 const MAPPING_KEY_EXT = 'hermes_mappings_ext';
 const OVERLAY_STATE_KEY_EXT = 'hermes_overlay_state_ext';
+const AFFIRM_STATE_KEY_EXT = 'hermes_affirmations_state_ext';
+const SCRATCH_KEY_EXT = 'hermes_scratch_notes_ext';
 const LEARNING_STATE_KEY_EXT = 'hermes_learning_state_ext';
 const DEBUG_MODE_KEY_EXT = 'hermes_debug_mode_ext';
 const POSITION_KEY_EXT = 'hermes_position_ext';
@@ -18,6 +20,7 @@ const BUNCHED_STATE_KEY_EXT = 'hermes_bunched_state_ext';
 const EFFECTS_STATE_KEY_EXT = 'hermes_effects_state_ext';
 const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
 const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
+const DISABLED_HOSTS_KEY_EXT = 'hermes_disabled_hosts_ext';
 
 // --- Debug Log Storage ---
 let debugLogs = [];
@@ -86,10 +89,13 @@ let hermesState = {
   isBunched: false,
   effectsMode: 'none',
   showOverlays: true,
+  showAffirmations: false,
+  scratchNotes: [],
   learningMode: false,
   debugMode: false,
   uiPosition: { top: null, left: null },
   whitelist: [],
+  disabledHosts: [],
   helpPanelOpen: false,
   configs: {}
 };
@@ -217,11 +223,14 @@ async function initializeHermesState() {
     [BUNCHED_STATE_KEY_EXT]: false,
     [EFFECTS_STATE_KEY_EXT]: 'none',
     [OVERLAY_STATE_KEY_EXT]: true,
+    [AFFIRM_STATE_KEY_EXT]: false,
+    [SCRATCH_KEY_EXT]: '[]',
     [LEARNING_STATE_KEY_EXT]: false,
     [DEBUG_MODE_KEY_EXT]: false,
     [POSITION_KEY_EXT]: JSON.stringify({ top: null, left: null }),
     [WHITELIST_KEY_EXT]: JSON.stringify([]),
-    [HELP_PANEL_OPEN_KEY_EXT]: false
+    [HELP_PANEL_OPEN_KEY_EXT]: false,
+    [DISABLED_HOSTS_KEY_EXT]: JSON.stringify([])
   };
 
   try {
@@ -233,9 +242,9 @@ async function initializeHermesState() {
       loadedSettings = JSON.parse(storedData[SETTINGS_KEY_EXT]);
     } catch (e) {
       console.error("Hermes BG: Error parsing stored settings JSON, using default from userscript.", e);
-      loadedSettings = defaultSettingsFromUserscript; 
+      loadedSettings = defaultSettingsFromUserscript;
     }
-    
+
     hermesState.settings = deepMerge(defaultSettingsFromUserscript, loadedSettings);
 
     try { hermesState.profile = JSON.parse(storedData[PROFILE_KEY_EXT]); }
@@ -254,6 +263,9 @@ async function initializeHermesState() {
     hermesState.isBunched = storedData[BUNCHED_STATE_KEY_EXT];
     hermesState.effectsMode = storedData[EFFECTS_STATE_KEY_EXT];
     hermesState.showOverlays = storedData[OVERLAY_STATE_KEY_EXT];
+    hermesState.showAffirmations = storedData[AFFIRM_STATE_KEY_EXT];
+    try { hermesState.scratchNotes = JSON.parse(storedData[SCRATCH_KEY_EXT]); }
+    catch (e) { console.error("Hermes BG: Error parsing scratch notes JSON.", e); hermesState.scratchNotes = []; }
     hermesState.learningMode = storedData[LEARNING_STATE_KEY_EXT];
     hermesState.debugMode = storedData[DEBUG_MODE_KEY_EXT];
 
@@ -262,6 +274,9 @@ async function initializeHermesState() {
 
     try { hermesState.whitelist = JSON.parse(storedData[WHITELIST_KEY_EXT]); }
     catch (e) { console.error("Hermes BG: Error parsing whitelist JSON.", e); hermesState.whitelist = []; }
+
+    try { hermesState.disabledHosts = JSON.parse(storedData[DISABLED_HOSTS_KEY_EXT]); }
+    catch (e) { console.error("Hermes BG: Error parsing disabled hosts JSON.", e); hermesState.disabledHosts = []; }
 
     hermesState.helpPanelOpen = storedData[HELP_PANEL_OPEN_KEY_EXT];
 
@@ -283,6 +298,42 @@ chrome.runtime.onInstalled.addListener((details) => {
 });
 
 initializeHermesState();
+
+chrome.contextMenus.create({
+  id: 'toggle-hermes',
+  title: 'Disable Hermes on this site',
+  contexts: ['page']
+});
+
+function updateContextMenu(tab) {
+  if (!tab || !tab.url) return;
+  const host = new URL(tab.url).hostname;
+  const disabled = hermesState.disabledHosts.includes(host);
+  chrome.contextMenus.update('toggle-hermes', {
+    title: disabled ? 'Enable Hermes on this site' : 'Disable Hermes on this site'
+  });
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId !== 'toggle-hermes' || !tab || !tab.id || !tab.url) return;
+  const host = new URL(tab.url).hostname;
+  const list = hermesState.disabledHosts;
+  const idx = list.indexOf(host);
+  const enable = idx > -1;
+  if (enable) list.splice(idx, 1); else list.push(host);
+  chrome.storage.local.set({ [DISABLED_HOSTS_KEY_EXT]: JSON.stringify(list) });
+  updateContextMenu(tab);
+  chrome.tabs.sendMessage(tab.id, { type: 'SET_ENABLED', payload: { enabled: enable } });
+});
+
+chrome.tabs.onActivated.addListener(async info => {
+  const tab = await chrome.tabs.get(info.tabId);
+  updateContextMenu(tab);
+});
+
+chrome.tabs.onUpdated.addListener((id, change, tab) => {
+  if (change.status === 'complete') updateContextMenu(tab);
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const { type, payload } = message;
@@ -372,17 +423,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         case BUNCHED_STATE_KEY_EXT: hermesState.isBunched = value; break;
         case EFFECTS_STATE_KEY_EXT: hermesState.effectsMode = value; break;
         case OVERLAY_STATE_KEY_EXT: hermesState.showOverlays = value; break;
+        case AFFIRM_STATE_KEY_EXT: hermesState.showAffirmations = value; break;
+        case SCRATCH_KEY_EXT: hermesState.scratchNotes = value; break;
         case LEARNING_STATE_KEY_EXT: hermesState.learningMode = value; break;
         case DEBUG_MODE_KEY_EXT: hermesState.debugMode = value; break;
         case POSITION_KEY_EXT: hermesState.uiPosition = value; break;
         case WHITELIST_KEY_EXT: hermesState.whitelist = value; break;
+        case DISABLED_HOSTS_KEY_EXT: hermesState.disabledHosts = value; break;
         case CUSTOM_THEMES_KEY_EXT: hermesState.customThemes = value; break;
         case HELP_PANEL_OPEN_KEY_EXT: hermesState.helpPanelOpen = value; break;
         default:
           console.warn("Hermes BG: Unknown key for SAVE_HERMES_DATA:", key);
           successfullyUpdatedInMemoryState = false;
           sendResponse({ success: false, error: `Unknown storage key: ${key}` });
-          return true; 
+          return true;
       }
 
       if (successfullyUpdatedInMemoryState) {
@@ -426,8 +480,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
   }
 
-  return true; 
+  return true;
 });
 
 console.log("Hermes BG: All event listeners set up. Ready for messages.");
-

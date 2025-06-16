@@ -7,7 +7,7 @@
 - 🔁 **Form filler** with intelligent field detection
 - 📼 **Macro recorder** and playback engine
 - 🧠 **Heuristic trainer** that learns from skipped fields
-- 🎨 **Theming engine** with draggable and bunchable UI
+- 🎨 **Theming engine** with draggable UI that stacks vertically when dragged to page edges
 - ✨ **Visual effects** like lasers, snowflakes and strobes
 - 🧩 **Domain allowlist** with minimize-on-unlisted mode
 - ❓ **Help panel** and detailed **settings editor**
@@ -82,6 +82,7 @@
 - Manage allowed domains from the GUI
 - When visiting unlisted domains the UI collapses to a small emoji
 - Add or remove domains without leaving the page
+- Right-click to temporarily disable or re-enable Hermes on the current site
 
 ### ⚙️ Settings Panel
 - JSON editor for advanced options such as border thickness or effect density
