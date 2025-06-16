@@ -73,18 +73,21 @@ function applyVars(themeName: string) {
 
     const additionalCss = `
         .hermes-button {
-            background: var(--hermes-button-bg);
-            color: var(--hermes-button-text);
-            border: 1px solid var(--hermes-border);
-            border-radius: 4px;
-            padding: 4px 6px;
-            cursor: pointer;
+          background: var(--hermes-button-bg);
+          color: var(--hermes-button-text);
+          border: 1px solid var(--hermes-border);
+          border-radius: 4px;
+          padding: 4px 6px;
+          cursor: pointer;
+          transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
         }
         .hermes-button:hover {
-            background: var(--hermes-button-hover-bg);
+          background: var(--hermes-button-hover-bg);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          transform: translateY(-1px);
         }
         #hermes-ui-container, #hermes-minimized-container {
-            border: 1px solid var(--hermes-border);
+          border: 1px solid var(--hermes-border);
         }
     `;
 
