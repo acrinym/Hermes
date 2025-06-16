@@ -95,13 +95,18 @@ function setupDragging(handle: HTMLElement) {
     });
     document.addEventListener('mousemove', (e) => {
         if (!dragging) return;
-        const newLeft = Math.max(0, Math.min(e.clientX - offsetX, window.innerWidth - (container?.offsetWidth || 0)));
-        const newTop = Math.max(0, Math.min(e.clientY - offsetY, window.innerHeight - (container?.offsetHeight || 0)));
+        const cw = container?.offsetWidth || 0;
+        const ch = container?.offsetHeight || 0;
+        const newLeft = Math.max(0, Math.min(e.clientX - offsetX, window.innerWidth - cw));
+        const newTop = Math.max(0, Math.min(e.clientY - offsetY, window.innerHeight - ch));
         position.left = newLeft;
         position.top = newTop;
         if (container) {
             container.style.left = `${newLeft}px`;
             container.style.top = `${newTop}px`;
+            const nearSide = newLeft < 10 || newLeft > window.innerWidth - cw - 10;
+            if (nearSide) container.classList.add('hermes-bunched');
+            else container.classList.remove('hermes-bunched');
         }
         if (minimized) {
             minimized.style.left = `${newLeft}px`;

@@ -89,6 +89,9 @@ function applyVars(themeName: string) {
         #hermes-ui-container, #hermes-minimized-container {
           border: 1px solid var(--hermes-border);
         }
+        #hermes-ui-container.hermes-bunched {
+            flex-direction: column;
+        }
     `;
 
     const variablesCss = Object.entries(vars).reduce((acc, [key, value]) => `${acc}${key}:${value};`, '');
