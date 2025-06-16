@@ -268,25 +268,6 @@ cd ../hermes-extension && npm test
 
 ---
 
-## 🚀 Development Setup & Testing
-
-Install dependencies for both the server and extension with the included script
-before running tests:
-
-```bash
-./setup.sh
-```
-
-This runs `npm install` inside the `server/` and `hermes-extension/` folders.
-Afterwards you can execute the test suites individually:
-
-```bash
-cd server && npm test
-cd ../hermes-extension && npm test
-```
-
----
-
 ## 📬 Feedback / Contributions
 
 PRs are welcome. For suggestions or issues, please use the Issues tab.
