@@ -4,12 +4,14 @@ import { configureStore } from '@reduxjs/toolkit';
 import settingsReducer from './settingsSlice';
 import macrosReducer from './macrosSlice';
 import profileReducer from './profileSlice';
+import themeReducer from './themeSlice';
 
 export const store = configureStore({
   reducer: {
     settings: settingsReducer,
     macros: macrosReducer,
     profile: profileReducer,
+    theme: themeReducer,
   },
 });
 
