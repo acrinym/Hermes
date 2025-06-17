@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
 import { AffirmationToggle } from './productivity.tsx';
-
 declare const chrome: any;
 
 const THEME_KEY = 'hermes_theme_ext';
