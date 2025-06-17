@@ -32,6 +32,8 @@
     const SYNC_URL = 'http://localhost:3000';
     const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
     const DOCK_MODE_KEY = 'hermes_dock_mode';
+    const NOTES_KEY = 'hermes_notes';
+    const POMODORO_KEY = 'hermes_pomodoro';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -51,7 +53,15 @@
     let statusIndicator = null;
     let effectsButton = null;
     let helpButton = null;
-    let settingsButton = null; // New settings button
+  let settingsButton = null; // New settings button
+  let notesButton = null;
+  let timerButton = null;
+
+  let notesText = GM_getValue(NOTES_KEY, '');
+  let pomodoroSettings = JSON.parse(GM_getValue(POMODORO_KEY, '{"work":25,"break":5}'));
+  let pomodoroInterval = null;
+  let pomodoroRemaining = 0;
+  let pomodoroMode = 'work';
 
     let autoSyncTimer = null;
 
@@ -142,7 +152,9 @@ let scheduleSettings = {};
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
         scheduleButton: { emoji: '⏰', text: 'Schedule', bunchedText: 'Sch', title: 'Schedule macro execution' },
-        settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' } // New settings button
+        settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' }, // New settings button
+        notesButton: { emoji: '📔', text: 'Notes', bunchedText: 'Note', title: 'Open quick notes' },
+        timerButton: { emoji: '⏱️', text: 'Timer', bunchedText: 'Tm', title: 'Pomodoro timer' }
     };
 
 
@@ -2056,15 +2068,114 @@ function importMacrosFromFile() {
         };
     }
 
-    function toggleSchedulePanel(show) {
-        if (!shadowRoot) return;
-        let panel = shadowRoot.querySelector('#hermes-schedule-panel');
-        if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
-        if (panel) {
-            if (show) { panel.style.display = 'block'; applyTheme(); }
-            else panel.style.display = 'none';
-        }
+  function toggleSchedulePanel(show) {
+    if (!shadowRoot) return;
+    let panel = shadowRoot.querySelector('#hermes-schedule-panel');
+    if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
+    if (panel) {
+      if (show) { panel.style.display = 'block'; applyTheme(); }
+      else panel.style.display = 'none';
     }
+  }
+
+  function createNotesPanel() {
+    const panelId = 'hermes-notes-panel';
+    if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+    const content = `<textarea id="hermes-notes-area" style="width:100%;height:40vh;min-height:200px;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>`;
+    const buttons = `<button id="hermes-notes-save" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save</button>`;
+    createModal(panelId, 'Quick Notes', content, '600px', buttons);
+    const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+    if (panel) {
+      const area = panel.querySelector('#hermes-notes-area');
+      if (area) area.value = notesText;
+      const saveBtn = panel.querySelector('#hermes-notes-save');
+      if (saveBtn) saveBtn.onclick = () => {
+        notesText = area.value;
+        GM_setValue(NOTES_KEY, notesText);
+        if (statusIndicator) {
+          statusIndicator.textContent = 'Notes Saved';
+          statusIndicator.style.color = 'var(--hermes-success-text)';
+          setTimeout(resetStatusIndicator, 2000);
+        }
+        panel.style.display = 'none';
+      };
+    }
+  }
+
+  function toggleNotesPanel(show) {
+    if (!shadowRoot) return;
+    let panel = shadowRoot.querySelector('#hermes-notes-panel');
+    if (show && !panel) { createNotesPanel(); panel = shadowRoot.querySelector('#hermes-notes-panel'); }
+    if (panel) {
+      if (show) { panel.style.display = 'block'; applyTheme(); }
+      else panel.style.display = 'none';
+    }
+  }
+
+  function updatePomodoroDisplay(el) {
+    if (!el) return;
+    const m = String(Math.floor(pomodoroRemaining / 60)).padStart(2, '0');
+    const s = String(pomodoroRemaining % 60).padStart(2, '0');
+    el.textContent = `${m}:${s}`;
+  }
+
+  function startPomodoro(display) {
+    if (pomodoroInterval) return;
+    if (pomodoroRemaining <= 0) {
+      pomodoroMode = 'work';
+      pomodoroRemaining = (pomodoroSettings.work || 25) * 60;
+    }
+    updatePomodoroDisplay(display);
+    pomodoroInterval = setInterval(() => {
+      pomodoroRemaining--;
+      if (pomodoroRemaining <= 0) {
+        if (pomodoroMode === 'work') {
+          pomodoroMode = 'break';
+          pomodoroRemaining = (pomodoroSettings.break || 5) * 60;
+          alert('Break time!');
+        } else {
+          pomodoroMode = 'work';
+          pomodoroRemaining = (pomodoroSettings.work || 25) * 60;
+          alert('Back to work!');
+        }
+      }
+      updatePomodoroDisplay(display);
+    }, 1000);
+  }
+
+  function stopPomodoro() {
+    if (pomodoroInterval) {
+      clearInterval(pomodoroInterval);
+      pomodoroInterval = null;
+    }
+  }
+
+  function createTimerPanel() {
+    const panelId = 'hermes-timer-panel';
+    if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+    const content = `<div id="hermes-timer-display" style="text-align:center;font-size:2em;margin-bottom:10px;">00:00</div>
+      <div style="display:flex;gap:10px;justify-content:center;"><button id="hermes-timer-start" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Start</button><button id="hermes-timer-stop" class="hermes-button" style="background:var(--hermes-error-text);color:var(--hermes-panel-bg);">Stop</button></div>`;
+    createModal(panelId, 'Pomodoro Timer', content, '300px');
+    const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+    if (panel) {
+      const display = panel.querySelector('#hermes-timer-display');
+      updatePomodoroDisplay(display);
+      const startBtn = panel.querySelector('#hermes-timer-start');
+      const stopBtn = panel.querySelector('#hermes-timer-stop');
+      if (startBtn) startBtn.onclick = () => startPomodoro(display);
+      if (stopBtn) stopBtn.onclick = () => stopPomodoro();
+    }
+  }
+
+  function toggleTimerPanel(show) {
+    if (!shadowRoot) return;
+    let panel = shadowRoot.querySelector('#hermes-timer-panel');
+    if (show && !panel) { createTimerPanel(); panel = shadowRoot.querySelector('#hermes-timer-panel'); }
+    if (panel) {
+      if (show) { panel.style.display = 'block'; applyTheme(); }
+      else panel.style.display = 'none';
+    }
+  }
 
     // =================== Effects System (with Distinct v13/v14 animations & Settings Integration) ===================
     function setupEffectsCanvas() {
@@ -3805,6 +3916,20 @@ function importMacrosFromFile() {
         updateButtonAppearance(settingsButton, 'settingsButton', isBunched);
         settingsButton.onclick = () => { closeAllSubmenus(); toggleSettingsPanel(true); };
         uiContainer.appendChild(settingsButton);
+
+  // Notes Button
+  notesButton = document.createElement('button');
+  notesButton.id = 'hermes-notes-button';
+  updateButtonAppearance(notesButton, 'notesButton', isBunched);
+  notesButton.onclick = () => { closeAllSubmenus(); toggleNotesPanel(true); };
+  uiContainer.appendChild(notesButton);
+
+  // Timer Button
+  timerButton = document.createElement('button');
+  timerButton.id = 'hermes-timer-button';
+  updateButtonAppearance(timerButton, 'timerButton', isBunched);
+  timerButton.onclick = () => { closeAllSubmenus(); toggleTimerPanel(true); };
+  uiContainer.appendChild(timerButton);
 
 
         // Snap Buttons Container
