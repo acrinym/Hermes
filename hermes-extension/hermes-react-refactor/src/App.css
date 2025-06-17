@@ -1,0 +1,155 @@
+/* hermes-react-refactor/src/App.css */
+
+.hermes-container {
+  position: fixed;
+  z-index: 9999;
+  background: #2d2d2d;
+  color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+  border: 1px solid #555;
+  width: 350px;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease, height 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+.hermes-header {
+  padding: 10px 15px;
+  background: #202020;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  cursor: grab;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #555;
+}
+
+.hermes-header h1 {
+  margin: 0;
+  font-size: 1.1em;
+  font-weight: 600;
+}
+
+.hermes-header span {
+  font-size: 0.9em;
+  color: #ff4d4d;
+}
+
+.hermes-body {
+  padding: 0 15px 15px 15px;
+  flex-grow: 1;
+}
+
+.hermes-footer {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  padding: 10px;
+  background: #252525;
+  border-bottom-left-radius: 7px;
+  border-bottom-right-radius: 7px;
+  border-top: 1px solid #444;
+  gap: 8px;
+  transition: flex-direction 0.3s ease;
+}
+
+.hermes-footer button {
+  flex-grow: 1;
+  padding: 8px 12px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.hermes-footer button:hover {
+  background-color: #45a049;
+}
+
+.hermes-footer button.recording {
+  background-color: #f44336;
+}
+.hermes-footer button.recording:hover {
+  background-color: #d32f2f;
+}
+
+/* Inchworm Stacking Logic */
+.hermes-container.stacked {
+  width: 120px;
+}
+
+.hermes-container.stacked .hermes-footer {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.hermes-container.stacked .hermes-body {
+  display: none; 
+}
+
+/* Modal styles */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #2d2d2d;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #555;
+}
+
+.modal-content h2, .modal-content h3 {
+  margin-top: 0;
+}
+
+.modal-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* MacroPanel specific styles */
+.macro-panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.macro-panel li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid #444;
+}
+
+.macro-panel li:last-child {
+  border-bottom: none;
+}
+
+.macro-actions button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  font-size: 1.1em;
+}
