@@ -279,19 +279,17 @@ let scheduleSettings = {};
             "useCoordinateFallback": false,
             "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
             "similarityThreshold": 0.5,
-            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
-        },
-        "_comment_recordHotkey": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
-        "recordHotkey": "Ctrl+Shift+R",
-        "_comment_playMacroHotkey": "Key combo to play the selected macro (e.g., Ctrl+Shift+P).",
-        "playMacroHotkey": "Ctrl+Shift+P"
+            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5.",
             "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5.",
             "selectorWaitTimeout": 5000,
             "_comment_selectorWaitTimeout": "Default timeout in ms for waitForSelector events. Default: 5000.",
             "networkIdleTimeout": 2000,
             "_comment_networkIdleTimeout": "Default timeout in ms for waitForNetworkIdle events. Default: 2000."
-        }
-
+        },
+        "_comment_recordHotkey": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
+        "recordHotkey": "Ctrl+Shift+R",
+        "_comment_playMacroHotkey": "Key combo to play the selected macro (e.g., Ctrl+Shift+P).",
+        "playMacroHotkey": "Ctrl+Shift+P"
     };
     let currentSettings = {};
 
@@ -501,7 +499,6 @@ let scheduleSettings = {};
             const recordHotkeyInput = settingsPanel.querySelector('#hermes-setting-recordHotkey');
             const playHotkeyInput = settingsPanel.querySelector('#hermes-setting-playHotkey');
             const syncInput = settingsPanel.querySelector('#hermes-sync-interval');
-             const recordMouseCb = settingsPanel.querySelector('#hermes-setting-recordMouse');
 
              
 
