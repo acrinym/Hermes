@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { saveDataToBackground } from './storage/index.ts';
 import { t } from '../i18n.js';
 
+declare const chrome: any;
+
 const AFFIRM_KEY = 'hermes_affirmations_state_ext';
 let overlayEl: HTMLDivElement | null = null;
 

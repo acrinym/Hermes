@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import App from './App';
 import { MacroEngine } from './services/macroEngineService';
+import { initEffects } from './services/effects';
 
 // --- Important Singleton Setup ---
 // Instantiate the macro engine and pass it the store's dispatch function
@@ -26,4 +27,5 @@ if (!document.getElementById('hermes-react-root')) {
       </Provider>
     </React.StrictMode>
   );
+  initEffects();
 }
