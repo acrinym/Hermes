@@ -6,7 +6,9 @@
     "checkJs": false,
     "outDir": "dist",
     "allowImportingTsExtensions": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "moduleResolution": "node",
+    "esModuleInterop": true
   },
   "include": ["src/**/*"]
 }
