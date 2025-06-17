@@ -7,13 +7,14 @@
 - 🔁 **Form filler** with intelligent field detection
 - 📼 **Macro recorder** and playback engine
 - 🧠 **Heuristic trainer** that learns from skipped fields
-- 🎨 **Theming engine** with draggable and bunchable UI
-- ✨ **Visual effects** like lasers, snowflakes and strobes
+- 🎨 **Theming engine** with draggable UI that stacks vertically when dragged to page edges
+- ✨ **Visual effects** including lasers, snowflakes, strobes and confetti
 - 🧩 **Domain allowlist** with minimize-on-unlisted mode
 - ❓ **Help panel** and detailed **settings editor**
 - 📤 **Profile import/export** via JSON
 - 🔍 **Debug toolkit** with logs and mutation detection
 - ⏰ **Macro scheduling UI**
+- 🗒️ **Task list panel** for quick to-dos
 - ⌨️ **Configurable hotkeys**
 - 🔎 **Macro search/filter**
 - 🕒 **Wait steps for reliable playback**
@@ -67,7 +68,7 @@
 - Displays status messages for actions
 
 ### ✨ Visual Effects
-- Snowflake, Laser (classic & simple), Strobe and new **Cube 3D** modes
+- Snowflake, Laser (classic & simple), Strobe, Confetti and new **Cube 3D** modes
 - Canvas or WebGL based rendering that can be toggled on/off
 - Effect parameters editable in the settings panel
 
@@ -82,6 +83,7 @@
 - Manage allowed domains from the GUI
 - When visiting unlisted domains the UI collapses to a small emoji
 - Add or remove domains without leaving the page
+- Right-click to temporarily disable or re-enable Hermes on the current site
 
 ### ⚙️ Settings Panel
 - JSON editor for advanced options such as border thickness or effect density
@@ -245,25 +247,6 @@ Press **Schedule Macro** to save. Scheduled jobs can be viewed or cancelled via 
 ## 🤖 Automation & Scheduler UI
 
 In addition to manual playback, Hermes exposes a local automation API under `/api`.  Macros and form fills can be triggered remotely or chained from other tools.  When the extension scans a new site it automatically saves a configuration file back to your GitHub repository so later automation runs consistently.  The web UI at `/schedule` provides a simple calendar view for creating one‑off or recurring jobs using those saved macros.
-
----
-
-## 🚀 Development Setup & Testing
-
-Install dependencies for both the server and extension with the included script
-before running tests:
-
-```bash
-./setup.sh
-```
-
-This runs `npm install` inside the `server/` and `hermes-extension/` folders.
-Afterwards you can execute the test suites individually:
-
-```bash
-cd server && npm test
-cd ../hermes-extension && npm test
-```
 
 ---
 

@@ -4,21 +4,29 @@ import { deepMerge } from "./utils/helpers.js";
 console.log("Hermes Extension: Background Service Worker Initializing...");
 
 // --- Storage Key Constants (using '_ext' to avoid userscript conflicts) ---
-const PROFILE_KEY_EXT = 'hermes_profile_ext';
-const MACRO_KEY_EXT = 'hermes_macros_ext';
-const MAPPING_KEY_EXT = 'hermes_mappings_ext';
-const OVERLAY_STATE_KEY_EXT = 'hermes_overlay_state_ext';
-const AFFIRM_STATE_KEY_EXT = 'hermes_affirmations_state_ext';
-const LEARNING_STATE_KEY_EXT = 'hermes_learning_state_ext';
-const DEBUG_MODE_KEY_EXT = 'hermes_debug_mode_ext';
-const POSITION_KEY_EXT = 'hermes_position_ext';
-const WHITELIST_KEY_EXT = 'hermes_whitelist_ext';
-const THEME_KEY_EXT = 'hermes_theme_ext';
-const CUSTOM_THEMES_KEY_EXT = 'hermes_custom_themes_ext';
-const BUNCHED_STATE_KEY_EXT = 'hermes_bunched_state_ext';
-const EFFECTS_STATE_KEY_EXT = 'hermes_effects_state_ext';
-const HELP_PANEL_OPEN_KEY_EXT = 'hermes_help_panel_state_ext';
-const SETTINGS_KEY_EXT = 'hermes_settings_v1_ext';
+const STORAGE_KEYS = {
+    PROFILE: 'hermes_profile_ext',
+    MACRO: 'hermes_macros_ext',
+    MAPPING: 'hermes_mappings_ext',
+    OVERLAY_STATE: 'hermes_overlay_state_ext',
+    AFFIRM_STATE: 'hermes_affirmations_state_ext',
+    SCRATCH_NOTES: 'hermes_scratch_notes_ext',
+    LEARNING_STATE: 'hermes_learning_state_ext',
+    DEBUG_MODE: 'hermes_debug_mode_ext',
+    POSITION: 'hermes_position_ext',
+    WHITELIST: 'hermes_whitelist_ext',
+    THEME: 'hermes_theme_ext',
+    CUSTOM_THEMES: 'hermes_custom_themes_ext',
+    BUNCHED_STATE: 'hermes_bunched_state_ext',
+    EFFECTS_STATE: 'hermes_effects_state_ext',
+    HELP_PANEL_OPEN: 'hermes_help_panel_state_ext',
+    SETTINGS: 'hermes_settings_v1_ext',
+    DISABLED_HOSTS: 'hermes_disabled_hosts_ext',
+    GITHUB_RAW_BASE: 'github_raw_base',
+    GITHUB_API_BASE: 'github_api_base',
+    GITHUB_TOKEN: 'github_token',
+    BUILT_IN_THEMES: 'hermes_built_in_themes' // For internal storage of built-in themes if needed
+};
 
 // --- Debug Log Storage ---
 let debugLogs = [];
@@ -53,26 +61,21 @@ const builtInThemes = {
     neon: { name: 'Neon', emoji: '💡' }
 };
 
-// --- GitHub configuration for remote site configs ---
-// These values can be stored in chrome.storage under the keys below or
-// provided as environment variables at build time.
-const GITHUB_RAW_BASE_KEY = 'github_raw_base';
-const GITHUB_API_BASE_KEY = 'github_api_base';
-const GITHUB_TOKEN_KEY = 'github_token';
-
-let GITHUB_RAW_BASE = '';
-let GITHUB_API_BASE = '';
-let GITHUB_TOKEN = '';
+let githubConfig = {
+    rawBase: '',
+    apiBase: '',
+    token: ''
+};
 
 async function loadGithubSettings() {
     const data = await chrome.storage.local.get({
-        [GITHUB_RAW_BASE_KEY]: '',
-        [GITHUB_API_BASE_KEY]: '',
-        [GITHUB_TOKEN_KEY]: ''
+        [STORAGE_KEYS.GITHUB_RAW_BASE]: '',
+        [STORAGE_KEYS.GITHUB_API_BASE]: '',
+        [STORAGE_KEYS.GITHUB_TOKEN]: ''
     });
-    GITHUB_RAW_BASE = data[GITHUB_RAW_BASE_KEY] || process.env.GITHUB_RAW_BASE || '';
-    GITHUB_API_BASE = data[GITHUB_API_BASE_KEY] || process.env.GITHUB_API_BASE || '';
-    GITHUB_TOKEN = data[GITHUB_TOKEN_KEY] || process.env.GITHUB_TOKEN || '';
+    githubConfig.rawBase = data[STORAGE_KEYS.GITHUB_RAW_BASE] || process.env.GITHUB_RAW_BASE || '';
+    githubConfig.apiBase = data[STORAGE_KEYS.GITHUB_API_BASE] || process.env.GITHUB_API_BASE || '';
+    githubConfig.token = data[STORAGE_KEYS.GITHUB_TOKEN] || process.env.GITHUB_TOKEN || '';
 }
 
 // --- In-memory cache for Hermes data ---
@@ -83,20 +86,23 @@ let hermesState = {
     mappings: {},
     theme: 'dark',
     customThemes: {},
-    builtInThemes,
+    builtInThemes, // Direct reference to the constant
     isBunched: false,
     effectsMode: 'none',
     showOverlays: true,
     showAffirmations: false,
+    scratchNotes: [],
     learningMode: false,
     debugMode: false,
     uiPosition: { top: null, left: null },
     whitelist: [],
+    disabledHosts: [],
     helpPanelOpen: false,
     configs: {}
 };
 
 // `defaultSettings` object extracted from your "hermes-system-themable-14.user.js"
+// These `_comment_` fields are retained as they are used for UI hovertext/description.
 const defaultSettingsFromUserscript = {
     "_comment_main_ui": "Settings for the main Hermes UI appearance.",
     "hermesBorderThickness": "1px",
@@ -193,6 +199,7 @@ const defaultSettingsFromUserscript = {
         "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
     }
 };
+
 async function initializeHermesState() {
     console.log("Hermes BG: Initializing Hermes state from chrome.storage.local...");
 
@@ -205,133 +212,200 @@ async function initializeHermesState() {
         console.error("Please ensure the full `defaultSettings` object is assigned to `defaultSettingsFromUserscript`.");
         console.error("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         // Fallback to a very minimal structure to prevent further errors, but this is not ideal.
-        hermesState.settings = { effects: {} };
+        hermesState.settings = { effects: {}, macro: {} };
     }
 
     const storageKeysDefaults = {
-        [SETTINGS_KEY_EXT]: JSON.stringify(defaultSettingsFromUserscript),
-        [PROFILE_KEY_EXT]: '{}',
-        [MACRO_KEY_EXT]: '{}',
-        [MAPPING_KEY_EXT]: '{}',
-        [THEME_KEY_EXT]: 'dark',
-        [CUSTOM_THEMES_KEY_EXT]: '{}',
-        hermes_built_in_themes: JSON.stringify(builtInThemes),
-        [BUNCHED_STATE_KEY_EXT]: false,
-        [EFFECTS_STATE_KEY_EXT]: 'none',
-        [OVERLAY_STATE_KEY_EXT]: true,
-        [AFFIRM_STATE_KEY_EXT]: false,
-        [LEARNING_STATE_KEY_EXT]: false,
-        [DEBUG_MODE_KEY_EXT]: false,
-        [POSITION_KEY_EXT]: JSON.stringify({ top: null, left: null }),
-        [WHITELIST_KEY_EXT]: JSON.stringify([]),
-        [HELP_PANEL_OPEN_KEY_EXT]: false
+        [STORAGE_KEYS.SETTINGS]: JSON.stringify(defaultSettingsFromUserscript),
+        [STORAGE_KEYS.PROFILE]: '{}',
+        [STORAGE_KEYS.MACRO]: '{}',
+        [STORAGE_KEYS.MAPPING]: '{}',
+        [STORAGE_KEYS.THEME]: 'dark',
+        [STORAGE_KEYS.CUSTOM_THEMES]: '{}',
+        [STORAGE_KEYS.BUILT_IN_THEMES]: JSON.stringify(builtInThemes),
+        [STORAGE_KEYS.BUNCHED_STATE]: false,
+        [STORAGE_KEYS.EFFECTS_STATE]: 'none',
+        [STORAGE_KEYS.OVERLAY_STATE]: true,
+        [STORAGE_KEYS.AFFIRM_STATE]: false,
+        [STORAGE_KEYS.SCRATCH_NOTES]: '[]',
+        [STORAGE_KEYS.LEARNING_STATE]: false,
+        [STORAGE_KEYS.DEBUG_MODE]: false,
+        [STORAGE_KEYS.POSITION]: JSON.stringify({ top: null, left: null }),
+        [STORAGE_KEYS.WHITELIST]: '[]',
+        [STORAGE_KEYS.HELP_PANEL_OPEN]: false,
+        [STORAGE_KEYS.DISABLED_HOSTS]: '[]'
     };
 
     try {
         const storedData = await chrome.storage.local.get(storageKeysDefaults);
         console.log("Hermes BG: Data retrieved from storage (or defaults used):", storedData);
 
-        let loadedSettings = {};
-        try {
-            loadedSettings = JSON.parse(storedData[SETTINGS_KEY_EXT]);
-        } catch (e) {
-            console.error("Hermes BG: Error parsing stored settings JSON, using default from userscript.", e);
-            loadedSettings = defaultSettingsFromUserscript; 
-        }
-        
-        hermesState.settings = deepMerge(defaultSettingsFromUserscript, loadedSettings);
+        // Function to safely parse JSON
+        const safeParse = (key, defaultValue) => {
+            try {
+                const parsed = JSON.parse(storedData[key]);
+                // Ensure deep merge is applied for settings to pick up new default properties
+                if (key === STORAGE_KEYS.SETTINGS) {
+                    return deepMerge(defaultValue, parsed);
+                }
+                return parsed;
+            } catch (e) {
+                console.error(`Hermes BG: Error parsing ${key} JSON, using default.`, e);
+                return defaultValue;
+            }
+        };
 
-        try { hermesState.profile = JSON.parse(storedData[PROFILE_KEY_EXT]); }
-        catch (e) { console.error("Hermes BG: Error parsing profile JSON.", e); hermesState.profile = {}; }
+        // Initialize state properties, using safeParse for JSON strings and direct assignment for others
+        hermesState.settings = safeParse(STORAGE_KEYS.SETTINGS, defaultSettingsFromUserscript);
+        hermesState.profile = safeParse(STORAGE_KEYS.PROFILE, {});
+        hermesState.macros = safeParse(STORAGE_KEYS.MACRO, {});
+        hermesState.mappings = safeParse(STORAGE_KEYS.MAPPING, {});
+        hermesState.theme = storedData[STORAGE_KEYS.THEME];
+        hermesState.customThemes = safeParse(STORAGE_KEYS.CUSTOM_THEMES, {});
+        hermesState.builtInThemes = builtInThemes; // Always use the latest built-in themes from the constant
+        hermesState.isBunched = storedData[STORAGE_KEYS.BUNCHED_STATE];
+        hermesState.effectsMode = storedData[STORAGE_KEYS.EFFECTS_STATE];
+        hermesState.showOverlays = storedData[STORAGE_KEYS.OVERLAY_STATE];
+        hermesState.showAffirmations = storedData[STORAGE_KEYS.AFFIRM_STATE];
+        hermesState.scratchNotes = safeParse(STORAGE_KEYS.SCRATCH_NOTES, []);
+        hermesState.learningMode = storedData[STORAGE_KEYS.LEARNING_STATE];
+        hermesState.debugMode = storedData[STORAGE_KEYS.DEBUG_MODE];
+        hermesState.uiPosition = safeParse(STORAGE_KEYS.POSITION, { top: null, left: null });
+        hermesState.whitelist = safeParse(STORAGE_KEYS.WHITELIST, []);
+        hermesState.disabledHosts = safeParse(STORAGE_KEYS.DISABLED_HOSTS, []);
+        hermesState.helpPanelOpen = storedData[STORAGE_KEYS.HELP_PANEL_OPEN];
 
-        try { hermesState.macros = JSON.parse(storedData[MACRO_KEY_EXT]); }
-        catch (e) { console.error("Hermes BG: Error parsing macros JSON.", e); hermesState.macros = {}; }
-
-        try { hermesState.mappings = JSON.parse(storedData[MAPPING_KEY_EXT]); }
-        catch (e) { console.error("Hermes BG: Error parsing mappings JSON.", e); hermesState.mappings = {}; }
-
-        hermesState.theme = storedData[THEME_KEY_EXT];
-        try { hermesState.customThemes = JSON.parse(storedData[CUSTOM_THEMES_KEY_EXT]); }
-        catch (e) { console.error("Hermes BG: Error parsing custom themes JSON.", e); hermesState.customThemes = {}; }
-        hermesState.builtInThemes = builtInThemes;
-        hermesState.isBunched = storedData[BUNCHED_STATE_KEY_EXT];
-        hermesState.effectsMode = storedData[EFFECTS_STATE_KEY_EXT];
-        hermesState.showOverlays = storedData[OVERLAY_STATE_KEY_EXT];
-        hermesState.showAffirmations = storedData[AFFIRM_STATE_KEY_EXT];
-        hermesState.learningMode = storedData[LEARNING_STATE_KEY_EXT];
-        hermesState.debugMode = storedData[DEBUG_MODE_KEY_EXT];
-
-        try { hermesState.uiPosition = JSON.parse(storedData[POSITION_KEY_EXT]); }
-        catch (e) { console.error("Hermes BG: Error parsing uiPosition JSON.", e); hermesState.uiPosition = { top: null, left: null }; }
-
-        try { hermesState.whitelist = JSON.parse(storedData[WHITELIST_KEY_EXT]); }
-        catch (e) { console.error("Hermes BG: Error parsing whitelist JSON.", e); hermesState.whitelist = []; }
-
-        hermesState.helpPanelOpen = storedData[HELP_PANEL_OPEN_KEY_EXT];
-
+        // Ensure built-in themes are stored for future reference/consistency
         chrome.storage.local.set({
-            hermes_built_in_themes: JSON.stringify(builtInThemes)
+            [STORAGE_KEYS.BUILT_IN_THEMES]: JSON.stringify(builtInThemes)
         });
 
-        console.log("Hermes BG: State initialization complete. Current learningMode:", hermesState.learningMode, "debugMode:", hermesState.debugMode);
-
+        console.log("Hermes BG: State initialization complete.");
     } catch (error) {
         console.error("Hermes BG: CRITICAL error initializing Hermes state:", error);
     }
 }
-
 
 chrome.runtime.onInstalled.addListener((details) => {
     console.log("Hermes BG: Extension event -", details.reason);
     initializeHermesState();
 });
 
+// Initialize state on startup as well
 initializeHermesState();
+
+chrome.contextMenus.create({
+    id: 'toggle-hermes',
+    title: 'Disable Hermes on this site',
+    contexts: ['page']
+});
+
+function updateContextMenu(tab) {
+    if (!tab || !tab.url) return;
+    try {
+        const host = new URL(tab.url).hostname;
+        // Ensure hermesState.disabledHosts is initialized before using includes
+        const isDisabled = hermesState.disabledHosts?.includes(host);
+        chrome.contextMenus.update('toggle-hermes', {
+            title: isDisabled ? 'Enable Hermes on this site' : 'Disable Hermes on this site'
+        });
+    } catch (e) {
+        // Ignore invalid URLs like chrome://extensions
+    }
+}
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId !== 'toggle-hermes' || !tab || !tab.id || !tab.url) return;
+    const host = new URL(tab.url).hostname;
+    // Ensure the list is a mutable array
+    const list = Array.isArray(hermesState.disabledHosts) ? [...hermesState.disabledHosts] : [];
+    const idx = list.indexOf(host);
+    const wasDisabled = idx > -1; // If found, it means it's currently disabled.
+
+    if (wasDisabled) {
+        list.splice(idx, 1); // Remove from disabled list (enabling it)
+    } else {
+        list.push(host); // Add to disabled list (disabling it)
+    }
+
+    // Update the in-memory state and storage
+    hermesState.disabledHosts = list;
+    chrome.storage.local.set({ [STORAGE_KEYS.DISABLED_HOSTS]: JSON.stringify(list) });
+
+    updateContextMenu(tab);
+    // Send message to content script to update its state
+    // If it WAS disabled (wasDisabled=true), it's now ENABLED (payload.enabled=true).
+    // If it WAS enabled (wasDisabled=false), it's now DISABLED (payload.enabled=false).
+    chrome.tabs.sendMessage(tab.id, { type: 'SET_ENABLED', payload: { enabled: !wasDisabled } });
+});
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    try {
+        const tab = await chrome.tabs.get(activeInfo.tabId);
+        updateContextMenu(tab);
+    } catch (e) {
+        console.warn(`Hermes BG: Could not get tab for onActivated event:`, e.message);
+    }
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete') {
+        updateContextMenu(tab);
+    }
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const { type, payload } = message;
     console.log(`Hermes BG: Message received - Type: ${type}`, payload || "", `From Tab: ${sender.tab ? sender.tab.id : 'N/A'}`);
 
-    switch (type) {
-        case "GET_HERMES_INITIAL_DATA":
-            sendResponse(JSON.parse(JSON.stringify(hermesState)));
-            break;
+    // This function ensures sendResponse is called, even if async operations are involved.
+    // It makes the listener return true to indicate an async response.
+    const handleMessage = async () => {
+        switch (type) {
+            case "GET_HERMES_INITIAL_DATA":
+                sendResponse(JSON.parse(JSON.stringify(hermesState)));
+                break;
 
-        case "GET_SITE_CONFIG":
-            if (!payload || !payload.site) {
-                console.error("Hermes BG: GET_SITE_CONFIG missing site in payload", payload);
-                sendResponse({ success: false, error: "Missing site" });
-                return true;
-            }
-            const site = payload.site.toLowerCase();
-            if (hermesState.configs[site]) {
-                sendResponse({ success: true, config: hermesState.configs[site] });
-            } else {
-                const localUrl = chrome.runtime.getURL(`configs/${site}.json`);
-                fetch(localUrl)
-                    .then(r => { if (!r.ok) throw new Error('local'); return r.json(); })
-                    .then(cfg => { hermesState.configs[site] = cfg; sendResponse({ success: true, config: cfg }); })
-                    .catch(() => {
-                        const remoteUrl = `${GITHUB_RAW_BASE}${site}.json`;
-                        fetch(remoteUrl)
-                            .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-                            .then(cfg => { hermesState.configs[site] = cfg; sendResponse({ success: true, config: cfg }); })
-                            .catch(err => { console.warn(`Hermes BG: Config for ${site} not found`, err); sendResponse({ success: false, error: err.toString() }); });
-                    });
-            }
-            return true;
+            case "GET_SITE_CONFIG":
+                if (!payload || !payload.site) {
+                    console.error("Hermes BG: GET_SITE_CONFIG missing site in payload", payload);
+                    sendResponse({ success: false, error: "Missing site" });
+                    return;
+                }
+                const site = payload.site.toLowerCase();
+                if (hermesState.configs[site]) {
+                    sendResponse({ success: true, config: hermesState.configs[site] });
+                } else {
+                    try {
+                        const localUrl = chrome.runtime.getURL(`configs/${site}.json`);
+                        let response = await fetch(localUrl);
+                        if (!response.ok) {
+                            // If local fetch fails, try remote
+                            const remoteUrl = `${githubConfig.rawBase}${site}.json`;
+                            response = await fetch(remoteUrl);
+                            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        }
+                        const cfg = await response.json();
+                        hermesState.configs[site] = cfg;
+                        sendResponse({ success: true, config: cfg });
+                    } catch (err) {
+                        console.warn(`Hermes BG: Config for ${site} not found locally or remotely`, err);
+                        sendResponse({ success: false, error: err.toString() });
+                    }
+                }
+                break;
 
-        case "SAVE_SITE_CONFIG":
-            if (!payload || !payload.site || !payload.config) {
-                sendResponse({ success: false, error: "Missing site or config" });
-                return true;
-            }
-            (async () => {
-                const fileUrl = `${GITHUB_API_BASE}${payload.site}.json`;
+            case "SAVE_SITE_CONFIG":
+                if (!payload || !payload.site || !payload.config) {
+                    sendResponse({ success: false, error: "Missing site or config" });
+                    return;
+                }
+                const fileUrl = `${githubConfig.apiBase}${payload.site}.json`;
                 const content = btoa(JSON.stringify(payload.config, null, 2));
-                const body = { message: `Add config for ${payload.site}`, content };
+                let body = { message: `Add config for ${payload.site}`, content };
                 const headers = { 'Content-Type': 'application/json' };
-                if (GITHUB_TOKEN) headers['Authorization'] = `token ${GITHUB_TOKEN}`;
+                if (githubConfig.token) headers['Authorization'] = `token ${githubConfig.token}`;
+
                 try {
                     const existingRes = await fetch(fileUrl, { headers });
                     if (existingRes.ok) {
@@ -339,7 +413,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         body.message = `Update config for ${payload.site}`;
                         body.sha = info.sha;
                     }
-                } catch (err) { }
+                } catch (err) {
+                    // Ignore if file doesn't exist, will be created with PUT
+                }
+
                 try {
                     const res = await fetch(fileUrl, {
                         method: 'PUT',
@@ -353,86 +430,85 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     console.error('Hermes BG: Failed to save config', err);
                     sendResponse({ success: false, error: err.toString() });
                 }
-            })();
-            return true;
+                break;
 
-        case "SAVE_HERMES_DATA":
-            if (!payload || typeof payload.key === 'undefined') { // Check if key exists
-                console.error("Hermes BG: Invalid SAVE_HERMES_DATA payload. Missing key.", payload);
-                sendResponse({ success: false, error: "Missing key in payload" });
-                return true;
-            }
-
-            const { key, value } = payload;
-            let dataToStoreInChromeStorage = {};
-            let successfullyUpdatedInMemoryState = true;
-
-            switch (key) {
-                case SETTINGS_KEY_EXT: hermesState.settings = value; break;
-                case PROFILE_KEY_EXT: hermesState.profile = value; break;
-                case MACRO_KEY_EXT: hermesState.macros = value; break;
-                case MAPPING_KEY_EXT: hermesState.mappings = value; break;
-                case THEME_KEY_EXT: hermesState.theme = value; break;
-                case BUNCHED_STATE_KEY_EXT: hermesState.isBunched = value; break;
-                case EFFECTS_STATE_KEY_EXT: hermesState.effectsMode = value; break;
-                case OVERLAY_STATE_KEY_EXT: hermesState.showOverlays = value; break;
-                case AFFIRM_STATE_KEY_EXT: hermesState.showAffirmations = value; break;
-                case LEARNING_STATE_KEY_EXT: hermesState.learningMode = value; break;
-                case DEBUG_MODE_KEY_EXT: hermesState.debugMode = value; break;
-                case POSITION_KEY_EXT: hermesState.uiPosition = value; break;
-                case WHITELIST_KEY_EXT: hermesState.whitelist = value; break;
-                case CUSTOM_THEMES_KEY_EXT: hermesState.customThemes = value; break;
-                case HELP_PANEL_OPEN_KEY_EXT: hermesState.helpPanelOpen = value; break;
-                default:
-                    console.warn("Hermes BG: Unknown key for SAVE_HERMES_DATA:", key);
-                    successfullyUpdatedInMemoryState = false;
-                    sendResponse({ success: false, error: `Unknown storage key: ${key}` });
-                    return true; 
-            }
-
-            if (successfullyUpdatedInMemoryState) {
-                if (typeof value === 'object' || Array.isArray(value)) {
-                    dataToStoreInChromeStorage[key] = JSON.stringify(value);
-                } else {
-                    dataToStoreInChromeStorage[key] = value;
+            case "SAVE_HERMES_DATA":
+                if (!payload || typeof payload.key === 'undefined') {
+                    console.error("Hermes BG: Invalid SAVE_HERMES_DATA payload. Missing key.", payload);
+                    sendResponse({ success: false, error: "Missing key in payload" });
+                    return;
                 }
 
-                chrome.storage.local.set(dataToStoreInChromeStorage, () => {
-                    if (chrome.runtime.lastError) {
-                        console.error(`Hermes BG: Error saving data for key ${key}:`, chrome.runtime.lastError.message);
-                        sendResponse({ success: false, error: chrome.runtime.lastError.message });
-                    } else {
-                        console.log(`Hermes BG: Data successfully saved for key ${key}. LearningMode: ${hermesState.learningMode}, DebugMode: ${hermesState.debugMode}`);
-                        sendResponse({ success: true });
-                    }
-                });
-            }
-            break;
+                const { key, value } = payload;
+                let dataToStoreInChromeStorage = {};
+                let successfullyUpdatedInMemoryState = true;
 
-        case "ADD_DEBUG_LOG":
-            if (payload) {
-                debugLogs.push(payload);
-            }
-            sendResponse({ success: true });
-            break;
+                switch (key) {
+                    case STORAGE_KEYS.SETTINGS: hermesState.settings = value; break;
+                    case STORAGE_KEYS.PROFILE: hermesState.profile = value; break;
+                    case STORAGE_KEYS.MACRO: hermesState.macros = value; break;
+                    case STORAGE_KEYS.MAPPING: hermesState.mappings = value; break;
+                    case STORAGE_KEYS.THEME: hermesState.theme = value; break;
+                    case STORAGE_KEYS.BUNCHED_STATE: hermesState.isBunched = value; break;
+                    case STORAGE_KEYS.EFFECTS_STATE: hermesState.effectsMode = value; break;
+                    case STORAGE_KEYS.OVERLAY_STATE: hermesState.showOverlays = value; break;
+                    case STORAGE_KEYS.AFFIRM_STATE: hermesState.showAffirmations = value; break;
+                    case STORAGE_KEYS.SCRATCH_NOTES: hermesState.scratchNotes = value; break;
+                    case STORAGE_KEYS.LEARNING_STATE: hermesState.learningMode = value; break;
+                    case STORAGE_KEYS.DEBUG_MODE: hermesState.debugMode = value; break;
+                    case STORAGE_KEYS.POSITION: hermesState.uiPosition = value; break;
+                    case STORAGE_KEYS.WHITELIST: hermesState.whitelist = value; break;
+                    case STORAGE_KEYS.DISABLED_HOSTS: hermesState.disabledHosts = value; break;
+                    case STORAGE_KEYS.CUSTOM_THEMES: hermesState.customThemes = value; break;
+                    case STORAGE_KEYS.HELP_PANEL_OPEN: hermesState.helpPanelOpen = value; break;
+                    default:
+                        console.warn("Hermes BG: Unknown key for SAVE_HERMES_DATA:", key);
+                        successfullyUpdatedInMemoryState = false;
+                        sendResponse({ success: false, error: `Unknown storage key: ${key}` });
+                        return;
+                }
 
-        case "GET_DEBUG_LOGS":
-            sendResponse({ success: true, logs: debugLogs });
-            break;
+                if (successfullyUpdatedInMemoryState) {
+                    dataToStoreInChromeStorage[key] = (typeof value === 'object' || Array.isArray(value)) ? JSON.stringify(value) : value;
 
-        case "CLEAR_DEBUG_LOGS":
-            debugLogs = [];
-            sendResponse({ success: true });
-            break;
+                    chrome.storage.local.set(dataToStoreInChromeStorage, () => {
+                        if (chrome.runtime.lastError) {
+                            console.error(`Hermes BG: Error saving data for key ${key}:`, chrome.runtime.lastError.message);
+                            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+                        } else {
+                            console.log(`Hermes BG: Data successfully saved for key ${key}.`);
+                            sendResponse({ success: true });
+                        }
+                    });
+                }
+                break;
 
-        default:
-            console.warn("Hermes BG: Received unknown message type:", type);
-            sendResponse({ success: false, error: `Unknown message type: ${type}` });
-            break;
-    }
+            case "ADD_DEBUG_LOG":
+                if (payload) {
+                    debugLogs.push(payload);
+                }
+                sendResponse({ success: true });
+                break;
 
-    return true; 
+            case "GET_DEBUG_LOGS":
+                sendResponse({ success: true, logs: debugLogs });
+                break;
+
+            case "CLEAR_DEBUG_LOGS":
+                debugLogs = [];
+                sendResponse({ success: true });
+                break;
+
+            default:
+                console.warn("Hermes BG: Received unknown message type:", type);
+                sendResponse({ success: false, error: `Unknown message type: ${type}` });
+                break;
+        }
+    };
+
+    // Call the async handler and return true to keep the message channel open
+    handleMessage();
+    return true;
 });
 
 console.log("Hermes BG: All event listeners set up. Ready for messages.");
-
