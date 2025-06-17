@@ -8,12 +8,13 @@
 - 📼 **Macro recorder** and playback engine
 - 🧠 **Heuristic trainer** that learns from skipped fields
 - 🎨 **Theming engine** with draggable UI that stacks vertically when dragged to page edges
-- ✨ **Visual effects** like lasers, snowflakes and strobes
+- ✨ **Visual effects** including lasers, snowflakes, strobes and confetti
 - 🧩 **Domain allowlist** with minimize-on-unlisted mode
 - ❓ **Help panel** and detailed **settings editor**
 - 📤 **Profile import/export** via JSON
 - 🔍 **Debug toolkit** with logs and mutation detection
 - ⏰ **Macro scheduling UI**
+- 🗒️ **Task list panel** for quick to-dos
 - ⌨️ **Configurable hotkeys**
 - 🔎 **Macro search/filter**
 - 🕒 **Wait steps for reliable playback**
@@ -67,7 +68,7 @@
 - Displays status messages for actions
 
 ### ✨ Visual Effects
-- Snowflake, Laser (classic & simple), Strobe and new **Cube 3D** modes
+- Snowflake, Laser (classic & simple), Strobe, Confetti and new **Cube 3D** modes
 - Canvas or WebGL based rendering that can be toggled on/off
 - Effect parameters editable in the settings panel
 
