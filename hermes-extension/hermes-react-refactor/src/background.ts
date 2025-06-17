@@ -14,7 +14,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'GET_HERMES_INITIAL_DATA') {
-    const keys = ['hermes_settings_v1_ext', 'hermes_profile_ext', 'hermes_macros_ext'];
+    const keys = ['hermes_settings_v1_ext', 'hermes_profile_ext', 'hermes_macros_ext', 'hermes_theme_ext'];
     chrome.storage.local.get(keys, (result) => {
       if (chrome.runtime.lastError) {
         sendResponse({ error: chrome.runtime.lastError.message });
@@ -23,6 +23,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           settings: result.hermes_settings_v1_ext || {},
           profile: result.hermes_profile_ext || {},
           macros: result.hermes_macros_ext || {},
+          theme: result.hermes_theme_ext || 'dark',
         });
       }
     });
