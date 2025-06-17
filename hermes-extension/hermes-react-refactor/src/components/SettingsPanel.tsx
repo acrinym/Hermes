@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { saveSettings, updateSettings } from '../store/settingsSlice';
 import { ThemeSelector } from './ThemeSelector';
+import { AffirmationToggle } from './AffirmationToggle';
 import { defaultSettings } from '../config/defaultSettings';
 
 interface SettingsPanelProps {
@@ -62,6 +63,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         />
         <div style={{ marginTop: '10px' }}>
           <ThemeSelector />
+          <AffirmationToggle />
           <label><input type="checkbox" checked={useCoords} onChange={e => setUseCoords(e.target.checked)} /> Use coordinate fallback</label><br/>
           <label><input type="checkbox" checked={recordMouse} onChange={e => setRecordMouse(e.target.checked)} /> Record mouse movements</label><br/>
           <label><input type="checkbox" checked={relativeCoords} onChange={e => setRelativeCoords(e.target.checked)} /> Track element movement</label><br/>
