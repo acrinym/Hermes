@@ -18,6 +18,7 @@ Use Hermes to:
 - Record macros that walk through complicated workflows for you.
 - Style and tweak the UI using themes and a deep settings panel.
 - Debug your mappings and macros through the built-in log viewer and overlays.
+- Keep a simple to-do list directly in Hermes.
 
 
 > Designed to work on *any* website, Hermes enhances browser interactivity without needing extra software or browser extensions.

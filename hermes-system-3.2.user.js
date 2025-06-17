@@ -32,6 +32,7 @@
     const SYNC_URL = 'http://localhost:3000';
     const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
     const DOCK_MODE_KEY = 'hermes_dock_mode';
+    const TASKS_KEY = 'hermes_tasks';
     const NOTES_KEY = 'hermes_notes';
     const POMODORO_KEY = 'hermes_pomodoro';
 
@@ -53,9 +54,10 @@
     let statusIndicator = null;
     let effectsButton = null;
     let helpButton = null;
-  let settingsButton = null; // New settings button
-  let notesButton = null;
-  let timerButton = null;
+    let settingsButton = null; // New settings button
+    let tasksButton = null;
+    let notesButton = null;
+    let timerButton = null;
 
   let notesText = GM_getValue(NOTES_KEY, '');
   let pomodoroSettings = JSON.parse(GM_getValue(POMODORO_KEY, '{"work":25,"break":5}'));
@@ -72,6 +74,7 @@
     let debugLogs = [];
     let profileData = {};
     let macros = {};
+    let tasks = [];
     let selectedMacroName = GM_getValue(SELECTED_MACRO_KEY, '');
     let customMappings = {};
     let skippedFields = [];
@@ -152,6 +155,8 @@ let scheduleSettings = {};
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
         scheduleButton: { emoji: '⏰', text: 'Schedule', bunchedText: 'Sch', title: 'Schedule macro execution' },
+        settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' },
+        tasksButton: { emoji: '🗒️', text: 'Tasks', bunchedText: 'Tsk', title: 'Manage task list' }
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' }, // New settings button
         notesButton: { emoji: '📔', text: 'Notes', bunchedText: 'Note', title: 'Open quick notes' },
         timerButton: { emoji: '⏱️', text: 'Timer', bunchedText: 'Tm', title: 'Pomodoro timer' }
@@ -177,6 +182,7 @@ let scheduleSettings = {};
     let strobeStateV13 = { phase: 0, opacity: 0 };
     let lasersV14 = [];
     let strobeStateV14 = { phase: 0, opacity: 0 };
+    let confettiPieces = [];
 
     function parseHotkeyString(str) {
         const parts = String(str || '').split('+').map(p => p.trim().toLowerCase());
@@ -279,6 +285,19 @@ let scheduleSettings = {};
                 "color": "rgba(255, 255, 255, {alpha})",
                 "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
             },
+            "_comment_confetti": "Settings for the 'Confetti' effect.",
+            "confetti": {
+                "density": 40,
+                "_comment_density": "Number of confetti pieces. Default: 40. Range: 10-200.",
+                "colors": ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff"],
+                "_comment_colors": "Array of colors for confetti squares.",
+                "size": 6,
+                "_comment_size": "Base size of confetti pieces in pixels.",
+                "gravity": 0.5,
+                "_comment_gravity": "Falling speed factor.",
+                "drift": 0.3,
+                "_comment_drift": "Sideways drift factor."
+            },
         "_comment_syncInterval": "Minutes between automatic sync with server. 0 disables.",
         "syncInterval": 0,
         },
@@ -339,6 +358,10 @@ let scheduleSettings = {};
             }
             if (settingsToSave.effects && settingsToSave.effects.snowflakesV13) {
                 settingsToSave.effects.snowflakesV13.density = Math.max(5, Math.min(settingsToSave.effects.snowflakesV13.density || 50, 300));
+            }
+            if (settingsToSave.effects && settingsToSave.effects.confetti) {
+                settingsToSave.effects.confetti.density = Math.max(5, Math.min(settingsToSave.effects.confetti.density || 40, 300));
+                settingsToSave.effects.confetti.size = Math.max(2, Math.min(settingsToSave.effects.confetti.size || 6, 20));
             }
             // Add more clamping for other settings as needed
 
@@ -921,6 +944,27 @@ let scheduleSettings = {};
             return true;
         } catch (e) {
             console.error('Hermes: Error saving schedule settings:', e);
+            return false;
+        }
+    }
+
+    const defaultTasks = [];
+    function loadTasks() {
+        try {
+            const json = GM_getValue(TASKS_KEY, '[]');
+            tasks = JSON.parse(json);
+        } catch (e) {
+            tasks = [...defaultTasks];
+        }
+        return tasks;
+    }
+    function saveTasks(list) {
+        try {
+            GM_setValue(TASKS_KEY, JSON.stringify(list));
+            tasks = list;
+            return true;
+        } catch (e) {
+            console.error('Hermes: Error saving tasks:', e);
             return false;
         }
     }
@@ -1957,11 +2001,12 @@ function importMacrosFromFile() {
                 <li><strong>Overlay:</strong> Highlight fillable fields (toggleable).</li>
                 <li><strong>Allowlist:</strong> Minimize UI on specific domains (shows full UI on click).</li>
                 <li><strong>Theme:</strong> Change UI appearance with various themes.</li>
-                <li><strong>Effects:</strong> Add visual effects (Snowflake, Classic/Simple Laser, Classic/Simple Strobe).</li>
+                <li><strong>Effects:</strong> Add visual effects (Snowflake, Laser, Strobe, Confetti).</li>
                 <li><strong>Settings (⚙️):</strong> Configure detailed options for UI (like border thickness) and visual effects (density, colors, speed, etc.) via a JSON editor.</li>
                 <li><strong>Bunch:</strong> Compact UI layout (vertical or horizontal).</li>
                 <li><strong>Sniff Elements:</strong> Log form elements for debugging.</li>
                 <li><strong>Import JSON:</strong> Import profile data from JSON.</li>
+                <li><strong>Tasks:</strong> Keep a simple to-do list.</li>
             </ul>
             <h3 style="margin-top:20px;color:var(--hermes-panel-text);">Tips</h3>
             <ul style="list-style:disc;padding-left:20px;">
@@ -2177,6 +2222,73 @@ function importMacrosFromFile() {
     }
   }
 
+    function createTasksPanel() {
+        const panelId = 'hermes-tasks-panel';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+
+        const contentHtml = `
+            <div id="hermes-tasks-list" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>
+            <div style="display:flex;gap:5px;">
+                <input id="hermes-task-input" type="text" placeholder="New task..." style="flex:1;">
+                <button id="hermes-task-add" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Add</button>
+            </div>`;
+        createModal(panelId, 'Hermes Tasks', contentHtml, '400px');
+
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (!panel) return;
+
+        const listDiv = panel.querySelector('#hermes-tasks-list');
+        const inputEl = panel.querySelector('#hermes-task-input');
+        const addBtn = panel.querySelector('#hermes-task-add');
+
+        const render = () => {
+            listDiv.innerHTML = '';
+            tasks.forEach((t, i) => {
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.marginBottom = '5px';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = t.done;
+                cb.onchange = () => { tasks[i].done = cb.checked; saveTasks(tasks); render(); };
+                const span = document.createElement('span');
+                span.textContent = t.text;
+                span.style.marginLeft = '5px';
+                if (t.done) span.style.textDecoration = 'line-through';
+                const del = document.createElement('button');
+                del.className = 'hermes-button';
+                del.textContent = '✖';
+                del.style.marginLeft = 'auto';
+                del.onclick = () => { tasks.splice(i,1); saveTasks(tasks); render(); };
+                item.appendChild(cb);
+                item.appendChild(span);
+                item.appendChild(del);
+                listDiv.appendChild(item);
+            });
+        };
+        render();
+        if (addBtn) addBtn.onclick = () => {
+            const text = inputEl.value.trim();
+            if (text) {
+                tasks.push({ text, done:false });
+                saveTasks(tasks);
+                inputEl.value = '';
+                render();
+            }
+        };
+    }
+
+    function toggleTasksPanel(show) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-tasks-panel');
+        if (show && !panel) { createTasksPanel(); panel = shadowRoot.querySelector('#hermes-tasks-panel'); }
+        if (panel) {
+            if (show) { panel.style.display = 'block'; applyTheme(); }
+            else panel.style.display = 'none';
+        }
+    }
+
     // =================== Effects System (with Distinct v13/v14 animations & Settings Integration) ===================
     function setupEffectsCanvas() {
         if (!shadowRoot) { console.warn("Hermes: ShadowRoot not ready for effects canvas."); return; }
@@ -2254,6 +2366,45 @@ function importMacrosFromFile() {
             }
         });
         effectAnimationFrameId = requestAnimationFrame(animateV13Snowflakes);
+    }
+
+    // --- Confetti Effect ---
+    function initConfetti() {
+        confettiPieces = [];
+        if (!effectsCanvas || !currentSettings.effects || !currentSettings.effects.confetti) return;
+        const settings = currentSettings.effects.confetti;
+        for (let i = 0; i < (settings.density || 40); i++) {
+            confettiPieces.push({
+                x: Math.random() * effectsCanvas.width,
+                y: Math.random() * effectsCanvas.height,
+                dx: (Math.random() - 0.5) * (settings.drift || 0.3) * 4,
+                dy: Math.random() * (settings.gravity || 0.5) * 2 + 1,
+                color: (settings.colors && settings.colors[Math.floor(Math.random() * settings.colors.length)]) || '#ff0',
+                size: settings.size || 6,
+                canvasWidth: effectsCanvas.width
+            });
+        }
+    }
+    function animateConfetti() {
+        if (!effectsCtx || effectsMode !== 'confetti' || isMinimized || !currentSettings.effects || !currentSettings.effects.confetti) return;
+        const settings = currentSettings.effects.confetti;
+        effectsCtx.clearRect(0, 0, effectsCanvas.width, effectsCanvas.height);
+        confettiPieces.forEach(p => {
+            p.x += p.dx;
+            p.y += p.dy;
+            p.dy += (settings.gravity || 0.5) * 0.01 * p.size;
+            if (p.y > effectsCanvas.height) {
+                p.y = -p.size;
+                p.x = Math.random() * effectsCanvas.width;
+                p.dy = Math.random() * (settings.gravity || 0.5) * 2 + 1;
+                p.color = (settings.colors && settings.colors[Math.floor(Math.random() * settings.colors.length)]) || '#ff0';
+            }
+            if (p.x > effectsCanvas.width) p.x = -p.size;
+            if (p.x < -p.size) p.x = effectsCanvas.width + p.size;
+            effectsCtx.fillStyle = p.color;
+            effectsCtx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        effectAnimationFrameId = requestAnimationFrame(animateConfetti);
     }
 
     // --- V13 Classic Laser (Settings Aware) ---
@@ -2363,7 +2514,7 @@ function importMacrosFromFile() {
 
         if (effectsMode === 'none' || isMinimized) {
             effectsCanvas.style.display = 'none';
-            snowflakesV13 = []; lasersV13 = []; lasersV14 = [];
+            snowflakesV13 = []; lasersV13 = []; lasersV14 = []; confettiPieces = [];
             strobeStateV13 = { phase: 0, opacity: 0 }; // Reset state
             strobeStateV14 = { phase: 0, opacity: 0 }; // Reset state
             return;
@@ -2397,6 +2548,12 @@ function importMacrosFromFile() {
             case 'strobeV14':
                 animateV14Strobe();
                 break;
+            case 'confetti':
+                if (confettiPieces.length === 0 || (effectsCanvas && confettiPieces[0] && confettiPieces[0].canvasWidth !== effectsCanvas.width)) {
+                    initConfetti();
+                }
+                animateConfetti();
+                break;
         }
     }
 
@@ -2411,7 +2568,8 @@ function importMacrosFromFile() {
             { mode: 'laserV13', name: 'Laser (Classic)', emoji: '↔️🟥' },
             { mode: 'strobeV13', name: 'Strobe (Classic)', emoji: '🔄🚨' },
             { mode: 'laserV14', name: 'Laser (Simple)', emoji: '⬇️🟥' },
-            { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' }
+            { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' },
+            { mode: 'confetti', name: 'Confetti', emoji: '🎊' }
         ];
         effectsListConfig.forEach(effect => {
             const button = document.createElement('button');
@@ -3457,7 +3615,8 @@ function importMacrosFromFile() {
                  const effectsListDisplay = [
                     { mode: 'none', emoji: '🚫' }, { mode: 'snowflake', emoji: '❄️' },
                     { mode: 'laserV13', emoji: '↔️🟥' }, { mode: 'strobeV13', emoji: '🔄🚨' },
-                    { mode: 'laserV14', emoji: '⬇️🟥' }, { mode: 'strobeV14', emoji: '💡' }
+                    { mode: 'laserV14', emoji: '⬇️🟥' }, { mode: 'strobeV14', emoji: '💡' },
+                    { mode: 'confetti', emoji: '🎊' }
                 ];
                 const activeEffectDisplay = effectsListDisplay.find(ef => ef.mode === effectsMode);
                 const currentEffectEmoji = activeEffectDisplay ? activeEffectDisplay.emoji : hermesButtonProperties.effectsButton.emoji;
@@ -3472,6 +3631,7 @@ function importMacrosFromFile() {
 
             if (helpButton) updateButtonAppearance(helpButton, 'helpButton', isBunched);
             if (settingsButton) updateButtonAppearance(settingsButton, 'settingsButton', isBunched); // Update settings button
+            if (tasksButton) updateButtonAppearance(tasksButton, 'tasksButton', isBunched);
 
             const sniffBtn = shadowRoot.querySelector('#hermes-sniff-button');
             if (sniffBtn) updateButtonAppearance(sniffBtn, 'sniffButton', isBunched);
@@ -3865,7 +4025,15 @@ function importMacrosFromFile() {
         // Effects Button & Submenu
         effectsButton = document.createElement('button'); // Already declared, just assign
         effectsButton.id = 'hermes-effects-button';
-        const effectsListDisplayInit = [ /* ... as before ... */ ];
+        const effectsListDisplayInit = [
+            { mode: 'none', emoji: '🚫' },
+            { mode: 'snowflake', emoji: '❄️' },
+            { mode: 'laserV13', emoji: '↔️🟥' },
+            { mode: 'strobeV13', emoji: '🔄🚨' },
+            { mode: 'laserV14', emoji: '⬇️🟥' },
+            { mode: 'strobeV14', emoji: '💡' },
+            { mode: 'confetti', emoji: '🎊' }
+        ];
         const activeEffectOnInit = effectsListDisplayInit.find(ef => ef.mode === effectsMode);
         const initialEffectEmoji = activeEffectOnInit ? activeEffectOnInit.emoji : hermesButtonProperties.effectsButton.emoji;
         updateButtonAppearance(effectsButton, 'effectsButton', isBunched, initialEffectEmoji);
@@ -3909,6 +4077,13 @@ function importMacrosFromFile() {
         updateButtonAppearance(helpButton, 'helpButton', isBunched);
         helpButton.onclick = () => { closeAllSubmenus(); toggleHelpPanel(true); };
         uiContainer.appendChild(helpButton);
+
+        // Tasks Button
+        tasksButton = document.createElement('button');
+        tasksButton.id = 'hermes-tasks-button';
+        updateButtonAppearance(tasksButton, 'tasksButton', isBunched);
+        tasksButton.onclick = () => { closeAllSubmenus(); toggleTasksPanel(true); };
+        uiContainer.appendChild(tasksButton);
 
         // Settings Button (NEW)
         settingsButton = document.createElement('button');
@@ -4100,6 +4275,7 @@ function importMacrosFromFile() {
         loadCustomMappings();
         loadSettings(); // Load settings early
         loadScheduleSettings();
+        loadTasks();
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             if(document.body){ // Ensure body exists
