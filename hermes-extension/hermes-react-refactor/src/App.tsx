@@ -14,6 +14,8 @@ import { SkippedField } from './services/heuristicsService';
 import { loadProfile } from './store/profileSlice';
 import { loadSettings } from './store/settingsSlice';
 import { loadMacros, saveMacros } from './store/macrosSlice';
+import { loadTheme } from './store/themeSlice';
+import { applyTheme } from './themes/theme';
 
 import './App.css';
 
@@ -28,12 +30,18 @@ const App: React.FC = () => {
   const { recordingState } = useSelector((state: RootState) => state.macros);
   const { profile } = useSelector((state: RootState) => state.profile);
   const { settings } = useSelector((state: RootState) => state.settings);
+  const { theme } = useSelector((state: RootState) => state.theme);
 
   useEffect(() => {
     dispatch(loadProfile());
     dispatch(loadSettings());
     dispatch(loadMacros());
+    dispatch(loadTheme());
   }, [dispatch]);
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   const handleRecord = () => {
     if (recordingState === 'recording') {
@@ -49,7 +57,7 @@ const App: React.FC = () => {
   };
 
   const handleFill = async () => {
-    const skipped = await fillForm(profile, settings);
+    const skipped = await fillForm(profile);
     if (skipped.length > 0) {
       alert(`${skipped.length} field(s) were not filled. Use the 'Train' button to improve accuracy.`);
     } else {
@@ -58,7 +66,7 @@ const App: React.FC = () => {
   };
 
   const handleTrain = async () => {
-    const skippedFields = await startHeuristicTraining(profile, settings);
+    const skippedFields = await startHeuristicTraining(profile);
     if (skippedFields.length > 0) {
       setTrainingSession(skippedFields);
     } else {
