@@ -332,6 +332,7 @@ let scheduleSettings = {};
     let currentSettings = {};
 
     function loadSettings() {
+        console.log('Hermes: Loading settings');
         try {
             const settingsJson = GM_getValue(SETTINGS_KEY, JSON.stringify(defaultSettings));
             currentSettings = JSON.parse(settingsJson);
@@ -352,6 +353,7 @@ let scheduleSettings = {};
         }
         applyCurrentSettings(); // Apply loaded settings
         startAutoSync(currentSettings.syncInterval);
+        console.log('Hermes: Settings loaded');
         return currentSettings;
     }
 
@@ -388,6 +390,7 @@ let scheduleSettings = {};
     }
 
     function applyCurrentSettings() {
+        console.log('Hermes: Applying settings');
         if (!shadowRoot || !uiContainer) return; // UI not ready
 
         updateParsedHotkeys();
@@ -404,6 +407,7 @@ let scheduleSettings = {};
         }
         applyTheme(); // Re-apply theme which might use settings for border etc.
         debugLogs.push({ timestamp: Date.now(), type: 'settings_apply', details: { currentSettings } });
+        console.log('Hermes: Settings applied');
     }
 
 
@@ -834,6 +838,7 @@ let scheduleSettings = {};
 
     // =================== Data Loading/Saving ===================
     function loadProfileData() {
+        console.log('Hermes: Loading profile data');
         try {
             const profileJson = GM_getValue(PROFILE_KEY, '{}');
             profileData = JSON.parse(profileJson);
@@ -842,6 +847,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'profile_load', details: { error: error.message } });
             profileData = {};
         }
+        console.log('Hermes: Profile data loaded');
         return profileData;
     }
     function saveProfileData(dataToSave) {
@@ -858,6 +864,7 @@ let scheduleSettings = {};
         }
     }
     function loadMacros() {
+        console.log('Hermes: Loading macros');
         try {
             const macrosJson = GM_getValue(MACRO_KEY, '{}');
             macros = JSON.parse(macrosJson);
@@ -866,6 +873,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'macros_load', details: { error: error.message } });
             macros = {};
         }
+        console.log('Hermes: Macros loaded');
         return macros;
     }
     function saveMacros(macrosToSave) {
@@ -881,6 +889,7 @@ let scheduleSettings = {};
         }
     }
     function loadCustomMappings() {
+        console.log('Hermes: Loading custom mappings');
         try {
             const mappingsJson = GM_getValue(MAPPING_KEY, '{}');
             customMappings = JSON.parse(mappingsJson);
@@ -889,6 +898,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'mappings_load', details: { error: error.message } });
             customMappings = {};
         }
+        console.log('Hermes: Custom mappings loaded');
         return customMappings;
     }
     function saveCustomMappings(mappingsToSave) {
@@ -904,9 +914,12 @@ let scheduleSettings = {};
         }
     }
     function loadWhitelist() {
+        console.log('Hermes: Loading allowlist');
         try {
             const whitelistJson = GM_getValue(WHITELIST_KEY, '[]');
-            return JSON.parse(whitelistJson);
+            const data = JSON.parse(whitelistJson);
+            console.log('Hermes: Allowlist loaded');
+            return data;
         } catch (error) {
             console.error("Hermes: Error loading allowlist:", error);
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'allowlist_load', details: { error: error.message } });
@@ -936,12 +949,14 @@ let scheduleSettings = {};
 
     const defaultScheduleSettings = { selected: [], date: '', time: '', recurrence: 'once' };
     function loadScheduleSettings() {
+        console.log('Hermes: Loading schedule settings');
         try {
             const json = GM_getValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(defaultScheduleSettings));
             scheduleSettings = JSON.parse(json);
         } catch (e) {
             scheduleSettings = { ...defaultScheduleSettings };
         }
+        console.log('Hermes: Schedule settings loaded');
         return scheduleSettings;
     }
     function saveScheduleSettings(data) {
@@ -957,12 +972,14 @@ let scheduleSettings = {};
 
     const defaultTasks = [];
     function loadTasks() {
+        console.log('Hermes: Loading tasks');
         try {
             const json = GM_getValue(TASKS_KEY, '[]');
             tasks = JSON.parse(json);
         } catch (e) {
             tasks = [...defaultTasks];
         }
+        console.log('Hermes: Tasks loaded');
         return tasks;
     }
     function saveTasks(list) {
@@ -3878,6 +3895,7 @@ function importMacrosFromFile() {
 
     // =================== UI Setup ===================
     function setupUI() {
+        console.log('Hermes: Setting up UI');
         if (document.querySelector('#hermes-shadow-host')) {
              console.warn("Hermes: UI setup aborted, shadow host already exists.");
              return;
@@ -4211,6 +4229,7 @@ function importMacrosFromFile() {
 
     // =================== Analysis Sniffer Plugin ===================
     function setupAnalysisSnifferPlugin() {
+        console.log('Hermes: Setting up Analysis Sniffer plugin');
         if(!uiContainer) return;
 
         const sniffButtonElement = document.createElement('button');
@@ -4277,20 +4296,24 @@ function importMacrosFromFile() {
 
     // =================== Initialization ===================
     function initialize() {
+        console.log('Hermes: Initialize start');
         loadProfileData();
         loadMacros();
         loadCustomMappings();
         loadSettings(); // Load settings early
         loadScheduleSettings();
         loadTasks();
+        console.log('Hermes: Data loaded');
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('Hermes: Document ready');
             if(document.body){ // Ensure body exists
                  setupUI();
                  setupAnalysisSnifferPlugin(); // Add new plugins here if they modify the main UI
                  applyCurrentSettings(); // Ensure settings are applied after UI is built
                  document.addEventListener('keydown', handleGlobalHotkeys, true);
             } else { // Fallback if body isn't parsed yet but state is interactive/complete
+                console.log('Hermes: Waiting for DOMContentLoaded (body missing)');
                 document.addEventListener('DOMContentLoaded', () => {
                     setupUI();
                     setupAnalysisSnifferPlugin();
@@ -4299,6 +4322,7 @@ function importMacrosFromFile() {
                 });
             }
         } else { // Still loading
+            console.log('Hermes: Waiting for DOMContentLoaded');
             document.addEventListener('DOMContentLoaded', () => {
                 setupUI();
                 setupAnalysisSnifferPlugin();
