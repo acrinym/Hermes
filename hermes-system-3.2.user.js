@@ -14,6 +14,13 @@
 (function() {
     'use strict';
 
+  // Announce script load in the console
+  if (typeof GM_info !== 'undefined') {
+    console.log(`[Hermes] ${GM_info.script.name} v${GM_info.script.version} loaded`);
+  } else {
+    console.log('Hermes userscript loaded');
+  }
+
     // =================== Constants & Keys ===================
     const PROFILE_KEY = 'hermes_profile';
     const MACRO_KEY = 'hermes_macros';
@@ -4301,16 +4308,22 @@ function importMacrosFromFile() {
         }
     }
 
-    // --- Script entry point ---
-    // Check for Tampermonkey/Violentmonkey for potentially more reliable GM_info and execution timing
-    if (typeof GM_info !== 'undefined' && (GM_info.scriptHandler === "Tampermonkey" || GM_info.scriptHandler === "Violentmonkey" || GM_info.scriptHandler === "Greasemonkey")) {
-        // Using a small timeout can sometimes help ensure the page is fully ready,
-        // especially with complex sites or other scripts running.
-        window.setTimeout(initialize, 150);
-    } else {
-        // For other script managers or if GM_info is not available, initialize directly.
-        // DOMContentLoaded should handle most cases.
-        initialize();
+  // --- Script entry point ---
+  // Check for Tampermonkey/Violentmonkey for potentially more reliable GM_info and execution timing
+  if (typeof GM_info !== 'undefined' && (GM_info.scriptHandler === "Tampermonkey" || GM_info.scriptHandler === "Violentmonkey" || GM_info.scriptHandler === "Greasemonkey")) {
+    if (typeof GM_registerMenuCommand === 'function') {
+      GM_registerMenuCommand('Open Hermes', initialize);
     }
+    // Using a small timeout can sometimes help ensure the page is fully ready,
+    // especially with complex sites or other scripts running.
+    window.setTimeout(initialize, 150);
+  } else {
+    if (typeof GM_registerMenuCommand === 'function') {
+      GM_registerMenuCommand('Open Hermes', initialize);
+    }
+    // For other script managers or if GM_info is not available, initialize directly.
+    // DOMContentLoaded should handle most cases.
+    initialize();
+  }
 
 })();
