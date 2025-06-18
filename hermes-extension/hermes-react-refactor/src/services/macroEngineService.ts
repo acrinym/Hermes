@@ -1,6 +1,6 @@
 // hermes-react-refactor/src/services/macroEngineService.ts
 
-import { AppDispatch } from '../store';
+import { store, AppDispatch } from '../store';
 import { setRecordingState, addMacro } from '../store/macrosSlice';
 
 export interface MacroEvent {
@@ -321,3 +321,5 @@ export class MacroEngine {
     return path;
   }
 }
+
+export const macroEngine = new MacroEngine(store.dispatch);
