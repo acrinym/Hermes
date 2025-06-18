@@ -1,0 +1,26 @@
+{
+  "name": "hermes-react-refactor",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@types/react": "^18.2.7",
+    "@types/react-dom": "^18.2.4",
+    "@types/chrome": "^0.0.234",
+    "@types/node": "^20.8.10",
+    "react-redux": "^9.0.0",
+    "@reduxjs/toolkit": "^2.2.3",
+    "@types/react-redux": "^7.1.25"
+  }
+}
