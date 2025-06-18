@@ -260,6 +260,9 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
   }
 }
 
+  // close updateMacroSubmenuContents
+}
+
 // === Macro Editor Panel ===
 function toggleMacroEditor(show: boolean, macroName?: string) {
   const panelId = 'hermes-macro-editor';

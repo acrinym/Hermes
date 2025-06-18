@@ -3,6 +3,8 @@ import { getRoot } from './root.ts';
 import { t } from '../i18n.js';
 import { saveDataToBackground } from './storage/index.ts';
 
+declare const chrome: any;
+
 const SCRATCH_KEY = 'hermes_scratch_notes_ext';
 
 interface Note { title: string; content: string; }
