@@ -6,6 +6,7 @@ import { RootState, AppDispatch } from './store';
 import { SettingsPanel } from './components/SettingsPanel';
 import MacroPanel from './components/MacroPanel';
 import { TrainerPanel } from './components/TrainerPanel';
+import AllowlistPanel from './components/AllowlistPanel';
 import { useDraggable } from './hooks/useDraggable';
 import { macroEngine } from './services/macroEngineService';
 import { fillForm } from './services/formFillerService';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
   const { position, isStacked } = useDraggable(appRef, headerRef);
   const [isSettingsVisible, setSettingsVisible] = useState(false);
   const [trainingSession, setTrainingSession] = useState<SkippedField[] | null>(null);
+  const [showAllowlist, setShowAllowlist] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const { recordingState } = useSelector((state: RootState) => state.macros);
@@ -94,16 +96,18 @@ const App: React.FC = () => {
         </button>
         <button onClick={handleTrain}>Train</button>
         <button onClick={() => setSettingsVisible(true)}>Settings</button>
+        <button onClick={() => setShowAllowlist(true)}>Allowlist</button>
       </div>
 
       {isSettingsVisible && <SettingsPanel onClose={() => setSettingsVisible(false)} />}
       {trainingSession && (
-        <TrainerPanel 
-          skippedFields={trainingSession} 
+        <TrainerPanel
+          skippedFields={trainingSession}
           currentProfile={profile}
-          onClose={() => setTrainingSession(null)} 
+          onClose={() => setTrainingSession(null)}
         />
       )}
+      {showAllowlist && <AllowlistPanel onClose={() => setShowAllowlist(false)} />}
     </div>
   );
 };
