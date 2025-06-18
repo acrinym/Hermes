@@ -14,6 +14,13 @@
 (function() {
     'use strict';
 
+  // Announce script load in the console
+  if (typeof GM_info !== 'undefined') {
+    console.log(`[Hermes] ${GM_info.script.name} v${GM_info.script.version} loaded`);
+  } else {
+    console.log('Hermes userscript loaded');
+  }
+
     // =================== Constants & Keys ===================
     const PROFILE_KEY = 'hermes_profile';
     const MACRO_KEY = 'hermes_macros';
@@ -183,6 +190,7 @@ let scheduleSettings = {};
     let lasersV14 = [];
     let strobeStateV14 = { phase: 0, opacity: 0 };
     let confettiPieces = [];
+    let bubbles = [];
 
     function parseHotkeyString(str) {
         const parts = String(str || '').split('+').map(p => p.trim().toLowerCase());
@@ -298,6 +306,21 @@ let scheduleSettings = {};
                 "drift": 0.3,
                 "_comment_drift": "Sideways drift factor."
             },
+            "_comment_bubbles": "Settings for the 'Bubbles' effect.",
+            "bubbles": {
+                "density": 40,
+                "_comment_density": "Number of bubbles. Default: 40. Range: 5-200.",
+                "sizeMin": 2,
+                "_comment_sizeMin": "Minimum bubble size in pixels. Default: 2.",
+                "sizeMax": 6,
+                "_comment_sizeMax": "Maximum bubble size in pixels. Default: 6.",
+                "speedMin": 0.5,
+                "_comment_speedMin": "Minimum rising speed. Default: 0.5.",
+                "speedMax": 1.5,
+                "_comment_speedMax": "Maximum rising speed. Default: 1.5.",
+                "color": "rgba(173,216,230,0.7)",
+                "_comment_color": "Color of bubbles. Default: 'rgba(173,216,230,0.7)'."
+            },
         "_comment_syncInterval": "Minutes between automatic sync with server. 0 disables.",
         "syncInterval": 0,
         },
@@ -325,6 +348,7 @@ let scheduleSettings = {};
     let currentSettings = {};
 
     function loadSettings() {
+        console.log('Hermes: Loading settings');
         try {
             const settingsJson = GM_getValue(SETTINGS_KEY, JSON.stringify(defaultSettings));
             currentSettings = JSON.parse(settingsJson);
@@ -345,6 +369,7 @@ let scheduleSettings = {};
         }
         applyCurrentSettings(); // Apply loaded settings
         startAutoSync(currentSettings.syncInterval);
+        console.log('Hermes: Settings loaded');
         return currentSettings;
     }
 
@@ -381,6 +406,7 @@ let scheduleSettings = {};
     }
 
     function applyCurrentSettings() {
+        console.log('Hermes: Applying settings');
         if (!shadowRoot || !uiContainer) return; // UI not ready
 
         updateParsedHotkeys();
@@ -397,6 +423,7 @@ let scheduleSettings = {};
         }
         applyTheme(); // Re-apply theme which might use settings for border etc.
         debugLogs.push({ timestamp: Date.now(), type: 'settings_apply', details: { currentSettings } });
+        console.log('Hermes: Settings applied');
     }
 
 
@@ -827,6 +854,7 @@ let scheduleSettings = {};
 
     // =================== Data Loading/Saving ===================
     function loadProfileData() {
+        console.log('Hermes: Loading profile data');
         try {
             const profileJson = GM_getValue(PROFILE_KEY, '{}');
             profileData = JSON.parse(profileJson);
@@ -835,6 +863,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'profile_load', details: { error: error.message } });
             profileData = {};
         }
+        console.log('Hermes: Profile data loaded');
         return profileData;
     }
     function saveProfileData(dataToSave) {
@@ -851,6 +880,7 @@ let scheduleSettings = {};
         }
     }
     function loadMacros() {
+        console.log('Hermes: Loading macros');
         try {
             const macrosJson = GM_getValue(MACRO_KEY, '{}');
             macros = JSON.parse(macrosJson);
@@ -859,6 +889,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'macros_load', details: { error: error.message } });
             macros = {};
         }
+        console.log('Hermes: Macros loaded');
         return macros;
     }
     function saveMacros(macrosToSave) {
@@ -874,6 +905,7 @@ let scheduleSettings = {};
         }
     }
     function loadCustomMappings() {
+        console.log('Hermes: Loading custom mappings');
         try {
             const mappingsJson = GM_getValue(MAPPING_KEY, '{}');
             customMappings = JSON.parse(mappingsJson);
@@ -882,6 +914,7 @@ let scheduleSettings = {};
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'mappings_load', details: { error: error.message } });
             customMappings = {};
         }
+        console.log('Hermes: Custom mappings loaded');
         return customMappings;
     }
     function saveCustomMappings(mappingsToSave) {
@@ -897,9 +930,12 @@ let scheduleSettings = {};
         }
     }
     function loadWhitelist() {
+        console.log('Hermes: Loading allowlist');
         try {
             const whitelistJson = GM_getValue(WHITELIST_KEY, '[]');
-            return JSON.parse(whitelistJson);
+            const data = JSON.parse(whitelistJson);
+            console.log('Hermes: Allowlist loaded');
+            return data;
         } catch (error) {
             console.error("Hermes: Error loading allowlist:", error);
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'allowlist_load', details: { error: error.message } });
@@ -929,12 +965,14 @@ let scheduleSettings = {};
 
     const defaultScheduleSettings = { selected: [], date: '', time: '', recurrence: 'once' };
     function loadScheduleSettings() {
+        console.log('Hermes: Loading schedule settings');
         try {
             const json = GM_getValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(defaultScheduleSettings));
             scheduleSettings = JSON.parse(json);
         } catch (e) {
             scheduleSettings = { ...defaultScheduleSettings };
         }
+        console.log('Hermes: Schedule settings loaded');
         return scheduleSettings;
     }
     function saveScheduleSettings(data) {
@@ -950,12 +988,14 @@ let scheduleSettings = {};
 
     const defaultTasks = [];
     function loadTasks() {
+        console.log('Hermes: Loading tasks');
         try {
             const json = GM_getValue(TASKS_KEY, '[]');
             tasks = JSON.parse(json);
         } catch (e) {
             tasks = [...defaultTasks];
         }
+        console.log('Hermes: Tasks loaded');
         return tasks;
     }
     function saveTasks(list) {
@@ -2001,7 +2041,7 @@ function importMacrosFromFile() {
                 <li><strong>Overlay:</strong> Highlight fillable fields (toggleable).</li>
                 <li><strong>Allowlist:</strong> Minimize UI on specific domains (shows full UI on click).</li>
                 <li><strong>Theme:</strong> Change UI appearance with various themes.</li>
-                <li><strong>Effects:</strong> Add visual effects (Snowflake, Laser, Strobe, Confetti).</li>
+                <li><strong>Effects:</strong> Add visual effects (Snowflake, Laser, Strobe, Confetti, Bubbles).</li>
                 <li><strong>Settings (⚙️):</strong> Configure detailed options for UI (like border thickness) and visual effects (density, colors, speed, etc.) via a JSON editor.</li>
                 <li><strong>Bunch:</strong> Compact UI layout (vertical or horizontal).</li>
                 <li><strong>Sniff Elements:</strong> Log form elements for debugging.</li>
@@ -2407,6 +2447,39 @@ function importMacrosFromFile() {
         effectAnimationFrameId = requestAnimationFrame(animateConfetti);
     }
 
+    // --- Bubbles Effect ---
+    function initBubbles() {
+        bubbles = [];
+        if (!effectsCanvas || !currentSettings.effects || !currentSettings.effects.bubbles) return;
+        const settings = currentSettings.effects.bubbles;
+        for (let i = 0; i < (settings.density || 40); i++) {
+            bubbles.push({
+                x: Math.random() * effectsCanvas.width,
+                y: Math.random() * effectsCanvas.height,
+                r: (settings.sizeMin || 2) + Math.random() * ((settings.sizeMax || 6) - (settings.sizeMin || 2)),
+                s: (settings.speedMin || 0.5) + Math.random() * ((settings.speedMax || 1.5) - (settings.speedMin || 0.5)),
+                canvasWidth: effectsCanvas.width
+            });
+        }
+    }
+    function animateBubbles() {
+        if (!effectsCtx || effectsMode !== 'bubbles' || isMinimized || !currentSettings.effects || !currentSettings.effects.bubbles) return;
+        const settings = currentSettings.effects.bubbles;
+        effectsCtx.clearRect(0, 0, effectsCanvas.width, effectsCanvas.height);
+        bubbles.forEach(b => {
+            b.y -= b.s;
+            if (b.y < -b.r * 2) {
+                b.y = effectsCanvas.height + b.r * 2;
+                b.x = Math.random() * effectsCanvas.width;
+            }
+            effectsCtx.beginPath();
+            effectsCtx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+            effectsCtx.fillStyle = settings.color || 'rgba(173,216,230,0.7)';
+            effectsCtx.fill();
+        });
+        effectAnimationFrameId = requestAnimationFrame(animateBubbles);
+    }
+
     // --- V13 Classic Laser (Settings Aware) ---
     function initV13Lasers() {
         lasersV13 = [];
@@ -2514,7 +2587,7 @@ function importMacrosFromFile() {
 
         if (effectsMode === 'none' || isMinimized) {
             effectsCanvas.style.display = 'none';
-            snowflakesV13 = []; lasersV13 = []; lasersV14 = []; confettiPieces = [];
+            snowflakesV13 = []; lasersV13 = []; lasersV14 = []; confettiPieces = []; bubbles = [];
             strobeStateV13 = { phase: 0, opacity: 0 }; // Reset state
             strobeStateV14 = { phase: 0, opacity: 0 }; // Reset state
             return;
@@ -2554,6 +2627,12 @@ function importMacrosFromFile() {
                 }
                 animateConfetti();
                 break;
+            case 'bubbles':
+                if (bubbles.length === 0 || (effectsCanvas && bubbles[0] && bubbles[0].canvasWidth !== effectsCanvas.width)) {
+                    initBubbles();
+                }
+                animateBubbles();
+                break;
         }
     }
 
@@ -2569,7 +2648,8 @@ function importMacrosFromFile() {
             { mode: 'strobeV13', name: 'Strobe (Classic)', emoji: '🔄🚨' },
             { mode: 'laserV14', name: 'Laser (Simple)', emoji: '⬇️🟥' },
             { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' },
-            { mode: 'confetti', name: 'Confetti', emoji: '🎊' }
+            { mode: 'confetti', name: 'Confetti', emoji: '🎊' },
+            { mode: 'bubbles', name: 'Bubbles', emoji: '🫧' }
         ];
         effectsListConfig.forEach(effect => {
             const button = document.createElement('button');
@@ -3871,6 +3951,7 @@ function importMacrosFromFile() {
 
     // =================== UI Setup ===================
     function setupUI() {
+        console.log('Hermes: Setting up UI');
         if (document.querySelector('#hermes-shadow-host')) {
              console.warn("Hermes: UI setup aborted, shadow host already exists.");
              return;
@@ -4204,6 +4285,7 @@ function importMacrosFromFile() {
 
     // =================== Analysis Sniffer Plugin ===================
     function setupAnalysisSnifferPlugin() {
+        console.log('Hermes: Setting up Analysis Sniffer plugin');
         if(!uiContainer) return;
 
         const sniffButtonElement = document.createElement('button');
@@ -4270,20 +4352,24 @@ function importMacrosFromFile() {
 
     // =================== Initialization ===================
     function initialize() {
+        console.log('Hermes: Initialize start');
         loadProfileData();
         loadMacros();
         loadCustomMappings();
         loadSettings(); // Load settings early
         loadScheduleSettings();
         loadTasks();
+        console.log('Hermes: Data loaded');
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('Hermes: Document ready');
             if(document.body){ // Ensure body exists
                  setupUI();
                  setupAnalysisSnifferPlugin(); // Add new plugins here if they modify the main UI
                  applyCurrentSettings(); // Ensure settings are applied after UI is built
                  document.addEventListener('keydown', handleGlobalHotkeys, true);
             } else { // Fallback if body isn't parsed yet but state is interactive/complete
+                console.log('Hermes: Waiting for DOMContentLoaded (body missing)');
                 document.addEventListener('DOMContentLoaded', () => {
                     setupUI();
                     setupAnalysisSnifferPlugin();
@@ -4292,6 +4378,7 @@ function importMacrosFromFile() {
                 });
             }
         } else { // Still loading
+            console.log('Hermes: Waiting for DOMContentLoaded');
             document.addEventListener('DOMContentLoaded', () => {
                 setupUI();
                 setupAnalysisSnifferPlugin();
@@ -4301,16 +4388,22 @@ function importMacrosFromFile() {
         }
     }
 
-    // --- Script entry point ---
-    // Check for Tampermonkey/Violentmonkey for potentially more reliable GM_info and execution timing
-    if (typeof GM_info !== 'undefined' && (GM_info.scriptHandler === "Tampermonkey" || GM_info.scriptHandler === "Violentmonkey" || GM_info.scriptHandler === "Greasemonkey")) {
-        // Using a small timeout can sometimes help ensure the page is fully ready,
-        // especially with complex sites or other scripts running.
-        window.setTimeout(initialize, 150);
-    } else {
-        // For other script managers or if GM_info is not available, initialize directly.
-        // DOMContentLoaded should handle most cases.
-        initialize();
+  // --- Script entry point ---
+  // Check for Tampermonkey/Violentmonkey for potentially more reliable GM_info and execution timing
+  if (typeof GM_info !== 'undefined' && (GM_info.scriptHandler === "Tampermonkey" || GM_info.scriptHandler === "Violentmonkey" || GM_info.scriptHandler === "Greasemonkey")) {
+    if (typeof GM_registerMenuCommand === 'function') {
+      GM_registerMenuCommand('Open Hermes', initialize);
     }
+    // Using a small timeout can sometimes help ensure the page is fully ready,
+    // especially with complex sites or other scripts running.
+    window.setTimeout(initialize, 150);
+  } else {
+    if (typeof GM_registerMenuCommand === 'function') {
+      GM_registerMenuCommand('Open Hermes', initialize);
+    }
+    // For other script managers or if GM_info is not available, initialize directly.
+    // DOMContentLoaded should handle most cases.
+    initialize();
+  }
 
 })();
