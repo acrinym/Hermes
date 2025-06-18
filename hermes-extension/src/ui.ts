@@ -258,6 +258,9 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
   const exportBtn = createSubButton('Export All Macros...', () => exportMacros());
   menu.appendChild(exportBtn);
   }
+
+}
+
 }
 
   // close updateMacroSubmenuContents

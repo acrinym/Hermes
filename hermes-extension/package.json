@@ -30,6 +30,8 @@
     "react-dom": "^18.2.0",
     "@types/react": "^18.2.7",
     "@types/react-dom": "^18.2.4",
-    "three": "^0.161.0"
+    "three": "^0.161.0",
+    "@types/chrome": "^0.0.234",
+    "@types/node": "^20.8.10"
   }
 }
