@@ -1,6 +1,8 @@
 node_modules/
 hermes-extension/node_modules/
 hermes-extension/dist/
+hermes-extension/hermes-react-refactor/node_modules/
+hermes-extension/hermes-react-refactor/dist/
 # Node dependencies
 server/node_modules/
 hermes-extension/node_modules/

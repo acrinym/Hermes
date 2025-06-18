@@ -4,7 +4,7 @@ import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { deleteMacro, renameMacro, saveMacros } from '../store/macrosSlice';
-import { macroEngine } from '../services/macroEngineService'; 
+import { macroEngine } from '../content';
 
 const MacroPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();

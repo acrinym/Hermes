@@ -5,7 +5,7 @@ import { defaultSettings } from '../config/defaultSettings';
 import { saveDataToBackground, getInitialData } from '../services/storageService';
 
 export interface SettingsState {
-  settings: typeof defaultSettings;
+  settings: Record<string, any>;
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
 }
 
