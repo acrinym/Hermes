@@ -259,7 +259,7 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
   }
 
   if (allNames.length) {
-    const exportAllBtn = createSubButton(t('EXPORT_ALL_MACROS'), () => exportMacros());
+    const exportAllBtn = createSubButton('Export All Macros...', () => exportMacros());
     menu.appendChild(exportAllBtn);
   }
 }
