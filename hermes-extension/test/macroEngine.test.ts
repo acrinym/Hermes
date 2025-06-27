@@ -61,6 +61,15 @@ describe('MacroEngine', () => {
     expect(engineXml.get('renamed')?.length).toBe(1);
   });
 
+  test('exportMacros can export a subset of macros', async () => {
+    const engine = new MacroEngine();
+    await engine.set('a', [{ type: 'click', selector: '#a', timestamp: 0 } as any]);
+    await engine.set('b', [{ type: 'click', selector: '#b', timestamp: 0 } as any]);
+    const json = engine.exportMacros('json', ['b']);
+    const parsed = JSON.parse(json);
+    expect(Object.keys(parsed)).toEqual(['b']);
+  });
+
   test('relative coordinates adjust to element position', () => {
     const engine = new MacroEngine();
     engine.updateSettings({ useCoordinateFallback: true, relativeCoordinates: true });

@@ -252,19 +252,19 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
   }
   const importBtn = createSubButton(t('IMPORT_MACROS'), () => importMacrosFromFile());
   menu.appendChild(importBtn);
+
   if (names.length) {
-  const exportBtn = createSubButton(t('EXPORT_MACROS'), () => exportMacros());
-  if (allNames.length) {
-  const exportBtn = createSubButton('Export All Macros...', () => exportMacros());
-  menu.appendChild(exportBtn);
+    const exportBtn = createSubButton(t('EXPORT_MACROS'), () => exportMacrosToFile(names));
+    menu.appendChild(exportBtn);
   }
 
+  if (allNames.length) {
+    const exportAllBtn = createSubButton(t('EXPORT_ALL_MACROS'), () => exportMacrosToFile());
+    menu.appendChild(exportAllBtn);
+  }
 }
 
-}
-
-  // close updateMacroSubmenuContents
-}
+// close updateMacroSubmenuContents
 
 // === Macro Editor Panel ===
 function toggleMacroEditor(show: boolean, macroName?: string) {
@@ -392,9 +392,9 @@ function toggleAllowPanel(show: boolean) {
 }
 
 // === Macro Export/Import ===
-function exportMacros() {
+function exportMacrosToFile(names?: string[]) {
   const format = 'json';
-  const data = macroEngine.exportMacros(format);
+  const data = macroEngine.exportMacros(format, names);
   const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

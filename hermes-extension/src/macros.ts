@@ -15,7 +15,8 @@ export const getMacro = (name: string) => macroEngine.get(name);
 export const renameMacro = (oldName: string, newName: string) => macroEngine.rename(oldName, newName);
 export const importMacros = (obj: Record<string, any[]>) => macroEngine.import(obj);
 export const importMacrosFromString = (data: string) => macroEngine.importFromString(data);
-export const exportMacros = (format: 'json' | 'xml' = 'json') => macroEngine.exportMacros(format);
+export const exportMacros = (format: 'json' | 'xml' = 'json', names?: string[]) =>
+  macroEngine.exportMacros(format, names);
 export const updateMacroSettings = (s: Partial<{
   recordMouseMoves: boolean;
   mouseMoveInterval: number;

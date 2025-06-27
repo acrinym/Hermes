@@ -289,11 +289,18 @@ export class MacroEngine {
     return this.saveMacros();
   }
 
-  exportMacros(format: 'json' | 'xml' = 'json'): string {
+  exportMacros(format: 'json' | 'xml' = 'json', names?: string[]): string {
+    const subset: Record<string, MacroEvent[]> = names
+      ? names.reduce((obj, n) => {
+          if (this.macros[n]) obj[n] = this.macros[n];
+          return obj;
+        }, {} as Record<string, MacroEvent[]>)
+      : this.macros;
+
     if (format === 'xml') {
       const doc = document.implementation.createDocument('', 'macros', null);
       const root = doc.documentElement;
-      for (const [name, events] of Object.entries(this.macros)) {
+      for (const [name, events] of Object.entries(subset)) {
         const macroEl = doc.createElement('macro');
         macroEl.setAttribute('name', name);
         for (const ev of events) {
@@ -308,7 +315,7 @@ export class MacroEngine {
       }
       return new XMLSerializer().serializeToString(doc);
     }
-    return JSON.stringify(this.macros, null, 2);
+    return JSON.stringify(subset, null, 2);
   }
 
   async importFromString(data: string): Promise<boolean> {
