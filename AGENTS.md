@@ -14,4 +14,5 @@
 ## Pull Request Guidelines
 - Summarize changes with references to relevant files using line citations.
 - Include a Testing section summarizing test commands and results.
+- Provide an informative summary describing what was added, changed or removed so developers can quickly grasp the purpose of the pull request.
 
