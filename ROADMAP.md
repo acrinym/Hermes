@@ -5,15 +5,12 @@ This roadmap highlights near-term priorities and deferred ideas.
 The sequence may change as resources allow.
 
 ## In Progress
-- Integrate remaining features from the original userscript into the extension for a unified experience.
-- Add quality-of-life panels such as a task list for quick to-dos.
+- Polish the newly added macro scheduler.
+- Continue refining the task list and pomodoro panels.
 
 This roadmap outlines upcoming milestones for consolidating the userscript and extension features.
 
 ## Short Term
-- Integrate remaining Tampermonkey tools directly into the extension:
-  - Task list panel
-  - Pomodoro timer panel
 - Maintain existing theming and TypeScript structure
 
 ## Mid Term

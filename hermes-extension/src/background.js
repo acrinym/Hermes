@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
     AFFIRM_STATE: 'hermes_affirmations_state_ext',
     SCRATCH_NOTES: 'hermes_scratch_notes_ext',
     TASK_LIST: 'hermes_tasks_ext',
+    SCHEDULE_SETTINGS: 'hermes_schedule_settings_ext',
     LEARNING_STATE: 'hermes_learning_state_ext',
     DEBUG_MODE: 'hermes_debug_mode_ext',
     POSITION: 'hermes_position_ext',
@@ -95,6 +96,7 @@ let hermesState = {
     showAffirmations: false,
     scratchNotes: [],
     tasks: [],
+    scheduleSettings: {},
     learningMode: false,
     debugMode: false,
     uiPosition: { top: null, left: null },
@@ -275,6 +277,7 @@ async function initializeHermesState() {
         hermesState.showAffirmations = storedData[STORAGE_KEYS.AFFIRM_STATE];
         hermesState.scratchNotes = safeParse(STORAGE_KEYS.SCRATCH_NOTES, []);
         hermesState.tasks = safeParse(STORAGE_KEYS.TASK_LIST, []);
+        hermesState.scheduleSettings = safeParse(STORAGE_KEYS.SCHEDULE_SETTINGS, {});
         hermesState.learningMode = storedData[STORAGE_KEYS.LEARNING_STATE];
         hermesState.debugMode = storedData[STORAGE_KEYS.DEBUG_MODE];
         hermesState.uiPosition = safeParse(STORAGE_KEYS.POSITION, { top: null, left: null });
@@ -463,6 +466,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     case STORAGE_KEYS.AFFIRM_STATE: hermesState.showAffirmations = value; break;
                     case STORAGE_KEYS.SCRATCH_NOTES: hermesState.scratchNotes = value; break;
                     case STORAGE_KEYS.TASK_LIST: hermesState.tasks = value; break;
+                    case STORAGE_KEYS.SCHEDULE_SETTINGS: hermesState.scheduleSettings = value; break;
                     case STORAGE_KEYS.LEARNING_STATE: hermesState.learningMode = value; break;
                     case STORAGE_KEYS.DEBUG_MODE: hermesState.debugMode = value; break;
                     case STORAGE_KEYS.POSITION: hermesState.uiPosition = value; break;
