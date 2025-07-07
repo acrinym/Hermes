@@ -1,12 +1,15 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
-import { act } from 'react-dom/test-utils';
+import { act } from 'react';
 import { OptionsApp } from '../src/options.tsx';
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
 
 describe('OptionsApp', () => {
+  beforeAll(() => {
+    (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  });
   beforeEach(() => {
     (global as any).chrome = {
       storage: {
