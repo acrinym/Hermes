@@ -8,6 +8,7 @@ This file lists potential enhancements for Hermes beyond its current features. T
  - ~~Visual macro editor for reordering or editing steps~~ (added in v3.8)
 - Shareable macro files or online gallery
 - Trigger macros via global hotkeys or toolbar buttons
+- Macro marketplace for sharing workflows (future)
  - ~~Export macros as JSON for backups or sharing~~ (added in v3.8)
 
 ## Form Filling & Heuristics
@@ -25,11 +26,14 @@ This file lists potential enhancements for Hermes beyond its current features. T
 - Dark mode that follows system theme
 - First-run onboarding or tutorial
 - Quick search/filter for macros and profiles
+- Task list panel for quick to-dos
 
 ## Synchronization & Portability
 - Cloud sync for profiles and macros
+- Cloud sync for profiles and macros (deferred; requires OAuth integration)
 - Support for Firefox/Edge versions
 - Import data from the userscript version
+- Ensure all userscript features are merged into the extension
 - One-click backup and restore of all settings
 
 ## Debugging & Developer Tooling

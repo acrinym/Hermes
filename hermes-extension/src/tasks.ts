@@ -1,7 +1,7 @@
 import { createModal } from './ui/components.js';
 import { getRoot } from './root.ts';
-import { t } from '../i18n.js';
 import { saveDataToBackground } from './storage/index.ts';
+import { t } from '../i18n.js';
 
 declare const chrome: any;
 
@@ -25,7 +25,6 @@ export async function initTasks() {
 
 function persist() {
   const json = JSON.stringify(tasks);
-  chrome.storage.local.set({ [TASKS_KEY]: json });
   chrome.storage.sync.set({ [TASKS_KEY]: json }, () => {});
   saveDataToBackground(TASKS_KEY, tasks).catch(e => console.error('BG save fail', e));
 }
@@ -50,7 +49,7 @@ function render() {
     del.className = 'hermes-button';
     del.textContent = '✖';
     del.style.marginLeft = 'auto';
-    del.onclick = () => { tasks.splice(i,1); persist(); render(); };
+    del.onclick = () => { tasks.splice(i, 1); persist(); render(); };
     item.appendChild(cb);
     item.appendChild(span);
     item.appendChild(del);
@@ -85,6 +84,7 @@ function createPanel(root: HTMLElement | ShadowRoot): HTMLElement {
 
 export function toggleTasks(show: boolean) {
   const root = getRoot();
-  if (!panel && show) panel = createPanel(root instanceof ShadowRoot ? root : document.body);
+  if (!pane
+l && show) panel = createPanel(root instanceof ShadowRoot ? root : document.body);
   if (panel) panel.style.display = show ? 'block' : 'none';
 }
