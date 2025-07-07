@@ -20,6 +20,7 @@ const STORAGE_KEYS = {
     BUNCHED_STATE: 'hermes_bunched_state_ext',
     EFFECTS_STATE: 'hermes_effects_state_ext',
     HELP_PANEL_OPEN: 'hermes_help_panel_state_ext',
+    ONBOARDED: 'hermes_onboarded_ext',
     SETTINGS: 'hermes_settings_v1_ext',
     DISABLED_HOSTS: 'hermes_disabled_hosts_ext',
     GITHUB_RAW_BASE: 'github_raw_base',
@@ -98,6 +99,7 @@ let hermesState = {
     whitelist: [],
     disabledHosts: [],
     helpPanelOpen: false,
+    onboarded: false,
     configs: {}
 };
 
@@ -233,7 +235,8 @@ async function initializeHermesState() {
         [STORAGE_KEYS.POSITION]: JSON.stringify({ top: null, left: null }),
         [STORAGE_KEYS.WHITELIST]: '[]',
         [STORAGE_KEYS.HELP_PANEL_OPEN]: false,
-        [STORAGE_KEYS.DISABLED_HOSTS]: '[]'
+        [STORAGE_KEYS.DISABLED_HOSTS]: '[]',
+        [STORAGE_KEYS.ONBOARDED]: false
     };
 
     try {
@@ -274,6 +277,7 @@ async function initializeHermesState() {
         hermesState.whitelist = safeParse(STORAGE_KEYS.WHITELIST, []);
         hermesState.disabledHosts = safeParse(STORAGE_KEYS.DISABLED_HOSTS, []);
         hermesState.helpPanelOpen = storedData[STORAGE_KEYS.HELP_PANEL_OPEN];
+        hermesState.onboarded = storedData[STORAGE_KEYS.ONBOARDED];
 
         // Ensure built-in themes are stored for future reference/consistency
         chrome.storage.local.set({
@@ -461,6 +465,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     case STORAGE_KEYS.DISABLED_HOSTS: hermesState.disabledHosts = value; break;
                     case STORAGE_KEYS.CUSTOM_THEMES: hermesState.customThemes = value; break;
                     case STORAGE_KEYS.HELP_PANEL_OPEN: hermesState.helpPanelOpen = value; break;
+                    case STORAGE_KEYS.ONBOARDED: hermesState.onboarded = value; break;
                     default:
                         console.warn("Hermes BG: Unknown key for SAVE_HERMES_DATA:", key);
                         successfullyUpdatedInMemoryState = false;
