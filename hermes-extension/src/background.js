@@ -11,6 +11,7 @@ const STORAGE_KEYS = {
     OVERLAY_STATE: 'hermes_overlay_state_ext',
     AFFIRM_STATE: 'hermes_affirmations_state_ext',
     SCRATCH_NOTES: 'hermes_scratch_notes_ext',
+    TASK_LIST: 'hermes_tasks_ext',
     LEARNING_STATE: 'hermes_learning_state_ext',
     DEBUG_MODE: 'hermes_debug_mode_ext',
     POSITION: 'hermes_position_ext',
@@ -93,6 +94,7 @@ let hermesState = {
     showOverlays: true,
     showAffirmations: false,
     scratchNotes: [],
+    tasks: [],
     learningMode: false,
     debugMode: false,
     uiPosition: { top: null, left: null },
@@ -230,6 +232,7 @@ async function initializeHermesState() {
         [STORAGE_KEYS.OVERLAY_STATE]: true,
         [STORAGE_KEYS.AFFIRM_STATE]: false,
         [STORAGE_KEYS.SCRATCH_NOTES]: '[]',
+        [STORAGE_KEYS.TASK_LIST]: '[]',
         [STORAGE_KEYS.LEARNING_STATE]: false,
         [STORAGE_KEYS.DEBUG_MODE]: false,
         [STORAGE_KEYS.POSITION]: JSON.stringify({ top: null, left: null }),
@@ -271,6 +274,7 @@ async function initializeHermesState() {
         hermesState.showOverlays = storedData[STORAGE_KEYS.OVERLAY_STATE];
         hermesState.showAffirmations = storedData[STORAGE_KEYS.AFFIRM_STATE];
         hermesState.scratchNotes = safeParse(STORAGE_KEYS.SCRATCH_NOTES, []);
+        hermesState.tasks = safeParse(STORAGE_KEYS.TASK_LIST, []);
         hermesState.learningMode = storedData[STORAGE_KEYS.LEARNING_STATE];
         hermesState.debugMode = storedData[STORAGE_KEYS.DEBUG_MODE];
         hermesState.uiPosition = safeParse(STORAGE_KEYS.POSITION, { top: null, left: null });
@@ -458,6 +462,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     case STORAGE_KEYS.OVERLAY_STATE: hermesState.showOverlays = value; break;
                     case STORAGE_KEYS.AFFIRM_STATE: hermesState.showAffirmations = value; break;
                     case STORAGE_KEYS.SCRATCH_NOTES: hermesState.scratchNotes = value; break;
+                    case STORAGE_KEYS.TASK_LIST: hermesState.tasks = value; break;
                     case STORAGE_KEYS.LEARNING_STATE: hermesState.learningMode = value; break;
                     case STORAGE_KEYS.DEBUG_MODE: hermesState.debugMode = value; break;
                     case STORAGE_KEYS.POSITION: hermesState.uiPosition = value; break;

@@ -22,6 +22,7 @@ import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { toggleOverlays, initOverlays } from './overlays.ts';
 import { initAffirmations } from './productivity.tsx';
 import { initScratchPad, toggleScratchPad } from './scratchPad.ts';
+import { initTasks, toggleTasksPanel } from './tasks.ts';
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -37,6 +38,7 @@ let effectsBtn: HTMLButtonElement;
 let macrosBtn: HTMLButtonElement;
 let allowBtn: HTMLButtonElement;
 let helpBtn: HTMLButtonElement;
+let tasksBtn: HTMLButtonElement;
 let overlayBtn: HTMLButtonElement;
 let settingsBtn: HTMLButtonElement;
 let debugBtn: HTMLButtonElement;
@@ -138,6 +140,8 @@ export async function initUI() {
   createButton(t('LOGS'), () => toggleLogViewer(true));
   // Scratch pad
   createButton(t('SCRATCH_PAD'), () => toggleScratchPad(true));
+  // Tasks
+  tasksBtn = createButton(t('TASKS'), () => toggleTasksPanel(true));
 
   // Allowlist
   allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
@@ -170,6 +174,7 @@ export async function initUI() {
   if (data.effectsMode) setEffect(data.effectsMode);
   initOverlays(!!data.showOverlays);
   initAffirmations(!!data.showAffirmations);
+  await initTasks();
   await initScratchPad();
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
