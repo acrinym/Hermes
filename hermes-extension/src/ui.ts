@@ -22,7 +22,8 @@ import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { toggleOverlays, initOverlays } from './overlays.ts';
 import { initAffirmations } from './productivity.tsx';
 import { initScratchPad, toggleScratchPad } from './scratchPad.ts';
-import { initTasks, toggleTasksPanel } from './tasks.ts';
+import { initTasks, toggleTasks } from './tasks.ts';
+import { toggleTimer } from './timer.ts';
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -39,6 +40,7 @@ let macrosBtn: HTMLButtonElement;
 let allowBtn: HTMLButtonElement;
 let helpBtn: HTMLButtonElement;
 let tasksBtn: HTMLButtonElement;
+let timerBtn: HTMLButtonElement;
 let overlayBtn: HTMLButtonElement;
 let settingsBtn: HTMLButtonElement;
 let debugBtn: HTMLButtonElement;
@@ -138,10 +140,15 @@ export async function initUI() {
 
   // Logs
   createButton(t('LOGS'), () => toggleLogViewer(true));
+
   // Scratch pad
   createButton(t('SCRATCH_PAD'), () => toggleScratchPad(true));
+
   // Tasks
-  tasksBtn = createButton(t('TASKS'), () => toggleTasksPanel(true));
+  tasksBtn = createButton(t('TASKS'), () => toggleTasks(true));
+
+  // Pomodoro timer
+  timerBtn = createButton(t('TIMER'), () => toggleTimer(true));
 
   // Allowlist
   allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
@@ -245,7 +252,7 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
       menu.appendChild(row);
     });
     const hr = document.createElement('hr');
-    hr.style.cssText = 'border: none; border-top: 1px solid var(--hermes-border); margin: 5px 0;';
+    hr.style.cssText = 'border: none; border-top: 1px solid var(--herMES-border); margin: 5px 0;';
     menu.appendChild(hr);
   } else {
     const msg = allNames.length ? 'No macros found.' : 'No macros recorded.';
@@ -278,7 +285,7 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
       <select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>
       <textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
     `;
-    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Macro</button>`;
+    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Marco</button>`;
     panelContainer = createModal(shadowRoot, panelId, t('MACRO_EDITOR'), contentHtml, '700px', buttonsHtml);
     const panel = panelContainer.querySelector(`#${panelId}`) as HTMLElement;
     const selectEl = panel.querySelector('#hermes-macro-edit-select') as HTMLSelectElement;

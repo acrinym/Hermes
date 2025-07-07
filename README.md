@@ -15,6 +15,7 @@
 - 🔍 **Debug toolkit** with logs and mutation detection
 - ⏰ **Macro scheduling UI**
 - 🗒️ **Task list panel** for quick to-dos
+- ⏲️ **Pomodoro timer** to stay focused
 - ⌨️ **Configurable hotkeys**
 - 🔎 **Macro search/filter**
 - 🕒 **Wait steps for reliable playback**
@@ -293,6 +294,8 @@ Proprietary License — all rights reserved. Contact the author for permissions.
 ## 🌐 Coming Soon
 
 - AI-assisted field mapping suggestions
+
+See also the [ROADMAP](ROADMAP.md) for planned milestones.
 
 For a full list of ideas and potential enhancements, see [TODO.md](TODO.md).
 
