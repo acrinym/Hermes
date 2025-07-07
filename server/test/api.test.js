@@ -1,7 +1,16 @@
 const request = require('supertest');
 const app = require('../index');
+const schedule = require('node-schedule');
 
 describe('API endpoints', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.runOnlyPendingTimers();
+    jest.useRealTimers();
+  });
   test('GET /api/macros returns list of macros', async () => {
     const res = await request(app).get('/api/macros');
     expect(res.status).toBe(200);
@@ -47,5 +56,9 @@ describe('API endpoints', () => {
     expect(up.status).toBe(200);
     const res = await request(app).get('/api/macros/data');
     expect(res.body).toEqual(data);
+  });
+
+  afterAll(async () => {
+    await schedule.gracefulShutdown();
   });
 });
