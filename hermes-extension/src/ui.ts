@@ -22,6 +22,8 @@ import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { toggleOverlays, initOverlays } from './overlays.ts';
 import { initAffirmations } from './productivity.tsx';
 import { initScratchPad, toggleScratchPad } from './scratchPad.ts';
+import { initTasks, toggleTasks } from './tasks.ts';
+import { toggleTimer } from './timer.ts';
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -138,6 +140,10 @@ export async function initUI() {
   createButton(t('LOGS'), () => toggleLogViewer(true));
   // Scratch pad
   createButton(t('SCRATCH_PAD'), () => toggleScratchPad(true));
+  // Tasks
+  createButton(t('TASKS'), () => toggleTasks(true));
+  // Pomodoro timer
+  createButton(t('TIMER'), () => toggleTimer(true));
 
   // Allowlist
   allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
@@ -171,6 +177,7 @@ export async function initUI() {
   initOverlays(!!data.showOverlays);
   initAffirmations(!!data.showAffirmations);
   await initScratchPad();
+  await initTasks();
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
 
