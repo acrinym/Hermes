@@ -3,12 +3,14 @@ import { toggleMinimizedUI } from './ui/setup.ts';
 import { initEffects } from './effects.ts';
 import { initMacros } from './macros.ts';
 import { ensureSiteConfig } from './domScanner.ts';
+import { checkOnboarding } from './onboarding.ts';
 
 export function init() {
   initUI();
   initEffects();
   initMacros();
   ensureSiteConfig();
+  checkOnboarding();
 }
 
 document.addEventListener('DOMContentLoaded', init);

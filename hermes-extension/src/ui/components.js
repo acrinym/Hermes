@@ -28,7 +28,7 @@ export function createModal(root, id, title, contentHtml, maxWidth = '600px', cu
     if (root instanceof ShadowRoot) {
       root.appendChild(panel);
     } else {
-      root.body.appendChild(panel);
+      (root.body || root).appendChild(panel);
     }
     const closeButton = panel.querySelector('.hermes-panel-close');
     if (closeButton) closeButton.addEventListener('click', () => {
