@@ -24,6 +24,7 @@ import { initAffirmations } from './productivity.tsx';
 import { initScratchPad, toggleScratchPad } from './scratchPad.ts';
 import { initTasks, toggleTasks } from './tasks.ts';
 import { toggleTimer } from './timer.ts';
+import { initSchedule, toggleSchedule } from './schedule.ts';
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -41,6 +42,7 @@ let allowBtn: HTMLButtonElement;
 let helpBtn: HTMLButtonElement;
 let tasksBtn: HTMLButtonElement;
 let timerBtn: HTMLButtonElement;
+let scheduleBtn: HTMLButtonElement;
 let overlayBtn: HTMLButtonElement;
 let settingsBtn: HTMLButtonElement;
 let debugBtn: HTMLButtonElement;
@@ -150,6 +152,9 @@ export async function initUI() {
   // Pomodoro timer
   timerBtn = createButton(t('TIMER'), () => toggleTimer(true));
 
+  // Schedule macros
+  scheduleBtn = createButton(t('SCHEDULE'), () => toggleSchedule(true));
+
   // Allowlist
   allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
 
@@ -183,6 +188,7 @@ export async function initUI() {
   initAffirmations(!!data.showAffirmations);
   await initTasks();
   await initScratchPad();
+  await initSchedule();
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
 
