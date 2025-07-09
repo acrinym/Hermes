@@ -253,6 +253,7 @@ In addition to manual playback, Hermes exposes a local automation API under `/ap
 ## 🌐 Demo Site
 
 After starting the server, open [http://localhost:3000/demo.html](http://localhost:3000/demo.html) to try Hermes on a page with example forms and dynamic elements.  Use this page to practice the form filler, record macros and experiment with theming.
+Open http://localhost:3000/advanced-demo.html for a more sophisticated demo with isolated iframes and a secure login example.
 
 ---
 
