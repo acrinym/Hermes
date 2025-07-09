@@ -250,6 +250,11 @@ Press **Schedule Macro** to save. Scheduled jobs can be viewed or cancelled via 
 
 In addition to manual playback, Hermes exposes a local automation API under `/api`.  Macros and form fills can be triggered remotely or chained from other tools.  When the extension scans a new site it automatically saves a configuration file back to your GitHub repository so later automation runs consistently.  The web UI at `/schedule` provides a simple calendar view for creating one‑off or recurring jobs using those saved macros.
 
+## 🌐 Demo Site
+
+After starting the server, open [http://localhost:3000/demo.html](http://localhost:3000/demo.html) to try Hermes on a page with example forms and dynamic elements.  Use this page to practice the form filler, record macros and experiment with theming.
+Open http://localhost:3000/advanced-demo.html for a more sophisticated demo with isolated iframes and a secure login example.
+
 ---
 
 ## 🚀 Development Setup & Testing
