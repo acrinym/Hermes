@@ -17,6 +17,7 @@
 - 🗒️ **Task list panel** for quick to-dos
 - ⏲️ **Pomodoro timer** to stay focused
 - 📝 **Scratch pad** for notes and Drive backups
+- 🙌 **Affirmation overlay** for positive motivation
 - 🕵️ **Form sniffer** to log page fields
 - 📌 **Dockable toolbar** for top or bottom placement
 - ⌨️ **Configurable hotkeys for recording and playback**
@@ -95,6 +96,12 @@
 - Dedicated Options page available from Chrome's extension settings
 - Manual or periodic cloud sync of profiles and macros
 - Interface localized based on browser language
+
+### 📈 Productivity Tools
+- Scratch pad for notes and Drive backups
+- Task list manager
+- Pomodoro timer with alerts
+- Optional affirmation overlay
 
 ---
 
