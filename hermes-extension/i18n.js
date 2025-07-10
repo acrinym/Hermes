@@ -47,6 +47,7 @@ export const translations = {
     LOAD_ERROR: 'Error loading macros',
     RECORD_HOTKEY: 'Record Hotkey',
     PLAY_HOTKEY: 'Play Hotkey',
+
     START: 'Start',
     BREAK_TIME: 'Break time!',
     BACK_TO_WORK: 'Back to work!',
@@ -109,6 +110,7 @@ export const translations = {
     LOAD_ERROR: 'Error cargando macros',
     RECORD_HOTKEY: 'Atajo para grabar',
     PLAY_HOTKEY: 'Atajo para ejecutar',
+
     START: 'Iniciar',
     BREAK_TIME: '\u00a1Hora de descansar!',
     BACK_TO_WORK: 'De vuelta al trabajo!',

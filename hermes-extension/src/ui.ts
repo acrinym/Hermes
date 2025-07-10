@@ -27,6 +27,7 @@ import { initTasks, toggleTasks } from './tasks.ts';
 import { toggleTimer } from './timer.ts';
 import { initSchedule, toggleSchedule } from './schedule.ts';
 import { initHotkeys } from './hotkeys.ts';
+
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -192,6 +193,7 @@ export async function initUI() {
   await initScratchPad();
   await initSchedule();
   await initMacros();
+  await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
   initHotkeys();
 

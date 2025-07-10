@@ -9,6 +9,7 @@ The sequence may change as resources allow.
 - Continue refining the task list and pomodoro panels.
 - Finalize hotkey support for recording and playback.
 
+
 This roadmap outlines upcoming milestones for consolidating the userscript and extension features.
 
 ## Short Term
