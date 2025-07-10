@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Embedded Widget</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1em; }
+    label { display: block; margin-bottom: 0.5em; }
+  </style>
+</head>
+<body>
+  <h3>Support Request</h3>
+  <form id="widgetForm">
+    <label>Issue <input name="issue" type="text"></label>
+    <label>Details <textarea name="details"></textarea></label>
+    <button type="submit">Send</button>
+  </form>
+  <script>
+    document.getElementById('widgetForm').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Widget form submitted!');
+    });
+  </script>
+</body>
+</html>
