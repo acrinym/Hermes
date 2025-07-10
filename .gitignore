@@ -11,3 +11,5 @@ npm-debug.log*
 # Mac OS
 .DS_Store
 
+
+grok_toolbar.user.js

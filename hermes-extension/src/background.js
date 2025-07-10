@@ -12,6 +12,7 @@ const STORAGE_KEYS = {
     AFFIRM_STATE: 'hermes_affirmations_state_ext',
     SCRATCH_NOTES: 'hermes_scratch_notes_ext',
     TASK_LIST: 'hermes_tasks_ext',
+    SCHEDULE_SETTINGS: 'hermes_schedule_settings_ext',
     LEARNING_STATE: 'hermes_learning_state_ext',
     DEBUG_MODE: 'hermes_debug_mode_ext',
     POSITION: 'hermes_position_ext',
@@ -20,6 +21,7 @@ const STORAGE_KEYS = {
     CUSTOM_THEMES: 'hermes_custom_themes_ext',
     BUNCHED_STATE: 'hermes_bunched_state_ext',
     EFFECTS_STATE: 'hermes_effects_state_ext',
+    DOCK_MODE: 'hermes_dock_mode_ext',
     HELP_PANEL_OPEN: 'hermes_help_panel_state_ext',
     ONBOARDED: 'hermes_onboarded_ext',
     SETTINGS: 'hermes_settings_v1_ext',
@@ -95,6 +97,8 @@ let hermesState = {
     showAffirmations: false,
     scratchNotes: [],
     tasks: [],
+    scheduleSettings: {},
+    dockMode: 'none',
     learningMode: false,
     debugMode: false,
     uiPosition: { top: null, left: null },
@@ -233,6 +237,7 @@ async function initializeHermesState() {
         [STORAGE_KEYS.AFFIRM_STATE]: false,
         [STORAGE_KEYS.SCRATCH_NOTES]: '[]',
         [STORAGE_KEYS.TASK_LIST]: '[]',
+        [STORAGE_KEYS.DOCK_MODE]: 'none',
         [STORAGE_KEYS.LEARNING_STATE]: false,
         [STORAGE_KEYS.DEBUG_MODE]: false,
         [STORAGE_KEYS.POSITION]: JSON.stringify({ top: null, left: null }),
@@ -275,6 +280,8 @@ async function initializeHermesState() {
         hermesState.showAffirmations = storedData[STORAGE_KEYS.AFFIRM_STATE];
         hermesState.scratchNotes = safeParse(STORAGE_KEYS.SCRATCH_NOTES, []);
         hermesState.tasks = safeParse(STORAGE_KEYS.TASK_LIST, []);
+        hermesState.scheduleSettings = safeParse(STORAGE_KEYS.SCHEDULE_SETTINGS, {});
+        hermesState.dockMode = storedData[STORAGE_KEYS.DOCK_MODE] || 'none';
         hermesState.learningMode = storedData[STORAGE_KEYS.LEARNING_STATE];
         hermesState.debugMode = storedData[STORAGE_KEYS.DEBUG_MODE];
         hermesState.uiPosition = safeParse(STORAGE_KEYS.POSITION, { top: null, left: null });
@@ -463,6 +470,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     case STORAGE_KEYS.AFFIRM_STATE: hermesState.showAffirmations = value; break;
                     case STORAGE_KEYS.SCRATCH_NOTES: hermesState.scratchNotes = value; break;
                     case STORAGE_KEYS.TASK_LIST: hermesState.tasks = value; break;
+                    case STORAGE_KEYS.SCHEDULE_SETTINGS: hermesState.scheduleSettings = value; break;
+                    case STORAGE_KEYS.DOCK_MODE: hermesState.dockMode = value; break;
                     case STORAGE_KEYS.LEARNING_STATE: hermesState.learningMode = value; break;
                     case STORAGE_KEYS.DEBUG_MODE: hermesState.debugMode = value; break;
                     case STORAGE_KEYS.POSITION: hermesState.uiPosition = value; break;
