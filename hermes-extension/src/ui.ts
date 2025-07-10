@@ -1,6 +1,7 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
 import { macroEngine } from './macroEngine.ts';
+import { initMacros, playMacro } from './macros.ts';
 import { fillForm } from './formFiller.ts';
 import { runHeuristicTrainerSession } from './trainer.ts';
 import { applyTheme } from './theme.ts';
@@ -25,6 +26,8 @@ import { initScratchPad, toggleScratchPad } from './scratchPad.ts';
 import { initTasks, toggleTasks } from './tasks.ts';
 import { toggleTimer } from './timer.ts';
 import { initSchedule, toggleSchedule } from './schedule.ts';
+import { initHotkeys } from './hotkeys.ts';
+
 import { t } from '../i18n.js';
 
 // Shadow DOM root globals
@@ -189,8 +192,10 @@ export async function initUI() {
   await initTasks();
   await initScratchPad();
   await initSchedule();
+  await initMacros();
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
+  initHotkeys();
 
   // --- Allowlist minimized logic
   if (!isAllowed(location.hostname, data.whitelist || [])) {
@@ -238,7 +243,7 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
       row.style.display = 'flex';
       row.style.gap = '4px';
       row.style.marginBottom = '4px';
-      const playBtn = createSubButton(name, () => { macroEngine.play(name); menu.style.display = 'none'; });
+      const playBtn = createSubButton(name, () => { playMacro(name); menu.style.display = 'none'; });
       playBtn.style.flexGrow = '1';
       const editBtn = createSubButton('✏️', () => toggleMacroEditor(true, name));
       const delBtn = createSubButton('🗑️', async () => {

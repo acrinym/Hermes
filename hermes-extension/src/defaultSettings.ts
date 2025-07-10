@@ -97,4 +97,8 @@ export const defaultSettings = {
   "similarityThreshold": 0.5,
   "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
   }
+  "_comment_recordHotkey": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
+  "recordHotkey": "Ctrl+Shift+R",
+  "_comment_playMacroHotkey": "Key combo to play the last macro (e.g., Ctrl+Shift+P).",
+  "playMacroHotkey": "Ctrl+Shift+P"
 } as const;
