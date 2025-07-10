@@ -2,6 +2,7 @@ import { saveDataToBackground, getInitialData } from './storage/index.ts';
 import { createModal } from './ui/components.js';
 import { updateMacroSettings } from './macros.ts';
 import { defaultSettings } from './defaultSettings.ts';
+import { refreshHotkeys } from "./hotkeys.ts";
 
 export interface Settings {
   [key: string]: any;
@@ -39,6 +40,8 @@ function populatePanel() {
   const relativeCoords = settingsPanel.querySelector('#hermes-setting-relativeCoords') as HTMLInputElement | null;
   const simSlider = settingsPanel.querySelector('#hermes-setting-similarity') as HTMLInputElement | null;
   const simValue = settingsPanel.querySelector('#hermes-sim-value') as HTMLElement | null;
+  const recordKey = settingsPanel.querySelector('#hermes-setting-recordHotkey') as HTMLInputElement | null;
+  const playKey = settingsPanel.querySelector('#hermes-setting-playHotkey') as HTMLInputElement | null;
   if (textarea) textarea.value = JSON.stringify(currentSettings, null, 2);
   if (useCoords) useCoords.checked = !!currentSettings?.macro?.useCoordinateFallback;
   if (recordMouse) recordMouse.checked = !!currentSettings?.macro?.recordMouseMoves;
@@ -47,6 +50,8 @@ function populatePanel() {
     simSlider.value = String(currentSettings?.macro?.similarityThreshold ?? 0.5);
     if (simValue) simValue.textContent = simSlider.value;
   }
+  if (recordKey) recordKey.value = currentSettings.recordHotkey || '';
+  if (playKey) playKey.value = currentSettings.playMacroHotkey || '';
 }
 
 export function createSettingsPanel(): HTMLElement {
@@ -59,6 +64,8 @@ export function createSettingsPanel(): HTMLElement {
       <label><input type="checkbox" id="hermes-setting-recordMouse"> Record mouse movements</label><br>
       <label><input type="checkbox" id="hermes-setting-relativeCoords"> Track element movement</label><br>
       <label>Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="width:150px;"><span id="hermes-sim-value"></span></label>
+      <label>Record Hotkey: <input type="text" id="hermes-setting-recordHotkey" style="width:120px;"></label><br>
+      <label>Play Hotkey: <input type="text" id="hermes-setting-playHotkey" style="width:120px;"></label>
     </div>`;
   const buttonsHtml = `
     <button id="hermes-settings-save-btn">Save & Apply</button>
@@ -72,6 +79,8 @@ export function createSettingsPanel(): HTMLElement {
   const relativeCoords = settingsPanel.querySelector('#hermes-setting-relativeCoords') as HTMLInputElement;
   const simSlider = settingsPanel.querySelector('#hermes-setting-similarity') as HTMLInputElement;
   const simValue = settingsPanel.querySelector('#hermes-sim-value') as HTMLElement;
+  const recordKey = settingsPanel.querySelector('#hermes-setting-recordHotkey') as HTMLInputElement;
+  const playKey = settingsPanel.querySelector('#hermes-setting-playHotkey') as HTMLInputElement;
 
   if (simSlider) simSlider.oninput = () => {
     if (simValue) simValue.textContent = simSlider.value;
@@ -85,8 +94,11 @@ export function createSettingsPanel(): HTMLElement {
       newSettings.macro.recordMouseMoves = recordMouse.checked;
       newSettings.macro.relativeCoordinates = relativeCoords.checked;
       newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
+      newSettings.recordHotkey = recordKey.value.trim();
+      newSettings.playMacroHotkey = playKey.value.trim();
       const ok = await saveSettings(newSettings);
       updateMacroSettings(newSettings.macro);
+      refreshHotkeys();
       alert(ok ? 'Settings saved' : 'Failed to save settings');
     } catch (err: any) {
       alert('Invalid JSON: ' + err.message);
@@ -100,6 +112,8 @@ export function createSettingsPanel(): HTMLElement {
     relativeCoords.checked = !!defaultSettings?.macro?.relativeCoordinates;
     simSlider.value = String(defaultSettings?.macro?.similarityThreshold ?? 0.5);
     if (simValue) simValue.textContent = simSlider.value;
+    recordKey.value = defaultSettings.recordHotkey;
+    playKey.value = defaultSettings.playMacroHotkey;
   });
 
   populatePanel();
