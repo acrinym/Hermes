@@ -1,13 +1,15 @@
 import { t } from '../../i18n.js';
+import { saveDataToBackground } from '../storage/index.ts';
 
 let container: HTMLDivElement | null = null;
 let minimized: HTMLDivElement | null = null;
 let isMinimized = false;
 let isBunched = false;
 let dragHandle: HTMLDivElement | null = null;
+let dockMode: 'none' | 'top' | 'bottom' = 'none';
 const position = { top: 10, left: 10 };
 
-export function setupUI(root: HTMLElement = document.body) {
+export function setupUI(root: HTMLElement = document.body, initialDock: 'none' | 'top' | 'bottom' = 'none') {
   if (container) return container;
 
   container = document.createElement('div');
@@ -28,6 +30,8 @@ export function setupUI(root: HTMLElement = document.body) {
   dragHandle.style.cssText = 'cursor:move;user-select:none;padding:0 4px;';
   container.appendChild(dragHandle);
   setupDragging(dragHandle);
+
+  dockMode = initialDock;
 
   const bunchBtn = document.createElement('button');
   bunchBtn.className = 'hermes-button';
@@ -58,16 +62,24 @@ export function setupUI(root: HTMLElement = document.body) {
     { edge: 'top-left', label: '\u2196' },
     { edge: 'top-right', label: '\u2197' },
     { edge: 'bottom-left', label: '\u2199' },
-    { edge: 'bottom-right', label: '\u2198' }
+    { edge: 'bottom-right', label: '\u2198' },
+    { edge: 'dock-top', label: '\u2912' },
+    { edge: 'dock-bottom', label: '\u2913' }
   ];
   snapData.forEach(d => {
     const b = document.createElement('button');
     b.className = 'hermes-button';
     b.textContent = d.label;
-    b.onclick = () => snapToEdge(d.edge);
+    b.onclick = () => {
+      if (d.edge === 'dock-top') dockToPage('top');
+      else if (d.edge === 'dock-bottom') dockToPage('bottom');
+      else snapToEdge(d.edge);
+    };
     snapContainer.appendChild(b);
   });
   container.appendChild(snapContainer);
+
+  applyDock();
 
   return container;
 }
@@ -80,6 +92,7 @@ export function toggleMinimizedUI(minimize: boolean) {
   if (!minimize) {
     container.style.left = `${position.left}px`;
     container.style.top = `${position.top}px`;
+    applyDock();
   }
 }
 
@@ -92,6 +105,7 @@ function setupDragging(handle: HTMLElement) {
     offsetX = e.clientX - position.left;
     offsetY = e.clientY - position.top;
     e.preventDefault();
+    dockToPage('none');
   });
   document.addEventListener('mousemove', (e) => {
     if (!dragging) return;
@@ -110,6 +124,7 @@ function setupDragging(handle: HTMLElement) {
       } else {
         container.classList.remove('hermes-bunched');
       }
+      applyDock();
     }
     if (minimized) {
       minimized.style.left = `${newLeft}px`;
@@ -123,6 +138,7 @@ function setupDragging(handle: HTMLElement) {
 
 function snapToEdge(edge: string) {
   if (!container || !minimized) return;
+  dockToPage('none');
   const rect = (isMinimized ? minimized : container).getBoundingClientRect();
   const margin = 10;
   let newLeft = position.left;
@@ -165,4 +181,37 @@ function snapToEdge(edge: string) {
   container.style.top = `${newTop}px`;
   minimized.style.left = `${newLeft}px`;
   minimized.style.top = `${newTop}px`;
+  applyDock();
+}
+
+function dockToPage(pos: 'none' | 'top' | 'bottom') {
+  dockMode = pos;
+  saveDataToBackground('hermes_dock_mode_ext', dockMode);
+  applyDock();
+}
+
+function applyDock() {
+  if (!container || !minimized) return;
+  const target = isMinimized ? minimized : container;
+  const height = target.getBoundingClientRect().height + 10;
+  if (dockMode === 'top') {
+    container.style.top = '0px';
+    container.style.bottom = '';
+    minimized.style.top = '0px';
+    minimized.style.bottom = '';
+    document.body.style.marginTop = `${height}px`;
+    document.body.style.marginBottom = '';
+  } else if (dockMode === 'bottom') {
+    container.style.bottom = '0px';
+    container.style.top = '';
+    minimized.style.bottom = '0px';
+    minimized.style.top = '';
+    document.body.style.marginBottom = `${height}px`;
+    document.body.style.marginTop = '';
+  } else {
+    document.body.style.marginTop = '';
+    document.body.style.marginBottom = '';
+    container.style.bottom = '';
+    minimized.style.bottom = '';
+  }
 }

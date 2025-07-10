@@ -5,10 +5,10 @@ This roadmap highlights near-term priorities and deferred ideas.
 The sequence may change as resources allow.
 
 ## In Progress
-- Polish the newly added macro scheduler.
-- Continue refining the task list and pomodoro panels.
+ - Polish the newly added macro scheduler.
+ - Continue refining the task list and pomodoro panels.
+ - Add dock mode and form sniffer from the userscript.
 - Finalize hotkey support for recording and playback.
-
 
 This roadmap outlines upcoming milestones for consolidating the userscript and extension features.
 

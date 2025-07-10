@@ -17,8 +17,9 @@
 - 🗒️ **Task list panel** for quick to-dos
 - ⏲️ **Pomodoro timer** to stay focused
 - 📝 **Scratch pad** for notes and Drive backups
+- 🕵️ **Form sniffer** to log page fields
+- 📌 **Dockable toolbar** for top or bottom placement
 - ⌨️ **Configurable hotkeys for recording and playback**
-
 - 🔎 **Macro search/filter**
 - 🕒 **Wait steps for reliable playback**
 - ☁️ **Optional cloud sync**
