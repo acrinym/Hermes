@@ -19,7 +19,7 @@
 - 📝 **Scratch pad** for notes and Drive backups
 - 🕵️ **Form sniffer** to log page fields
 - 📌 **Dockable toolbar** for top or bottom placement
-- ⌨️ **Configurable hotkeys**
+- ⌨️ **Configurable hotkeys for recording and playback**
 - 🔎 **Macro search/filter**
 - 🕒 **Wait steps for reliable playback**
 - ☁️ **Optional cloud sync**
@@ -251,6 +251,12 @@ Press **Schedule Macro** to save. Scheduled jobs can be viewed or cancelled via 
 ## 🤖 Automation & Scheduler UI
 
 In addition to manual playback, Hermes exposes a local automation API under `/api`.  Macros and form fills can be triggered remotely or chained from other tools.  When the extension scans a new site it automatically saves a configuration file back to your GitHub repository so later automation runs consistently.  The web UI at `/schedule` provides a simple calendar view for creating one‑off or recurring jobs using those saved macros.
+
+## 🌐 Demo Site
+
+Open `demo-site/index.html` directly in your browser to explore Hermes without running a server.  The page contains contact and login forms, a multi-step wizard and dynamic fields so you can try the form filler, heuristics and macro recorder.
+An embedded widget demonstrates filling elements inside iframes.  Simply load the file and activate the extension to begin experimenting.
+
 
 ---
 

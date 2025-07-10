@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hermes Extension Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1em auto; max-width: 900px; }
+    section { margin-bottom: 2em; }
+    label { display: block; margin-bottom: 0.5em; }
+    form { padding: 1em; border: 1px solid #ddd; }
+    .step { display: none; }
+    .step.active { display: block; }
+    iframe { width: 100%; border: 1px solid #ccc; height: 300px; }
+  </style>
+</head>
+<body>
+  <h1>Hermes Extension Interactive Demo</h1>
+  <p>Use this page to practice form filling, record macros and test dynamic elements.</p>
+  <section id="contact">
+    <h2>Contact Form</h2>
+    <form id="contactForm">
+      <label>First Name <input name="first" type="text"></label>
+      <label>Last Name <input name="last" type="text"></label>
+      <label>Email <input name="email" type="email"></label>
+      <label>Company <input name="company" type="text"></label>
+      <label>Subscribe <input name="subscribe" type="checkbox"></label>
+      <button type="submit">Send</button>
+    </form>
+  </section>
+  <section id="login">
+    <h2>Login Form</h2>
+    <form id="loginForm">
+      <label>Username <input name="username" type="text" autocomplete="off"></label>
+      <label>Password <input name="password" type="password" autocomplete="new-password"></label>
+      <button type="submit">Log In</button>
+    </form>
+  </section>
+  <section id="wizard">
+    <h2>Signup Wizard</h2>
+    <div class="step active">
+      <p>Step 1: Choose a username</p>
+      <input name="wizardUsername" type="text">
+      <button id="next1">Next</button>
+    </div>
+    <div class="step">
+      <p>Step 2: Enter your email</p>
+      <input name="wizardEmail" type="email">
+      <button id="back2">Back</button>
+      <button id="next2">Next</button>
+    </div>
+    <div class="step">
+      <p>Step 3: Set a password</p>
+      <input name="wizardPass" type="password">
+      <button id="back3">Back</button>
+      <button id="finish">Finish</button>
+    </div>
+  </section>
+  <section id="dynamic">
+    <h2>Dynamic Fields</h2>
+    <button id="addField">Add Field</button>
+    <div id="dynamicContainer"></div>
+  </section>
+  <section>
+    <h2>Embedded Widget</h2>
+    <iframe src="widget.html"></iframe>
+  </section>
+  <script>
+    document.getElementById('contactForm').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Contact form submitted!');
+    });
+    document.getElementById('loginForm').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Logged in!');
+    });
+    const steps = document.querySelectorAll('#wizard .step');
+    const showStep = index => {
+      steps.forEach((step, i) => {
+        step.classList.toggle('active', i === index);
+      });
+    };
+    document.getElementById('next1').addEventListener('click', () => showStep(1));
+    document.getElementById('back2').addEventListener('click', () => showStep(0));
+    document.getElementById('next2').addEventListener('click', () => showStep(2));
+    document.getElementById('back3').addEventListener('click', () => showStep(1));
+    document.getElementById('finish').addEventListener('click', () => alert('Wizard done!'));
+    document.getElementById('addField').addEventListener('click', () => {
+      const container = document.getElementById('dynamicContainer');
+      const count = container.children.length + 1;
+      const div = document.createElement('div');
+      div.innerHTML = `<label>Extra Field ${count} <input name="extra${count}" type="text"></label>`;
+      container.appendChild(div);
+    });
+  </script>
+</body>
+</html>
