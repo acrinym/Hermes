@@ -59,6 +59,7 @@
     let debugLogs = [];
     let profileData = {};
     let macros = {};
+    let lastPlayedMacro = '';
     let customMappings = {};
     let skippedFields = [];
     let fieldSelectMode = false;
@@ -115,6 +116,7 @@
         helpButton: { emoji: '❓', text: 'Help', bunchedText: 'Hlp', title: 'Show help panel' },
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
+        exportButton: { emoji: '📤', text: 'Export', bunchedText: 'Exp', title: 'Export profile to JSON file' },
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' } // New settings button
     };
 
@@ -138,6 +140,8 @@
     let strobeStateV13 = { phase: 0, opacity: 0 };
     let lasersV14 = [];
     let strobeStateV14 = { phase: 0, opacity: 0 };
+    let cubeRenderer = null, cubeScene = null, cubeCamera = null, cubeMesh = null;
+    let threeLoaded = false;
 
     // =================== Settings Management ===================
     const defaultSettings = {
@@ -232,9 +236,14 @@
             "useCoordinateFallback": false,
             "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
             "similarityThreshold": 0.5,
-            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
-        }
+        "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+        },
+        "_comment_recordHotkey": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
+        "recordHotkey": "Ctrl+Shift+R",
+        "_comment_playMacroHotkey": "Key combo to play the last macro (e.g., Ctrl+Shift+P).",
+        "playMacroHotkey": "Ctrl+Shift+P"
     };
+    let currentSettings = {};
     let currentSettings = {};
 
     function loadSettings() {
@@ -248,6 +257,7 @@
                 currentSettings.effects[effectKey] = {...defaultSettings.effects[effectKey], ...(currentSettings.effects[effectKey] || {})};
             }
             currentSettings.macro = {...defaultSettings.macro, ...(currentSettings.macro || {})};
+            updateHotkeysFromSettings();
 
         } catch (error) {
             console.error('Hermes: Error loading settings, reverting to defaults:', error);
@@ -325,6 +335,8 @@
                 <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-useCoords"> Use coordinate fallback</label>
                 <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-recordMouse"> Record mouse movements</label>
                 <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
+                <label style="display:block;margin-bottom:5px;">Record Hotkey: <input type="text" id="hermes-setting-recordHotkey" style="width:120px;"></label>
+                <label style="display:block;margin-bottom:5px;">Play Macro Hotkey: <input type="text" id="hermes-setting-playHotkey" style="width:120px;"></label>
             </div>
             <h4 style="margin-top:15px; margin-bottom:8px; border-bottom: 1px solid var(--hermes-panel-border); padding-bottom: 5px;">Settings Guide:</h4>
             <div id="hermes-settings-explanations" style="max-height:20vh;overflow-y:auto;padding:5px;background:rgba(0,0,0,0.1);border-radius:4px;">
@@ -346,6 +358,8 @@
             const recordMouseCb = panelInRoot.querySelector('#hermes-setting-recordMouse');
             const simSlider = panelInRoot.querySelector('#hermes-setting-similarity');
             const simValue = panelInRoot.querySelector('#hermes-sim-value');
+            const recordKey = panelInRoot.querySelector('#hermes-setting-recordHotkey');
+            const playKey = panelInRoot.querySelector('#hermes-setting-playHotkey');
 
             if (settingsTextarea) {
                 settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
@@ -360,6 +374,8 @@
                 if (simValue) simValue.textContent = simSlider.value;
                 simSlider.oninput = () => { if (simValue) simValue.textContent = simSlider.value; };
             }
+            if (recordKey) recordKey.value = currentSettings.recordHotkey || '';
+            if (playKey) playKey.value = currentSettings.playMacroHotkey || '';
 
             if (saveBtn) {
                 saveBtn.onclick = () => {
@@ -369,7 +385,10 @@
                         if (useCoordsCb) newSettings.macro.useCoordinateFallback = useCoordsCb.checked;
                         if (recordMouseCb) newSettings.macro.recordMouseMoves = recordMouseCb.checked;
                         if (simSlider) newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
+                        if (recordKey) newSettings.recordHotkey = recordKey.value.trim();
+                        if (playKey) newSettings.playMacroHotkey = playKey.value.trim();
                         if (saveSettings(newSettings)) {
+                            refreshHotkeys();
                             if (statusIndicator) { statusIndicator.textContent = 'Settings Saved & Applied'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
                             // toggleSettingsPanel(false); // Optionally close panel on save
                         } else {
@@ -396,6 +415,8 @@
                             simSlider.value = currentSettings.macro.similarityThreshold;
                             if (simValue) simValue.textContent = simSlider.value;
                         }
+                        if (recordKey) recordKey.value = currentSettings.recordHotkey;
+                        if (playKey) playKey.value = currentSettings.playMacroHotkey;
                         if (statusIndicator) { statusIndicator.textContent = 'Defaults Loaded. Save to apply.'; statusIndicator.style.color = 'var(--hermes-warning-text)'; setTimeout(resetStatusIndicator, 2000); }
                     }
                 };
@@ -415,6 +436,8 @@
              const recordMouseCb = settingsPanel.querySelector('#hermes-setting-recordMouse');
              const simSlider = settingsPanel.querySelector('#hermes-setting-similarity');
              const simValue = settingsPanel.querySelector('#hermes-sim-value');
+             const recordKey = settingsPanel.querySelector('#hermes-setting-recordHotkey');
+             const playKey = settingsPanel.querySelector('#hermes-setting-playHotkey');
              if(settingsTextarea) {
                  settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
                     if (key.startsWith('_comment')) return undefined;
@@ -427,6 +450,8 @@
                  simSlider.value = currentSettings.macro.similarityThreshold;
                  if (simValue) simValue.textContent = simSlider.value;
              }
+             if (recordKey) recordKey.value = currentSettings.recordHotkey;
+             if (playKey) playKey.value = currentSettings.playMacroHotkey;
         }
 
         if (settingsPanel) {
@@ -724,6 +749,18 @@
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'profile_save', details: { error: error.message } });
             return false;
         }
+    }
+
+    function exportProfileData() {
+        try {
+            const blob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hermes_profile_export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) { console.error('Hermes: Error exporting profile', e); }
     }
     function loadMacros() {
         try {
@@ -1113,6 +1150,60 @@
         }
     }
 
+    // =================== Hotkey Support ===================
+    let recordHotkeyParsed = null;
+    let playHotkeyParsed = null;
+
+    function parseHotkey(str) {
+        const h = { key: '', ctrl: false, shift: false, alt: false, meta: false };
+        str.split('+').map(p => p.trim().toLowerCase()).forEach(part => {
+            if (part === 'ctrl' || part === 'control') h.ctrl = true;
+            else if (part === 'shift') h.shift = true;
+            else if (part === 'alt') h.alt = true;
+            else if (part === 'meta' || part === 'cmd' || part === 'command') h.meta = true;
+            else if (part) h.key = part;
+        });
+        return h;
+    }
+
+    function hotkeyMatches(e, hotkey) {
+        if (!hotkey || !hotkey.key) return false;
+        return e.key.toLowerCase() === hotkey.key &&
+            !!e.ctrlKey === hotkey.ctrl &&
+            !!e.shiftKey === hotkey.shift &&
+            !!e.altKey === hotkey.alt &&
+            !!e.metaKey === hotkey.meta;
+    }
+
+    function updateHotkeysFromSettings() {
+        recordHotkeyParsed = parseHotkey(String(currentSettings.recordHotkey || 'Ctrl+Shift+R'));
+        playHotkeyParsed = parseHotkey(String(currentSettings.playMacroHotkey || 'Ctrl+Shift+P'));
+    }
+
+    function hotkeyHandler(e) {
+        if (hotkeyMatches(e, recordHotkeyParsed)) {
+            e.preventDefault();
+            e.stopPropagation();
+            isRecording ? stopRecording() : startRecording();
+        } else if (hotkeyMatches(e, playHotkeyParsed)) {
+            e.preventDefault();
+            e.stopPropagation();
+            const name = lastPlayedMacro || Object.keys(macros)[0];
+            if (name) {
+                playMacro(name);
+            }
+        }
+    }
+
+    function initHotkeys() {
+        updateHotkeysFromSettings();
+        document.addEventListener('keydown', hotkeyHandler, true);
+    }
+
+    function refreshHotkeys() {
+        updateHotkeysFromSettings();
+    }
+
     // =================== Visual Overlays ===================
     function removeVisualOverlays() {
         document.querySelectorAll('[data-hermes-overlay]').forEach((el) => {
@@ -1267,7 +1358,7 @@
                 playBtn.className = 'hermes-button hermes-submenu-button';
                 playBtn.textContent = name;
                 playBtn.title = `Play macro: ${name}`;
-                playBtn.onclick = (e) => { e.stopPropagation(); playMacro(name); closeAllSubmenus(); };
+                playBtn.onclick = (e) => { e.stopPropagation(); lastPlayedMacro = name; playMacro(name); closeAllSubmenus(); };
 
                 const editBtn = document.createElement('button');
                 editBtn.className = 'hermes-button hermes-submenu-button';
@@ -1920,6 +2011,60 @@
         effectAnimationFrameId = requestAnimationFrame(animateV14Strobe);
     }
 
+    // --- Cube Effect ---
+    function loadThree(callback) {
+        if (window.THREE) { callback(); return; }
+        if (threeLoaded) { const id = setInterval(() => { if (window.THREE) { clearInterval(id); callback(); } }, 50); return; }
+        threeLoaded = true;
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+        s.onload = callback;
+        document.head.appendChild(s);
+    }
+
+    function initCube() {
+        if (!window.THREE || cubeRenderer) return;
+        cubeRenderer = new THREE.WebGLRenderer({ alpha: true });
+        cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+        cubeRenderer.domElement.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483639;';
+        cubeScene = new THREE.Scene();
+        cubeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        cubeCamera.position.z = 5;
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        cubeMesh = new THREE.Mesh(geometry, material);
+        cubeScene.add(cubeMesh);
+        shadowRoot.appendChild(cubeRenderer.domElement);
+        window.addEventListener('resize', () => {
+            if (!cubeRenderer || !cubeCamera) return;
+            cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+            cubeCamera.aspect = window.innerWidth / window.innerHeight;
+            cubeCamera.updateProjectionMatrix();
+        });
+    }
+
+    function animateCube() {
+        if (!cubeRenderer || effectsMode !== 'cube') return;
+        cubeMesh.rotation.x += 0.01;
+        cubeMesh.rotation.y += 0.01;
+        cubeRenderer.render(cubeScene, cubeCamera);
+        effectAnimationFrameId = requestAnimationFrame(animateCube);
+    }
+
+    function startCubeEffect() {
+        loadThree(() => {
+            initCube();
+            if (cubeRenderer) {
+                cubeRenderer.domElement.style.display = 'block';
+                animateCube();
+            }
+        });
+    }
+
+    function stopCubeEffect() {
+        if (cubeRenderer) cubeRenderer.domElement.style.display = 'none';
+    }
+
     function updateEffectsRendering() {
         if (!effectsCtx || !effectsCanvas) return;
         if (effectAnimationFrameId) cancelAnimationFrame(effectAnimationFrameId);
@@ -1930,9 +2075,11 @@
             snowflakesV13 = []; lasersV13 = []; lasersV14 = [];
             strobeStateV13 = { phase: 0, opacity: 0 }; // Reset state
             strobeStateV14 = { phase: 0, opacity: 0 }; // Reset state
+            stopCubeEffect();
             return;
         }
-        effectsCanvas.style.display = 'block';
+        effectsCanvas.style.display = effectsMode === 'cube' ? 'none' : 'block';
+        if (effectsMode !== 'cube') stopCubeEffect();
 
         switch (effectsMode) {
             case 'snowflake':
@@ -1961,6 +2108,9 @@
             case 'strobeV14':
                 animateV14Strobe();
                 break;
+            case 'cube':
+                startCubeEffect();
+                break;
         }
     }
 
@@ -1975,7 +2125,8 @@
             { mode: 'laserV13', name: 'Laser (Classic)', emoji: '↔️🟥' },
             { mode: 'strobeV13', name: 'Strobe (Classic)', emoji: '🔄🚨' },
             { mode: 'laserV14', name: 'Laser (Simple)', emoji: '⬇️🟥' },
-            { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' }
+            { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' },
+            { mode: 'cube', name: 'Cube 3D', emoji: '🧊' }
         ];
         effectsListConfig.forEach(effect => {
             const button = document.createElement('button');
@@ -3041,6 +3192,8 @@
             if (sniffBtn) updateButtonAppearance(sniffBtn, 'sniffButton', isBunched);
             const importBtn = shadowRoot.querySelector('#hermes-import-button');
             if (importBtn) updateButtonAppearance(importBtn, 'importButton', isBunched);
+            const exportBtn = shadowRoot.querySelector('#hermes-export-button');
+            if (exportBtn) updateButtonAppearance(exportBtn, 'exportButton', isBunched);
 
 
             // Apply border thickness directly if uiContainer is available
@@ -3573,6 +3726,12 @@
             input.click();
         };
         uiContainer.appendChild(importButtonElement);
+
+        const exportButtonElement = document.createElement('button');
+        exportButtonElement.id = 'hermes-export-button';
+        updateButtonAppearance(exportButtonElement, 'exportButton', isBunched);
+        exportButtonElement.onclick = () => { closeAllSubmenus(); exportProfileData(); };
+        uiContainer.appendChild(exportButtonElement);
     }
 
 
@@ -3588,11 +3747,13 @@
                  setupUI();
                  setupAnalysisSnifferPlugin(); // Add new plugins here if they modify the main UI
                  applyCurrentSettings(); // Ensure settings are applied after UI is built
+                 initHotkeys();
             } else { // Fallback if body isn't parsed yet but state is interactive/complete
                 document.addEventListener('DOMContentLoaded', () => {
                     setupUI();
                     setupAnalysisSnifferPlugin();
                     applyCurrentSettings();
+                    initHotkeys();
                 });
             }
         } else { // Still loading
@@ -3600,6 +3761,7 @@
                 setupUI();
                 setupAnalysisSnifferPlugin();
                 applyCurrentSettings();
+                initHotkeys();
             });
         }
     }
