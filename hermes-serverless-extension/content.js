@@ -116,6 +116,7 @@
         helpButton: { emoji: '❓', text: 'Help', bunchedText: 'Hlp', title: 'Show help panel' },
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
+        exportButton: { emoji: '📤', text: 'Export', bunchedText: 'Exp', title: 'Export profile to JSON file' },
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' } // New settings button
     };
 
@@ -139,6 +140,8 @@
     let strobeStateV13 = { phase: 0, opacity: 0 };
     let lasersV14 = [];
     let strobeStateV14 = { phase: 0, opacity: 0 };
+    let cubeRenderer = null, cubeScene = null, cubeCamera = null, cubeMesh = null;
+    let threeLoaded = false;
 
     // =================== Settings Management ===================
     const defaultSettings = {
@@ -746,6 +749,18 @@
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'profile_save', details: { error: error.message } });
             return false;
         }
+    }
+
+    function exportProfileData() {
+        try {
+            const blob = new Blob([JSON.stringify(profileData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hermes_profile_export.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch (e) { console.error('Hermes: Error exporting profile', e); }
     }
     function loadMacros() {
         try {
@@ -1996,6 +2011,60 @@
         effectAnimationFrameId = requestAnimationFrame(animateV14Strobe);
     }
 
+    // --- Cube Effect ---
+    function loadThree(callback) {
+        if (window.THREE) { callback(); return; }
+        if (threeLoaded) { const id = setInterval(() => { if (window.THREE) { clearInterval(id); callback(); } }, 50); return; }
+        threeLoaded = true;
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+        s.onload = callback;
+        document.head.appendChild(s);
+    }
+
+    function initCube() {
+        if (!window.THREE || cubeRenderer) return;
+        cubeRenderer = new THREE.WebGLRenderer({ alpha: true });
+        cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+        cubeRenderer.domElement.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483639;';
+        cubeScene = new THREE.Scene();
+        cubeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        cubeCamera.position.z = 5;
+        const geometry = new THREE.BoxGeometry();
+        const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+        cubeMesh = new THREE.Mesh(geometry, material);
+        cubeScene.add(cubeMesh);
+        shadowRoot.appendChild(cubeRenderer.domElement);
+        window.addEventListener('resize', () => {
+            if (!cubeRenderer || !cubeCamera) return;
+            cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+            cubeCamera.aspect = window.innerWidth / window.innerHeight;
+            cubeCamera.updateProjectionMatrix();
+        });
+    }
+
+    function animateCube() {
+        if (!cubeRenderer || effectsMode !== 'cube') return;
+        cubeMesh.rotation.x += 0.01;
+        cubeMesh.rotation.y += 0.01;
+        cubeRenderer.render(cubeScene, cubeCamera);
+        effectAnimationFrameId = requestAnimationFrame(animateCube);
+    }
+
+    function startCubeEffect() {
+        loadThree(() => {
+            initCube();
+            if (cubeRenderer) {
+                cubeRenderer.domElement.style.display = 'block';
+                animateCube();
+            }
+        });
+    }
+
+    function stopCubeEffect() {
+        if (cubeRenderer) cubeRenderer.domElement.style.display = 'none';
+    }
+
     function updateEffectsRendering() {
         if (!effectsCtx || !effectsCanvas) return;
         if (effectAnimationFrameId) cancelAnimationFrame(effectAnimationFrameId);
@@ -2006,9 +2075,11 @@
             snowflakesV13 = []; lasersV13 = []; lasersV14 = [];
             strobeStateV13 = { phase: 0, opacity: 0 }; // Reset state
             strobeStateV14 = { phase: 0, opacity: 0 }; // Reset state
+            stopCubeEffect();
             return;
         }
-        effectsCanvas.style.display = 'block';
+        effectsCanvas.style.display = effectsMode === 'cube' ? 'none' : 'block';
+        if (effectsMode !== 'cube') stopCubeEffect();
 
         switch (effectsMode) {
             case 'snowflake':
@@ -2037,6 +2108,9 @@
             case 'strobeV14':
                 animateV14Strobe();
                 break;
+            case 'cube':
+                startCubeEffect();
+                break;
         }
     }
 
@@ -2051,7 +2125,8 @@
             { mode: 'laserV13', name: 'Laser (Classic)', emoji: '↔️🟥' },
             { mode: 'strobeV13', name: 'Strobe (Classic)', emoji: '🔄🚨' },
             { mode: 'laserV14', name: 'Laser (Simple)', emoji: '⬇️🟥' },
-            { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' }
+            { mode: 'strobeV14', name: 'Strobe (Simple)', emoji: '💡' },
+            { mode: 'cube', name: 'Cube 3D', emoji: '🧊' }
         ];
         effectsListConfig.forEach(effect => {
             const button = document.createElement('button');
@@ -3117,6 +3192,8 @@
             if (sniffBtn) updateButtonAppearance(sniffBtn, 'sniffButton', isBunched);
             const importBtn = shadowRoot.querySelector('#hermes-import-button');
             if (importBtn) updateButtonAppearance(importBtn, 'importButton', isBunched);
+            const exportBtn = shadowRoot.querySelector('#hermes-export-button');
+            if (exportBtn) updateButtonAppearance(exportBtn, 'exportButton', isBunched);
 
 
             // Apply border thickness directly if uiContainer is available
@@ -3649,6 +3726,12 @@
             input.click();
         };
         uiContainer.appendChild(importButtonElement);
+
+        const exportButtonElement = document.createElement('button');
+        exportButtonElement.id = 'hermes-export-button';
+        updateButtonAppearance(exportButtonElement, 'exportButton', isBunched);
+        exportButtonElement.onclick = () => { closeAllSubmenus(); exportProfileData(); };
+        uiContainer.appendChild(exportButtonElement);
     }
 
 
