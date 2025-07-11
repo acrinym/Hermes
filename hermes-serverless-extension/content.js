@@ -59,6 +59,7 @@
     let debugLogs = [];
     let profileData = {};
     let macros = {};
+    let lastPlayedMacro = '';
     let customMappings = {};
     let skippedFields = [];
     let fieldSelectMode = false;
@@ -232,9 +233,14 @@
             "useCoordinateFallback": false,
             "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
             "similarityThreshold": 0.5,
-            "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
-        }
+        "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+        },
+        "_comment_recordHotkey": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
+        "recordHotkey": "Ctrl+Shift+R",
+        "_comment_playMacroHotkey": "Key combo to play the last macro (e.g., Ctrl+Shift+P).",
+        "playMacroHotkey": "Ctrl+Shift+P"
     };
+    let currentSettings = {};
     let currentSettings = {};
 
     function loadSettings() {
@@ -248,6 +254,7 @@
                 currentSettings.effects[effectKey] = {...defaultSettings.effects[effectKey], ...(currentSettings.effects[effectKey] || {})};
             }
             currentSettings.macro = {...defaultSettings.macro, ...(currentSettings.macro || {})};
+            updateHotkeysFromSettings();
 
         } catch (error) {
             console.error('Hermes: Error loading settings, reverting to defaults:', error);
@@ -325,6 +332,8 @@
                 <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-useCoords"> Use coordinate fallback</label>
                 <label style="display:block;margin-bottom:5px;"><input type="checkbox" id="hermes-setting-recordMouse"> Record mouse movements</label>
                 <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
+                <label style="display:block;margin-bottom:5px;">Record Hotkey: <input type="text" id="hermes-setting-recordHotkey" style="width:120px;"></label>
+                <label style="display:block;margin-bottom:5px;">Play Macro Hotkey: <input type="text" id="hermes-setting-playHotkey" style="width:120px;"></label>
             </div>
             <h4 style="margin-top:15px; margin-bottom:8px; border-bottom: 1px solid var(--hermes-panel-border); padding-bottom: 5px;">Settings Guide:</h4>
             <div id="hermes-settings-explanations" style="max-height:20vh;overflow-y:auto;padding:5px;background:rgba(0,0,0,0.1);border-radius:4px;">
@@ -346,6 +355,8 @@
             const recordMouseCb = panelInRoot.querySelector('#hermes-setting-recordMouse');
             const simSlider = panelInRoot.querySelector('#hermes-setting-similarity');
             const simValue = panelInRoot.querySelector('#hermes-sim-value');
+            const recordKey = panelInRoot.querySelector('#hermes-setting-recordHotkey');
+            const playKey = panelInRoot.querySelector('#hermes-setting-playHotkey');
 
             if (settingsTextarea) {
                 settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
@@ -360,6 +371,8 @@
                 if (simValue) simValue.textContent = simSlider.value;
                 simSlider.oninput = () => { if (simValue) simValue.textContent = simSlider.value; };
             }
+            if (recordKey) recordKey.value = currentSettings.recordHotkey || '';
+            if (playKey) playKey.value = currentSettings.playMacroHotkey || '';
 
             if (saveBtn) {
                 saveBtn.onclick = () => {
@@ -369,7 +382,10 @@
                         if (useCoordsCb) newSettings.macro.useCoordinateFallback = useCoordsCb.checked;
                         if (recordMouseCb) newSettings.macro.recordMouseMoves = recordMouseCb.checked;
                         if (simSlider) newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
+                        if (recordKey) newSettings.recordHotkey = recordKey.value.trim();
+                        if (playKey) newSettings.playMacroHotkey = playKey.value.trim();
                         if (saveSettings(newSettings)) {
+                            refreshHotkeys();
                             if (statusIndicator) { statusIndicator.textContent = 'Settings Saved & Applied'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
                             // toggleSettingsPanel(false); // Optionally close panel on save
                         } else {
@@ -396,6 +412,8 @@
                             simSlider.value = currentSettings.macro.similarityThreshold;
                             if (simValue) simValue.textContent = simSlider.value;
                         }
+                        if (recordKey) recordKey.value = currentSettings.recordHotkey;
+                        if (playKey) playKey.value = currentSettings.playMacroHotkey;
                         if (statusIndicator) { statusIndicator.textContent = 'Defaults Loaded. Save to apply.'; statusIndicator.style.color = 'var(--hermes-warning-text)'; setTimeout(resetStatusIndicator, 2000); }
                     }
                 };
@@ -415,6 +433,8 @@
              const recordMouseCb = settingsPanel.querySelector('#hermes-setting-recordMouse');
              const simSlider = settingsPanel.querySelector('#hermes-setting-similarity');
              const simValue = settingsPanel.querySelector('#hermes-sim-value');
+             const recordKey = settingsPanel.querySelector('#hermes-setting-recordHotkey');
+             const playKey = settingsPanel.querySelector('#hermes-setting-playHotkey');
              if(settingsTextarea) {
                  settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
                     if (key.startsWith('_comment')) return undefined;
@@ -427,6 +447,8 @@
                  simSlider.value = currentSettings.macro.similarityThreshold;
                  if (simValue) simValue.textContent = simSlider.value;
              }
+             if (recordKey) recordKey.value = currentSettings.recordHotkey;
+             if (playKey) playKey.value = currentSettings.playMacroHotkey;
         }
 
         if (settingsPanel) {
@@ -1113,6 +1135,60 @@
         }
     }
 
+    // =================== Hotkey Support ===================
+    let recordHotkeyParsed = null;
+    let playHotkeyParsed = null;
+
+    function parseHotkey(str) {
+        const h = { key: '', ctrl: false, shift: false, alt: false, meta: false };
+        str.split('+').map(p => p.trim().toLowerCase()).forEach(part => {
+            if (part === 'ctrl' || part === 'control') h.ctrl = true;
+            else if (part === 'shift') h.shift = true;
+            else if (part === 'alt') h.alt = true;
+            else if (part === 'meta' || part === 'cmd' || part === 'command') h.meta = true;
+            else if (part) h.key = part;
+        });
+        return h;
+    }
+
+    function hotkeyMatches(e, hotkey) {
+        if (!hotkey || !hotkey.key) return false;
+        return e.key.toLowerCase() === hotkey.key &&
+            !!e.ctrlKey === hotkey.ctrl &&
+            !!e.shiftKey === hotkey.shift &&
+            !!e.altKey === hotkey.alt &&
+            !!e.metaKey === hotkey.meta;
+    }
+
+    function updateHotkeysFromSettings() {
+        recordHotkeyParsed = parseHotkey(String(currentSettings.recordHotkey || 'Ctrl+Shift+R'));
+        playHotkeyParsed = parseHotkey(String(currentSettings.playMacroHotkey || 'Ctrl+Shift+P'));
+    }
+
+    function hotkeyHandler(e) {
+        if (hotkeyMatches(e, recordHotkeyParsed)) {
+            e.preventDefault();
+            e.stopPropagation();
+            isRecording ? stopRecording() : startRecording();
+        } else if (hotkeyMatches(e, playHotkeyParsed)) {
+            e.preventDefault();
+            e.stopPropagation();
+            const name = lastPlayedMacro || Object.keys(macros)[0];
+            if (name) {
+                playMacro(name);
+            }
+        }
+    }
+
+    function initHotkeys() {
+        updateHotkeysFromSettings();
+        document.addEventListener('keydown', hotkeyHandler, true);
+    }
+
+    function refreshHotkeys() {
+        updateHotkeysFromSettings();
+    }
+
     // =================== Visual Overlays ===================
     function removeVisualOverlays() {
         document.querySelectorAll('[data-hermes-overlay]').forEach((el) => {
@@ -1267,7 +1343,7 @@
                 playBtn.className = 'hermes-button hermes-submenu-button';
                 playBtn.textContent = name;
                 playBtn.title = `Play macro: ${name}`;
-                playBtn.onclick = (e) => { e.stopPropagation(); playMacro(name); closeAllSubmenus(); };
+                playBtn.onclick = (e) => { e.stopPropagation(); lastPlayedMacro = name; playMacro(name); closeAllSubmenus(); };
 
                 const editBtn = document.createElement('button');
                 editBtn.className = 'hermes-button hermes-submenu-button';
@@ -3588,11 +3664,13 @@
                  setupUI();
                  setupAnalysisSnifferPlugin(); // Add new plugins here if they modify the main UI
                  applyCurrentSettings(); // Ensure settings are applied after UI is built
+                 initHotkeys();
             } else { // Fallback if body isn't parsed yet but state is interactive/complete
                 document.addEventListener('DOMContentLoaded', () => {
                     setupUI();
                     setupAnalysisSnifferPlugin();
                     applyCurrentSettings();
+                    initHotkeys();
                 });
             }
         } else { // Still loading
@@ -3600,6 +3678,7 @@
                 setupUI();
                 setupAnalysisSnifferPlugin();
                 applyCurrentSettings();
+                initHotkeys();
             });
         }
     }
