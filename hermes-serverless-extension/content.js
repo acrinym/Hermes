@@ -31,6 +31,10 @@
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
+    const TASKS_KEY = 'hermes_tasks';
+    const NOTES_KEY = 'hermes_notes';
+    const POMODORO_KEY = 'hermes_pomodoro';
+    const AFFIRM_KEY = 'hermes_affirmations_state';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -68,6 +72,14 @@
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
+    let tasks = [];
+    let notes = [{ title: 'Note 1', content: '' }];
+    let currentNote = 0;
+    let pomodoroSettings = JSON.parse(GM_getValue(POMODORO_KEY, '{"work":25,"break":5}'));
+    let pomodoroInterval = null;
+    let pomodoroRemaining = 0;
+    let pomodoroMode = 'work';
+    let affirmOverlay = null;
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -117,7 +129,10 @@
         sniffButton: { emoji: '👃', text: 'Sniff', bunchedText: 'Snif', title: 'Log form elements for analysis' },
         importButton: { emoji: '📥', text: 'Import', bunchedText: 'Imp', title: 'Import profile from JSON file' },
         exportButton: { emoji: '📤', text: 'Export', bunchedText: 'Exp', title: 'Export profile to JSON file' },
-        settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' } // New settings button
+        settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' }, // New settings button
+        tasksButton: { emoji: '🗒️', text: 'Tasks', bunchedText: 'Tsk', title: 'Manage task list' },
+        notesButton: { emoji: '📔', text: 'Notes', bunchedText: 'Note', title: 'Open scratch pad' },
+        timerButton: { emoji: '⏱️', text: 'Timer', bunchedText: 'Tm', title: 'Pomodoro timer' }
     };
 
 
@@ -1831,6 +1846,216 @@
             else { helpPanel.style.display = 'none'; GM_setValue(HELP_PANEL_OPEN_KEY, false); }
         }
     }
+
+    // =================== Scratch Pad ===================
+    function loadNotes() {
+        try { notes = JSON.parse(GM_getValue(NOTES_KEY, '[{"title":"Note 1","content":""}]')); }
+        catch { notes = [{ title: 'Note 1', content: '' }]; }
+    }
+    function saveNotes() { GM_setValue(NOTES_KEY, JSON.stringify(notes)); }
+    function createScratchPadPanel() {
+        const panelId = 'hermes-scratch-pad';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+        const contentHtml = `<div id="pad-tabs" style="display:flex;gap:4px;margin-bottom:4px;"></div>` +
+            `<textarea id="pad-text" style="width:100%;height:50vh;resize:vertical;"></textarea>` +
+            `<div style="margin-top:8px;display:flex;gap:4px;align-items:center;">` +
+            `<select id="pad-format"><option value="md">MD</option><option value="txt">TXT</option><option value="json">JSON</option></select>` +
+            `<button id="pad-export" class="hermes-button">Export</button>` +
+            `<button id="pad-drive" class="hermes-button">Save To Drive</button></div>`;
+        createModal(panelId, 'Scratch Pad', contentHtml, '700px');
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (!panel) return;
+        const textArea = panel.querySelector('#pad-text');
+        const tabsContainer = panel.querySelector('#pad-tabs');
+        const exportBtn = panel.querySelector('#pad-export');
+        const formatSel = panel.querySelector('#pad-format');
+        const driveBtn = panel.querySelector('#pad-drive');
+
+        function updateContent() {
+            if (textArea) textArea.value = notes[currentNote].content;
+            if (!tabsContainer) return;
+            tabsContainer.innerHTML = '';
+            notes.forEach((n, idx) => {
+                const b = document.createElement('button');
+                b.className = 'hermes-button';
+                b.textContent = n.title;
+                if (idx === currentNote) b.style.background = 'lightgreen';
+                b.onclick = () => {
+                    notes[currentNote].content = textArea.value;
+                    currentNote = idx;
+                    updateContent();
+                    saveNotes();
+                };
+                tabsContainer.appendChild(b);
+            });
+            const addBtn = document.createElement('button');
+            addBtn.className = 'hermes-button';
+            addBtn.textContent = '+';
+            addBtn.onclick = () => {
+                notes.push({ title: `Note ${notes.length + 1}`, content: '' });
+                currentNote = notes.length - 1;
+                updateContent();
+                saveNotes();
+            };
+            tabsContainer.appendChild(addBtn);
+        }
+
+        textArea.oninput = () => { notes[currentNote].content = textArea.value; saveNotes(); };
+        exportBtn.onclick = () => {
+            const fmt = formatSel.value;
+            const data = fmt === 'json' ? JSON.stringify(notes, null, 2) : notes[currentNote].content;
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `hermes-note.${fmt}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+        driveBtn.onclick = () => {
+            if (!window.chrome || !chrome.identity) return;
+            chrome.identity.getAuthToken({ interactive: true }, token => {
+                if (chrome.runtime.lastError || !token) { console.error('Drive auth failed', chrome.runtime.lastError); return; }
+                fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media', {
+                    method: 'POST', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ notes })
+                }).catch(e => console.error('Drive upload error', e));
+            });
+        };
+        updateContent();
+    }
+    function toggleScratchPad(show) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-scratch-pad');
+        if (show && !panel) { createScratchPadPanel(); panel = shadowRoot.querySelector('#hermes-scratch-pad'); }
+        if (panel) { panel.style.display = show ? 'block' : 'none'; if (show) applyTheme(); }
+    }
+
+    // =================== Task List ===================
+    function loadTasks() {
+        try { tasks = JSON.parse(GM_getValue(TASKS_KEY, '[]')); } catch { tasks = []; }
+    }
+    function saveTasks(list) { try { GM_setValue(TASKS_KEY, JSON.stringify(list)); tasks = list; } catch (e) { console.error('Hermes: Error saving tasks', e); } }
+    function createTasksPanel() {
+        const panelId = 'hermes-tasks-panel';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+        const contentHtml = `<div id="hermes-tasks-list" style="max-height:40vh;overflow-y:auto;margin-bottom:10px;"></div>` +
+            `<div style="display:flex;gap:5px;"><input id="hermes-task-input" type="text" placeholder="New task..." style="flex:1;">` +
+            `<button id="hermes-task-add" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Add</button></div>`;
+        createModal(panelId, 'Hermes Tasks', contentHtml, '400px');
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (!panel) return;
+        const listDiv = panel.querySelector('#hermes-tasks-list');
+        const inputEl = panel.querySelector('#hermes-task-input');
+        const addBtn = panel.querySelector('#hermes-task-add');
+
+        function render() {
+            listDiv.innerHTML = '';
+            tasks.forEach((t, i) => {
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.marginBottom = '5px';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = t.done;
+                cb.onchange = () => { tasks[i].done = cb.checked; saveTasks(tasks); render(); };
+                const span = document.createElement('span');
+                span.textContent = t.text;
+                span.style.marginLeft = '5px';
+                if (t.done) span.style.textDecoration = 'line-through';
+                const del = document.createElement('button');
+                del.className = 'hermes-button';
+                del.textContent = '✖';
+                del.style.marginLeft = 'auto';
+                del.onclick = () => { tasks.splice(i,1); saveTasks(tasks); render(); };
+                item.appendChild(cb);
+                item.appendChild(span);
+                item.appendChild(del);
+                listDiv.appendChild(item);
+            });
+        }
+
+        render();
+        addBtn.onclick = () => {
+            const text = inputEl.value.trim();
+            if (text) { tasks.push({ text, done:false }); saveTasks(tasks); inputEl.value=''; render(); }
+        };
+    }
+    function toggleTasksPanel(show) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-tasks-panel');
+        if (show && !panel) { createTasksPanel(); panel = shadowRoot.querySelector('#hermes-tasks-panel'); }
+        if (panel) { panel.style.display = show ? 'block' : 'none'; if (show) applyTheme(); }
+    }
+
+    // =================== Pomodoro Timer ===================
+    function updatePomodoroDisplay(el) {
+        if (!el) return;
+        const m = String(Math.floor(pomodoroRemaining / 60)).padStart(2, '0');
+        const s = String(pomodoroRemaining % 60).padStart(2, '0');
+        el.textContent = `${m}:${s}`;
+    }
+    function startPomodoro(display) {
+        if (pomodoroInterval) return;
+        if (pomodoroRemaining <= 0) {
+            pomodoroMode = 'work';
+            pomodoroRemaining = (pomodoroSettings.work || 25) * 60;
+        }
+        updatePomodoroDisplay(display);
+        pomodoroInterval = setInterval(() => {
+            pomodoroRemaining--;
+            if (pomodoroRemaining <= 0) {
+                if (pomodoroMode === 'work') {
+                    pomodoroMode = 'break';
+                    pomodoroRemaining = (pomodoroSettings.break || 5) * 60;
+                    alert('Break time!');
+                } else {
+                    pomodoroMode = 'work';
+                    pomodoroRemaining = (pomodoroSettings.work || 25) * 60;
+                    alert('Back to work!');
+                }
+            }
+            updatePomodoroDisplay(display);
+        }, 1000);
+    }
+    function stopPomodoro() { if (pomodoroInterval) { clearInterval(pomodoroInterval); pomodoroInterval = null; } }
+    function createTimerPanel() {
+        const panelId = 'hermes-timer-panel';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+        const content = `<div id="hermes-timer-display" style="text-align:center;font-size:2em;margin-bottom:10px;">00:00</div>` +
+            `<div style="display:flex;gap:10px;justify-content:center;"><button id="hermes-timer-start" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Start</button>` +
+            `<button id="hermes-timer-stop" class="hermes-button" style="background:var(--hermes-error-text);color:var(--hermes-panel-bg);">Stop</button></div>`;
+        createModal(panelId, 'Pomodoro Timer', content, '300px');
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (!panel) return;
+        const display = panel.querySelector('#hermes-timer-display');
+        updatePomodoroDisplay(display);
+        const startBtn = panel.querySelector('#hermes-timer-start');
+        const stopBtn = panel.querySelector('#hermes-timer-stop');
+        if (startBtn) startBtn.onclick = () => startPomodoro(display);
+        if (stopBtn) stopBtn.onclick = () => stopPomodoro();
+    }
+    function toggleTimerPanel(show) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-timer-panel');
+        if (show && !panel) { createTimerPanel(); panel = shadowRoot.querySelector('#hermes-timer-panel'); }
+        if (panel) { panel.style.display = show ? 'block' : 'none'; if (show) applyTheme(); }
+    }
+
+    // =================== Affirmations ===================
+    function showAffirmation() {
+        if (!affirmOverlay) {
+            affirmOverlay = document.createElement('div');
+            affirmOverlay.id = 'hermes-affirm';
+            affirmOverlay.textContent = 'You are doing great!';
+            affirmOverlay.style.cssText = 'position:fixed;bottom:10px;right:10px;padding:8px 12px;border-radius:4px;font-family:sans-serif;z-index:2147483647;pointer-events:none;';
+            document.body.appendChild(affirmOverlay);
+        }
+        affirmOverlay.style.display = 'block';
+    }
+    function hideAffirmation() { if (affirmOverlay) affirmOverlay.style.display = 'none'; }
+    function initAffirmations() { if (GM_getValue(AFFIRM_KEY, false)) showAffirmation(); }
 
     // =================== Effects System (with Distinct v13/v14 animations & Settings Integration) ===================
     function setupEffectsCanvas() {
@@ -3584,6 +3809,27 @@
         helpButton.onclick = () => { closeAllSubmenus(); toggleHelpPanel(true); };
         uiContainer.appendChild(helpButton);
 
+        // Tasks Button
+        const tasksButton = document.createElement('button');
+        tasksButton.id = 'hermes-tasks-button';
+        updateButtonAppearance(tasksButton, 'tasksButton', isBunched);
+        tasksButton.onclick = () => { closeAllSubmenus(); toggleTasksPanel(true); };
+        uiContainer.appendChild(tasksButton);
+
+        // Notes Button
+        const notesButton = document.createElement('button');
+        notesButton.id = 'hermes-notes-button';
+        updateButtonAppearance(notesButton, 'notesButton', isBunched);
+        notesButton.onclick = () => { closeAllSubmenus(); toggleScratchPad(true); };
+        uiContainer.appendChild(notesButton);
+
+        // Timer Button
+        const timerButton = document.createElement('button');
+        timerButton.id = 'hermes-timer-button';
+        updateButtonAppearance(timerButton, 'timerButton', isBunched);
+        timerButton.onclick = () => { closeAllSubmenus(); toggleTimerPanel(true); };
+        uiContainer.appendChild(timerButton);
+
         // Settings Button (NEW)
         settingsButton = document.createElement('button');
         settingsButton.id = 'hermes-settings-main-button'; // Unique ID for this specific button
@@ -3741,6 +3987,9 @@
         loadMacros();
         loadCustomMappings();
         loadSettings(); // Load settings early
+        loadTasks();
+        loadNotes();
+        initAffirmations();
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
             if(document.body){ // Ensure body exists
