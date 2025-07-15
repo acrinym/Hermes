@@ -35,6 +35,7 @@
     const NOTES_KEY = 'hermes_notes';
     const POMODORO_KEY = 'hermes_pomodoro';
     const AFFIRM_KEY = 'hermes_affirmations_state';
+    const SCHEDULES_KEY = 'hermes_schedules';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -75,6 +76,7 @@
     let tasks = [];
     let notes = [{ title: 'Note 1', content: '' }];
     let currentNote = 0;
+    let schedules = [];
     let pomodoroSettings = JSON.parse(GM_getValue(POMODORO_KEY, '{"work":25,"break":5}'));
     let pomodoroInterval = null;
     let pomodoroRemaining = 0;
@@ -132,7 +134,8 @@
         settingsButton: { emoji: '⚙️', text: 'Settings', bunchedText: 'Set', title: 'Configure Hermes settings' }, // New settings button
         tasksButton: { emoji: '🗒️', text: 'Tasks', bunchedText: 'Tsk', title: 'Manage task list' },
         notesButton: { emoji: '📔', text: 'Notes', bunchedText: 'Note', title: 'Open scratch pad' },
-        timerButton: { emoji: '⏱️', text: 'Timer', bunchedText: 'Tm', title: 'Pomodoro timer' }
+        timerButton: { emoji: '⏱️', text: 'Timer', bunchedText: 'Tm', title: 'Pomodoro timer' },
+        scheduleButton: { emoji: '⏰', text: 'Schedule', bunchedText: 'Sch', title: 'Schedule macro execution' }
     };
 
 
@@ -1989,6 +1992,78 @@
         if (panel) { panel.style.display = show ? 'block' : 'none'; if (show) applyTheme(); }
     }
 
+    // =================== Macro Scheduler ===================
+    function loadSchedules() {
+        try { schedules = JSON.parse(GM_getValue(SCHEDULES_KEY, '[]')); } catch { schedules = []; }
+    }
+    function saveSchedules(list) { try { GM_setValue(SCHEDULES_KEY, JSON.stringify(list)); schedules = list; } catch (e) { console.error('Hermes: Error saving schedules', e); } }
+
+    function checkScheduledMacros() {
+        const now = Date.now();
+        let changed = false;
+        schedules.forEach(item => {
+            if (!item.nextRun) return;
+            if (now >= item.nextRun) {
+                if (macros[item.name]) playMacro(item.name);
+                if (item.recurrence === 'once') { item.nextRun = null; changed = true; }
+                else {
+                    const d = new Date(item.nextRun);
+                    if (item.recurrence === 'daily') d.setDate(d.getDate() + 1);
+                    else if (item.recurrence === 'weekly') d.setDate(d.getDate() + 7);
+                    else if (item.recurrence === 'monthly') d.setMonth(d.getMonth() + 1);
+                    item.nextRun = d.getTime();
+                    changed = true;
+                }
+            }
+        });
+        if (changed) saveSchedules(schedules.filter(s => s.nextRun));
+    }
+
+    function startScheduleChecker() { setInterval(checkScheduledMacros, 60000); checkScheduledMacros(); }
+
+    function createSchedulePanel() {
+        const panelId = 'hermes-schedule-panel';
+        if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
+        const macroOptions = Object.keys(macros).map(n => `<label style="display:block"><input type="checkbox" value="${n}"> ${n}</label>`).join('');
+        const contentHtml = `<div id="hermes-schedule-list" style="max-height:30vh;overflow-y:auto;margin-bottom:8px;">${macroOptions}</div>` +
+            `<div style="margin-bottom:8px;"><label>Date: <input id="hermes-schedule-date" type="date"></label></div>` +
+            `<div style="margin-bottom:8px;"><label>Time: <input id="hermes-schedule-time" type="time"></label></div>` +
+            `<fieldset style="margin-bottom:8px;"><legend>Repeat</legend>` +
+            `<label><input type="radio" name="hermes-schedule-repeat" value="once" checked> Once</label>` +
+            `<label><input type="radio" name="hermes-schedule-repeat" value="daily"> Daily</label>` +
+            `<label><input type="radio" name="hermes-schedule-repeat" value="weekly"> Weekly</label>` +
+            `<label><input type="radio" name="hermes-schedule-repeat" value="monthly"> Monthly</label></fieldset>`;
+        const buttonsHtml = `<button id="hermes-schedule-save" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Save</button>`;
+        createModal(panelId, 'Schedule Macros', contentHtml, '500px', buttonsHtml);
+
+        const panel = shadowRoot ? shadowRoot.querySelector(`#${panelId}`) : null;
+        if (!panel) return;
+        const listDiv = panel.querySelector('#hermes-schedule-list');
+        const dateInput = panel.querySelector('#hermes-schedule-date');
+        const timeInput = panel.querySelector('#hermes-schedule-time');
+        const saveBtn = panel.querySelector('#hermes-schedule-save');
+
+        if (saveBtn) saveBtn.onclick = () => {
+            const selected = Array.from(listDiv.querySelectorAll('input:checked')).map(el => el.value);
+            const date = dateInput.value;
+            const time = timeInput.value;
+            const recurrence = panel.querySelector('input[name="hermes-schedule-repeat"]:checked').value;
+            const nextRun = date && time ? new Date(`${date}T${time}`).getTime() : null;
+            selected.forEach(name => {
+                schedules.push({ name, nextRun, recurrence });
+            });
+            saveSchedules(schedules);
+            panel.style.display = 'none';
+        };
+    }
+
+    function toggleSchedulePanel(show) {
+        if (!shadowRoot) return;
+        let panel = shadowRoot.querySelector('#hermes-schedule-panel');
+        if (show && !panel) { createSchedulePanel(); panel = shadowRoot.querySelector('#hermes-schedule-panel'); }
+        if (panel) { panel.style.display = show ? 'block' : 'none'; if (show) applyTheme(); }
+    }
+
     // =================== Pomodoro Timer ===================
     function updatePomodoroDisplay(el) {
         if (!el) return;
@@ -3830,6 +3905,13 @@
         timerButton.onclick = () => { closeAllSubmenus(); toggleTimerPanel(true); };
         uiContainer.appendChild(timerButton);
 
+        // Schedule Button
+        const scheduleButton = document.createElement('button');
+        scheduleButton.id = 'hermes-schedule-button';
+        updateButtonAppearance(scheduleButton, 'scheduleButton', isBunched);
+        scheduleButton.onclick = () => { closeAllSubmenus(); toggleSchedulePanel(true); };
+        uiContainer.appendChild(scheduleButton);
+
         // Settings Button (NEW)
         settingsButton = document.createElement('button');
         settingsButton.id = 'hermes-settings-main-button'; // Unique ID for this specific button
@@ -3989,6 +4071,8 @@
         loadSettings(); // Load settings early
         loadTasks();
         loadNotes();
+        loadSchedules();
+        startScheduleChecker();
         initAffirmations();
 
         if (document.readyState === 'complete' || document.readyState === 'interactive') {
