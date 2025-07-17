@@ -28,7 +28,6 @@ const STORAGE_KEYS = {
     DISABLED_HOSTS: 'hermes_disabled_hosts_ext',
     GITHUB_RAW_BASE: 'github_raw_base',
     GITHUB_API_BASE: 'github_api_base',
-    GITHUB_TOKEN: 'github_token',
     BUILT_IN_THEMES: 'hermes_built_in_themes' // For internal storage of built-in themes if needed
 };
 
@@ -74,12 +73,11 @@ let githubConfig = {
 async function loadGithubSettings() {
     const data = await chrome.storage.local.get({
         [STORAGE_KEYS.GITHUB_RAW_BASE]: '',
-        [STORAGE_KEYS.GITHUB_API_BASE]: '',
-        [STORAGE_KEYS.GITHUB_TOKEN]: ''
+        [STORAGE_KEYS.GITHUB_API_BASE]: ''
     });
     githubConfig.rawBase = data[STORAGE_KEYS.GITHUB_RAW_BASE] || process.env.GITHUB_RAW_BASE || '';
     githubConfig.apiBase = data[STORAGE_KEYS.GITHUB_API_BASE] || process.env.GITHUB_API_BASE || '';
-    githubConfig.token = data[STORAGE_KEYS.GITHUB_TOKEN] || process.env.GITHUB_TOKEN || '';
+    githubConfig.token = process.env.GITHUB_TOKEN || '';
 }
 
 // --- In-memory cache for Hermes data ---
