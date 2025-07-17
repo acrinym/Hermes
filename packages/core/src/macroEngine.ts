@@ -36,7 +36,8 @@ export class MacroEngine {
     recordMouseMoves: false,
     mouseMoveInterval: 200,
     useCoordinateFallback: false,
-    relativeCoordinates: true
+    relativeCoordinates: true,
+    recordNetworkRequests: false
   };
   private lastMouseMove = 0;
   private origFetch: typeof window.fetch | null = null;
@@ -49,6 +50,7 @@ export class MacroEngine {
     if (data?.macros) this.macros = data.macros;
     if (data?.settings) {
       this.settings.useCoordinateFallback = !!data.settings.macro?.useCoordinateFallback;
+      this.settings.recordNetworkRequests = !!data.settings.macro?.recordNetworkRequests;
     }
     console.log('Hermes: macro engine ready');
   }
@@ -68,51 +70,59 @@ export class MacroEngine {
     if (this.settings.recordMouseMoves) types.push('mousemove');
     for (const t of types) document.addEventListener(t, this.handleEvent, true);
 
-    // monkey patch network requests
-    this.origFetch = window.fetch;
-    const self = this;
-    window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
-      if (self.recording) {
-        const url = typeof input === 'string' ? input : (input as Request).url;
-        const method = init?.method || (input instanceof Request ? input.method : 'GET');
-        let body: string | null = null;
-        if (init?.body && typeof init.body === 'string') body = init.body;
-        const headersObj: Record<string, string> = {};
-        const headers = init?.headers || (input instanceof Request ? (input as Request).headers : undefined);
-        if (headers instanceof Headers) {
-          headers.forEach((v, k) => { headersObj[k] = v; });
-        } else if (headers && typeof headers === 'object') {
-          Object.entries(headers as Record<string, string>).forEach(([k, v]) => { headersObj[k] = v as string; });
-        }
-        self.events.push({ type: 'fetch', selector: null, timestamp: Date.now(), url, method, body, headers: headersObj });
+    if (this.settings.recordNetworkRequests) {
+      if (!confirm('Recording network requests may capture sensitive information. Continue?')) {
+        this.settings.recordNetworkRequests = false;
       }
-      return self.origFetch!.apply(this, arguments as any);
-    };
+    }
 
-    this.origXhrOpen = XMLHttpRequest.prototype.open;
-    this.origXhrSend = XMLHttpRequest.prototype.send;
-    this.origXhrSetHeader = XMLHttpRequest.prototype.setRequestHeader;
-    XMLHttpRequest.prototype.open = function(method: string, url: string) {
-      (this as any).__hermesMethod = method;
-      (this as any).__hermesUrl = url;
-      (this as any).__hermesHeaders = {};
-      return self.origXhrOpen!.apply(this, arguments as any);
-    };
-    XMLHttpRequest.prototype.setRequestHeader = function(name: string, value: string) {
-      (this as any).__hermesHeaders = (this as any).__hermesHeaders || {};
-      (this as any).__hermesHeaders[name] = value;
-      return self.origXhrSetHeader!.apply(this, arguments as any);
-    };
-    XMLHttpRequest.prototype.send = function(body?: Document | BodyInit | null) {
-      if (self.recording) {
-        const url = (this as any).__hermesUrl;
-        const method = (this as any).__hermesMethod;
-        const headers = (this as any).__hermesHeaders || {};
-        const bodyStr = typeof body === 'string' ? body : null;
-        self.events.push({ type: 'xhr', selector: null, timestamp: Date.now(), url, method, body: bodyStr, headers });
-      }
-      return self.origXhrSend!.apply(this, arguments as any);
-    };
+    if (this.settings.recordNetworkRequests) {
+      // monkey patch network requests
+      this.origFetch = window.fetch;
+      const self = this;
+      window.fetch = async function(input: RequestInfo | URL, init?: RequestInit) {
+        if (self.recording) {
+          const url = typeof input === 'string' ? input : (input as Request).url;
+          const method = init?.method || (input instanceof Request ? input.method : 'GET');
+          let body: string | null = null;
+          if (init?.body && typeof init.body === 'string') body = init.body;
+          const headersObj: Record<string, string> = {};
+          const headers = init?.headers || (input instanceof Request ? (input as Request).headers : undefined);
+          if (headers instanceof Headers) {
+            headers.forEach((v, k) => { headersObj[k] = v; });
+          } else if (headers && typeof headers === 'object') {
+            Object.entries(headers as Record<string, string>).forEach(([k, v]) => { headersObj[k] = v as string; });
+          }
+          self.events.push({ type: 'fetch', selector: null, timestamp: Date.now(), url, method, body, headers: headersObj });
+        }
+        return self.origFetch!.apply(this, arguments as any);
+      };
+
+      this.origXhrOpen = XMLHttpRequest.prototype.open;
+      this.origXhrSend = XMLHttpRequest.prototype.send;
+      this.origXhrSetHeader = XMLHttpRequest.prototype.setRequestHeader;
+      XMLHttpRequest.prototype.open = function(method: string, url: string) {
+        (this as any).__hermesMethod = method;
+        (this as any).__hermesUrl = url;
+        (this as any).__hermesHeaders = {};
+        return self.origXhrOpen!.apply(this, arguments as any);
+      };
+      XMLHttpRequest.prototype.setRequestHeader = function(name: string, value: string) {
+        (this as any).__hermesHeaders = (this as any).__hermesHeaders || {};
+        (this as any).__hermesHeaders[name] = value;
+        return self.origXhrSetHeader!.apply(this, arguments as any);
+      };
+      XMLHttpRequest.prototype.send = function(body?: Document | BodyInit | null) {
+        if (self.recording) {
+          const url = (this as any).__hermesUrl;
+          const method = (this as any).__hermesMethod;
+          const headers = (this as any).__hermesHeaders || {};
+          const bodyStr = typeof body === 'string' ? body : null;
+          self.events.push({ type: 'xhr', selector: null, timestamp: Date.now(), url, method, body: bodyStr, headers });
+        }
+        return self.origXhrSend!.apply(this, arguments as any);
+      };
+    }
 
     addDebugLog('macro_start', null, { name: this.name });
   }
