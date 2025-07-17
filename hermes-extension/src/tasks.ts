@@ -84,7 +84,6 @@ function createPanel(root: HTMLElement | ShadowRoot): HTMLElement {
 
 export function toggleTasks(show: boolean) {
   const root = getRoot();
-  if (!pane
-l && show) panel = createPanel(root instanceof ShadowRoot ? root : document.body);
+  if (!panel && show) panel = createPanel(root instanceof ShadowRoot ? root : document.body);
   if (panel) panel.style.display = show ? 'block' : 'none';
 }
