@@ -13,7 +13,12 @@ export function init() {
   checkOnboarding();
 }
 
-document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  // If the content script runs after DOMContentLoaded, init immediately
+  init();
+}
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'SET_ENABLED') {
