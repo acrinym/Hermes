@@ -28,6 +28,7 @@
     const WHITELIST_KEY = 'hermes_whitelist';
     const THEME_KEY = 'hermes_theme';
     const BUNCHED_STATE_KEY = 'hermes_bunched_state';
+    const DOCK_MODE_KEY = 'hermes_dock_mode';
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
@@ -72,6 +73,7 @@
     let minimizedContainer = null;
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
+    let dockMode = GM_getValue(DOCK_MODE_KEY, 'none');
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
     let tasks = [];
     let notes = [{ title: 'Note 1', content: '' }];
@@ -3528,8 +3530,43 @@
     }
 
     // =================== UI Dragging & Snapping ===================
+    function applyDockMode() {
+        if (!uiContainer || !minimizedContainer) return;
+        const container = isMinimized ? minimizedContainer : uiContainer;
+        const height = container.getBoundingClientRect().height + 10;
+        if (dockMode === 'top') {
+            uiContainer.style.top = '0px';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.top = '0px';
+            minimizedContainer.style.bottom = '';
+            document.body.style.marginTop = `${height}`;
+            document.body.style.marginBottom = '';
+        } else if (dockMode === 'bottom') {
+            uiContainer.style.bottom = '0px';
+            uiContainer.style.top = '';
+            minimizedContainer.style.bottom = '0px';
+            minimizedContainer.style.top = '';
+            document.body.style.marginBottom = `${height}`;
+            document.body.style.marginTop = '';
+        } else {
+            document.body.style.marginTop = '';
+            document.body.style.marginBottom = '';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.bottom = '';
+            uiContainer.style.top = `${state.position.top}px`;
+            minimizedContainer.style.top = `${state.position.top}px`;
+        }
+    }
+
+    function dockToPage(position) {
+        dockMode = position;
+        GM_setValue(DOCK_MODE_KEY, dockMode);
+        applyDockMode();
+    }
+
     function snapToEdge(edge) {
         if (!uiContainer || !minimizedContainer) return;
+        dockToPage('none');
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         const uiRect = uiContainer.getBoundingClientRect();
@@ -3656,6 +3693,7 @@
                 uiContainer.style.left = `${state.position.left !== null ? state.position.left + 'px' : '10px'}`;
 
             }
+            applyDockMode();
             updateEffectsRendering(); // Crucial to stop/start animations
             debugLogs.push({
                 timestamp: Date.now(),
@@ -3839,7 +3877,15 @@
         // Effects Button & Submenu
         effectsButton = document.createElement('button'); // Already declared, just assign
         effectsButton.id = 'hermes-effects-button';
-        const effectsListDisplayInit = [ /* ... as before ... */ ];
+        const effectsListDisplayInit = [
+            { mode: 'none', emoji: '🚫' },
+            { mode: 'snowflake', emoji: '❄️' },
+            { mode: 'laserV13', emoji: '↔️🟥' },
+            { mode: 'strobeV13', emoji: '🔄🚨' },
+            { mode: 'laserV14', emoji: '⬇️🟥' },
+            { mode: 'strobeV14', emoji: '💡' },
+            { mode: 'confetti', emoji: '🎊' }
+        ];
         const activeEffectOnInit = effectsListDisplayInit.find(ef => ef.mode === effectsMode);
         const initialEffectEmoji = activeEffectOnInit ? activeEffectOnInit.emoji : hermesButtonProperties.effectsButton.emoji;
         updateButtonAppearance(effectsButton, 'effectsButton', isBunched, initialEffectEmoji);
@@ -3930,8 +3976,31 @@
             snapButtonsContainer.style.flexDirection = 'row'; // Or 'column' if preferred for bunched
             snapButtonsContainer.style.justifyContent = 'center';
         }
-        const snapButtonsData = [ /* ... as before ... */ ];
-        snapButtonsData.forEach(data => { /* ... as before ... */ });
+        const snapButtonsData = [
+            { edge: 'top-left', label: '↖' },
+            { edge: 'top', label: '↑' },
+            { edge: 'top-right', label: '↗' },
+            { edge: 'left', label: '←' },
+            { edge: 'right', label: '→' },
+            { edge: 'bottom-left', label: '↙' },
+            { edge: 'bottom', label: '↓' },
+            { edge: 'bottom-right', label: '↘' },
+            { edge: 'dock-top', label: '⤒' },
+            { edge: 'dock-bottom', label: '⤓' }
+        ];
+        snapButtonsData.forEach(data => {
+            const btn = document.createElement('button');
+            btn.className = 'hermes-button hermes-snap-button';
+            btn.textContent = data.label;
+            btn.title = data.edge;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (data.edge === 'dock-top') dockToPage('top');
+                else if (data.edge === 'dock-bottom') dockToPage('bottom');
+                else snapToEdge(data.edge);
+            };
+            snapButtonsContainer.appendChild(btn);
+        });
         uiContainer.appendChild(snapButtonsContainer);
 
 
@@ -3944,6 +4013,7 @@
         // Finalize UI Setup
         setupEffectsCanvas(); // Initialize canvas for effects
         applyTheme();         // Apply current theme and settings-based styles
+        applyDockMode();      // Adjust page margins if docked
         setupDragging();      // Enable UI dragging
 
         // Initial UI state (minimized or full)
