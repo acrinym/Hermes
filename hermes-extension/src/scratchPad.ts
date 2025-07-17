@@ -129,13 +129,25 @@ function exportCurrent(fmt: string) {
   URL.revokeObjectURL(url);
 }
 
-function backupToDrive() {
-  chrome.identity.getAuthToken({ interactive: true }, token => {
-    if (chrome.runtime.lastError || !token) {
-      console.error('Drive auth failed', chrome.runtime.lastError);
-      return;
-    }
-    fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media', {
+async function getDriveToken(): Promise<string> {
+  if (process.env.GOOGLE_DRIVE_TOKEN) {
+    return process.env.GOOGLE_DRIVE_TOKEN;
+  }
+  return new Promise<string>((resolve, reject) => {
+    chrome.identity.getAuthToken({ interactive: true }, token => {
+      if (chrome.runtime.lastError || !token) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve(token);
+      }
+    });
+  });
+}
+
+async function backupToDrive() {
+  try {
+    const token = await getDriveToken();
+    await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=media', {
       method: 'POST',
       headers: {
         'Authorization': 'Bearer ' + token,
@@ -144,6 +156,8 @@ function backupToDrive() {
       body: JSON.stringify({ notes })
     }).then(r => {
       if (!r.ok) throw new Error('Drive upload failed');
-    }).catch(e => console.error('Drive upload error', e));
-  });
+    });
+  } catch (e) {
+    console.error('Drive upload error', e);
+  }
 }

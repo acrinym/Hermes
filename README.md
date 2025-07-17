@@ -152,25 +152,19 @@ it later.
 ### GitHub Settings
 
 The extension expects the URLs for the remote config repository to be provided
-via Chrome storage or build-time environment variables.
+via Chrome storage or build-time environment variables. Tokens should be
+retrieved from environment variables or your OS credential store instead of
+persisting them in Chrome storage.
 
 - **`github_raw_base`** – Base URL for raw config files
 - **`github_api_base`** – API endpoint for creating/updating configs
-- **`github_token`** – Personal token for write access (optional)
 
-You can set these at runtime with:
+Tokens should **not** be stored using `chrome.storage`. Instead, supply a GitHub
+personal access token through the `GITHUB_TOKEN` environment variable or your OS
+keychain.
 
-```javascript
-chrome.storage.local.set({
-  github_raw_base: 'https://raw.githubusercontent.com/USER/REPO/main/_Configs/',
-  github_api_base: 'https://api.github.com/repos/USER/REPO/contents/_Configs/',
-  github_token: 'ghp_xxx' // optional
-});
-```
-
-Alternatively, define the environment variables `GITHUB_RAW_BASE`,
-`GITHUB_API_BASE`, and `GITHUB_TOKEN` when running `npm run build` to embed them
-in the bundle.
+Define the environment variables `GITHUB_RAW_BASE`, `GITHUB_API_BASE`, and
+`GITHUB_TOKEN` when running `npm run build` to embed them in the bundle.
 
 ---
 
