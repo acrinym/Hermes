@@ -29,6 +29,7 @@
     const DOCK_MODE_KEY = 'hermes_dock_mode';
     const THEME_KEY = 'hermes_theme';
     const BUNCHED_STATE_KEY = 'hermes_bunched_state';
+    const DOCK_MODE_KEY = 'hermes_dock_mode';
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
     const HELP_PANEL_OPEN_KEY = 'hermes_help_panel_state';
     const SETTINGS_KEY = 'hermes_settings_v1'; // New key for settings
@@ -81,6 +82,7 @@
     let dockMode = GM_getValue(DOCK_MODE_KEY, 'none');
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
+    let dockMode = GM_getValue(DOCK_MODE_KEY, 'none');
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
     let tasks = [];
     let notes = [{ title: 'Note 1', content: '' }];
@@ -3863,6 +3865,7 @@ function toggleTasksPanel(show) {
                 uiContainer.style.left = `${state.position.left !== null ? state.position.left + 'px' : '10px'}`;
 
             }
+            applyDockMode();
             updateEffectsRendering(); // Crucial to stop/start animations
             applyDockMode();
             debugLogs.push({
@@ -4047,7 +4050,15 @@ function toggleTasksPanel(show) {
         // Effects Button & Submenu
         effectsButton = document.createElement('button'); // Already declared, just assign
         effectsButton.id = 'hermes-effects-button';
-        const effectsListDisplayInit = [ /* ... as before ... */ ];
+        const effectsListDisplayInit = [
+            { mode: 'none', emoji: '🚫' },
+            { mode: 'snowflake', emoji: '❄️' },
+            { mode: 'laserV13', emoji: '↔️🟥' },
+            { mode: 'strobeV13', emoji: '🔄🚨' },
+            { mode: 'laserV14', emoji: '⬇️🟥' },
+            { mode: 'strobeV14', emoji: '💡' },
+            { mode: 'confetti', emoji: '🎊' }
+        ];
         const activeEffectOnInit = effectsListDisplayInit.find(ef => ef.mode === effectsMode);
         const initialEffectEmoji = activeEffectOnInit ? activeEffectOnInit.emoji : hermesButtonProperties.effectsButton.emoji;
         updateButtonAppearance(effectsButton, 'effectsButton', isBunched, initialEffectEmoji);
