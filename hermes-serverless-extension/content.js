@@ -36,6 +36,10 @@
     const POMODORO_KEY = 'hermes_pomodoro';
     const AFFIRM_KEY = 'hermes_affirmations_state';
     const SCHEDULES_KEY = 'hermes_schedules';
+    const SELECTED_MACRO_KEY = 'hermes_selected_macro';
+    const DOCK_MODE_KEY = 'hermes_dock_mode';
+    const SYNC_URL = 'http://localhost:3000';
+    const SCHEDULE_SETTINGS_KEY = 'hermes_schedule_settings';
 
     // =================== State Variables ===================
     let showOverlays = GM_getValue(OVERLAY_STATE_KEY, true);
@@ -64,7 +68,10 @@
     let debugLogs = [];
     let profileData = {};
     let macros = {};
-    let lastPlayedMacro = '';
+    let lastPlayedMacro = GM_getValue(SELECTED_MACRO_KEY, '');
+    let dockMode = GM_getValue(DOCK_MODE_KEY, 'none');
+    let autoSyncTimer = null;
+    let scheduleSettings = {};
     let customMappings = {};
     let skippedFields = [];
     let fieldSelectMode = false;
@@ -283,6 +290,7 @@
             debugLogs.push({ timestamp: Date.now(), type: 'error', target: 'settings_load', details: { error: error.message } });
         }
         applyCurrentSettings(); // Apply loaded settings
+        startAutoSync(currentSettings.syncInterval);
         return currentSettings;
     }
 
@@ -303,6 +311,7 @@
             currentSettings = settingsToSave;
             console.log('Hermes: Settings saved:', settingsToSave);
             debugLogs.push({ timestamp: Date.now(), type: 'settings_save', details: { settingsToSave } });
+            startAutoSync(currentSettings.syncInterval);
             applyCurrentSettings();
             return true;
         } catch (error) {
@@ -355,6 +364,8 @@
                 <label style="display:block;margin-bottom:5px;">Similarity Threshold: <input type="range" id="hermes-setting-similarity" min="0" max="1" step="0.05" style="vertical-align:middle;width:150px;"><span id="hermes-sim-value"></span></label>
                 <label style="display:block;margin-bottom:5px;">Record Hotkey: <input type="text" id="hermes-setting-recordHotkey" style="width:120px;"></label>
                 <label style="display:block;margin-bottom:5px;">Play Macro Hotkey: <input type="text" id="hermes-setting-playHotkey" style="width:120px;"></label>
+                <button id="hermes-sync-now" class="hermes-button" style="margin-top:5px;">Sync Now</button>
+                <label style="display:block;margin-top:5px;">Auto Sync (min): <input type="number" id="hermes-sync-interval" min="0" style="width:60px;"></label>
             </div>
             <h4 style="margin-top:15px; margin-bottom:8px; border-bottom: 1px solid var(--hermes-panel-border); padding-bottom: 5px;">Settings Guide:</h4>
             <div id="hermes-settings-explanations" style="max-height:20vh;overflow-y:auto;padding:5px;background:rgba(0,0,0,0.1);border-radius:4px;">
@@ -378,6 +389,8 @@
             const simValue = panelInRoot.querySelector('#hermes-sim-value');
             const recordKey = panelInRoot.querySelector('#hermes-setting-recordHotkey');
             const playKey = panelInRoot.querySelector('#hermes-setting-playHotkey');
+            const syncBtn = panelInRoot.querySelector('#hermes-sync-now');
+            const syncInput = panelInRoot.querySelector('#hermes-sync-interval');
 
             if (settingsTextarea) {
                 settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
@@ -394,6 +407,8 @@
             }
             if (recordKey) recordKey.value = currentSettings.recordHotkey || '';
             if (playKey) playKey.value = currentSettings.playMacroHotkey || '';
+            if (syncInput) syncInput.value = String(currentSettings.syncInterval || 0);
+            if (syncBtn) syncBtn.onclick = () => syncWithServer();
 
             if (saveBtn) {
                 saveBtn.onclick = () => {
@@ -405,6 +420,7 @@
                         if (simSlider) newSettings.macro.similarityThreshold = parseFloat(simSlider.value);
                         if (recordKey) newSettings.recordHotkey = recordKey.value.trim();
                         if (playKey) newSettings.playMacroHotkey = playKey.value.trim();
+                        if (syncInput) newSettings.syncInterval = parseInt(syncInput.value, 10) || 0;
                         if (saveSettings(newSettings)) {
                             refreshHotkeys();
                             if (statusIndicator) { statusIndicator.textContent = 'Settings Saved & Applied'; statusIndicator.style.color = 'var(--hermes-success-text)'; setTimeout(resetStatusIndicator, 2000); }
@@ -435,6 +451,7 @@
                         }
                         if (recordKey) recordKey.value = currentSettings.recordHotkey;
                         if (playKey) playKey.value = currentSettings.playMacroHotkey;
+                        if (syncInput) syncInput.value = String(currentSettings.syncInterval);
                         if (statusIndicator) { statusIndicator.textContent = 'Defaults Loaded. Save to apply.'; statusIndicator.style.color = 'var(--hermes-warning-text)'; setTimeout(resetStatusIndicator, 2000); }
                     }
                 };
@@ -456,6 +473,7 @@
              const simValue = settingsPanel.querySelector('#hermes-sim-value');
              const recordKey = settingsPanel.querySelector('#hermes-setting-recordHotkey');
              const playKey = settingsPanel.querySelector('#hermes-setting-playHotkey');
+             const syncInput = settingsPanel.querySelector('#hermes-sync-interval');
              if(settingsTextarea) {
                  settingsTextarea.value = JSON.stringify(currentSettings, (key, value) => {
                     if (key.startsWith('_comment')) return undefined;
@@ -470,6 +488,7 @@
              }
              if (recordKey) recordKey.value = currentSettings.recordHotkey;
              if (playKey) playKey.value = currentSettings.playMacroHotkey;
+             if (syncInput) syncInput.value = String(currentSettings.syncInterval || 0);
         }
 
         if (settingsPanel) {
@@ -1208,6 +1227,8 @@
             e.stopPropagation();
             const name = lastPlayedMacro || Object.keys(macros)[0];
             if (name) {
+                lastPlayedMacro = name;
+                GM_setValue(SELECTED_MACRO_KEY, name);
                 playMacro(name);
             }
         }
@@ -1376,7 +1397,7 @@
                 playBtn.className = 'hermes-button hermes-submenu-button';
                 playBtn.textContent = name;
                 playBtn.title = `Play macro: ${name}`;
-                playBtn.onclick = (e) => { e.stopPropagation(); lastPlayedMacro = name; playMacro(name); closeAllSubmenus(); };
+                playBtn.onclick = (e) => { e.stopPropagation(); lastPlayedMacro = name; GM_setValue(SELECTED_MACRO_KEY, name); playMacro(name); closeAllSubmenus(); };
 
                 const editBtn = document.createElement('button');
                 editBtn.className = 'hermes-button hermes-submenu-button';
@@ -1705,6 +1726,39 @@
         input.click();
     }
 
+    async function syncWithServer() {
+        try {
+            await fetch(`${SYNC_URL}/api/profile`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loadProfileData())
+            });
+            await fetch(`${SYNC_URL}/api/macros/data`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loadMacros())
+            });
+            const pRes = await fetch(`${SYNC_URL}/api/profile`);
+            const newProfile = await pRes.json();
+            saveProfileData(newProfile);
+            const mRes = await fetch(`${SYNC_URL}/api/macros/data`);
+            const newMacros = await mRes.json();
+            macros = newMacros;
+            saveMacros(macros);
+            updateMacroDropdown();
+            if (statusIndicator) { statusIndicator.textContent = 'Synced'; setTimeout(resetStatusIndicator, 2000); }
+        } catch (e) {
+            console.error('Hermes: Sync failed', e);
+        }
+    }
+
+    function startAutoSync(minutes) {
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        if (minutes && minutes > 0) {
+            autoSyncTimer = setInterval(syncWithServer, minutes * 60000);
+        }
+    }
+
     function createWhitelistPanel() {
         const panelId = 'hermes-allowlist-panel';
         if (shadowRoot && shadowRoot.querySelector(`#${panelId}`)) return;
@@ -1985,11 +2039,33 @@
             if (text) { tasks.push({ text, done:false }); saveTasks(tasks); inputEl.value=''; render(); }
         };
     }
-    function toggleTasksPanel(show) {
+function toggleTasksPanel(show) {
         if (!shadowRoot) return;
         let panel = shadowRoot.querySelector('#hermes-tasks-panel');
         if (show && !panel) { createTasksPanel(); panel = shadowRoot.querySelector('#hermes-tasks-panel'); }
         if (panel) { panel.style.display = show ? 'block' : 'none'; if (show) applyTheme(); }
+}
+
+    // =================== Schedule Settings ===================
+    const defaultScheduleSettings = { selected: [], date: '', time: '', recurrence: 'once' };
+    function loadScheduleSettings() {
+        try {
+            const json = GM_getValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(defaultScheduleSettings));
+            scheduleSettings = JSON.parse(json);
+        } catch (e) {
+            scheduleSettings = { ...defaultScheduleSettings };
+        }
+        return scheduleSettings;
+    }
+    function saveScheduleSettings(data) {
+        try {
+            GM_setValue(SCHEDULE_SETTINGS_KEY, JSON.stringify(data));
+            scheduleSettings = data;
+            return true;
+        } catch (e) {
+            console.error('Hermes: Error saving schedule settings:', e);
+            return false;
+        }
     }
 
     // =================== Macro Scheduler ===================
@@ -2004,7 +2080,7 @@
         schedules.forEach(item => {
             if (!item.nextRun) return;
             if (now >= item.nextRun) {
-                if (macros[item.name]) playMacro(item.name);
+                if (macros[item.name]) { lastPlayedMacro = item.name; GM_setValue(SELECTED_MACRO_KEY, item.name); playMacro(item.name); }
                 if (item.recurrence === 'once') { item.nextRun = null; changed = true; }
                 else {
                     const d = new Date(item.nextRun);
@@ -2043,11 +2119,21 @@
         const timeInput = panel.querySelector('#hermes-schedule-time');
         const saveBtn = panel.querySelector('#hermes-schedule-save');
 
+        // Apply saved settings
+        dateInput.value = scheduleSettings.date || '';
+        timeInput.value = scheduleSettings.time || '';
+        const repeatRadio = panel.querySelector(`input[name="hermes-schedule-repeat"][value="${scheduleSettings.recurrence || 'once'}"]`);
+        if (repeatRadio) repeatRadio.checked = true;
+        Array.from(listDiv.querySelectorAll('input[type="checkbox"]')).forEach(cb => {
+            if (scheduleSettings.selected && scheduleSettings.selected.includes(cb.value)) cb.checked = true;
+        });
+
         if (saveBtn) saveBtn.onclick = () => {
             const selected = Array.from(listDiv.querySelectorAll('input:checked')).map(el => el.value);
             const date = dateInput.value;
             const time = timeInput.value;
             const recurrence = panel.querySelector('input[name="hermes-schedule-repeat"]:checked').value;
+            saveScheduleSettings({ selected, date, time, recurrence });
             const nextRun = date && time ? new Date(`${date}T${time}`).getTime() : null;
             selected.forEach(name => {
                 schedules.push({ name, nextRun, recurrence });
@@ -3528,8 +3614,43 @@
     }
 
     // =================== UI Dragging & Snapping ===================
+    function applyDockMode() {
+        if (!uiContainer || !minimizedContainer) return;
+        const container = isMinimized ? minimizedContainer : uiContainer;
+        const height = container.getBoundingClientRect().height + 10;
+        if (dockMode === 'top') {
+            uiContainer.style.top = '0px';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.top = '0px';
+            minimizedContainer.style.bottom = '';
+            document.body.style.marginTop = `${height}`;
+            document.body.style.marginBottom = '';
+        } else if (dockMode === 'bottom') {
+            uiContainer.style.bottom = '0px';
+            uiContainer.style.top = '';
+            minimizedContainer.style.bottom = '0px';
+            minimizedContainer.style.top = '';
+            document.body.style.marginBottom = `${height}`;
+            document.body.style.marginTop = '';
+        } else {
+            document.body.style.marginTop = '';
+            document.body.style.marginBottom = '';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.bottom = '';
+            uiContainer.style.top = `${state.position.top}px`;
+            minimizedContainer.style.top = `${state.position.top}px`;
+        }
+    }
+
+    function dockToPage(position) {
+        dockMode = position;
+        GM_setValue(DOCK_MODE_KEY, dockMode);
+        applyDockMode();
+    }
+
     function snapToEdge(edge) {
         if (!uiContainer || !minimizedContainer) return;
+        dockToPage('none');
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         const uiRect = uiContainer.getBoundingClientRect();
@@ -3930,8 +4051,31 @@
             snapButtonsContainer.style.flexDirection = 'row'; // Or 'column' if preferred for bunched
             snapButtonsContainer.style.justifyContent = 'center';
         }
-        const snapButtonsData = [ /* ... as before ... */ ];
-        snapButtonsData.forEach(data => { /* ... as before ... */ });
+        const snapButtonsData = [
+            { edge: 'top-left', label: '↖' },
+            { edge: 'top', label: '↑' },
+            { edge: 'top-right', label: '↗' },
+            { edge: 'left', label: '←' },
+            { edge: 'right', label: '→' },
+            { edge: 'bottom-left', label: '↙' },
+            { edge: 'bottom', label: '↓' },
+            { edge: 'bottom-right', label: '↘' },
+            { edge: 'dock-top', label: '⤒' },
+            { edge: 'dock-bottom', label: '⤓' }
+        ];
+        snapButtonsData.forEach(data => {
+            const btn = document.createElement('button');
+            btn.className = 'hermes-button hermes-snap-button';
+            btn.textContent = data.label;
+            btn.title = data.edge;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (data.edge === 'dock-top') dockToPage('top');
+                else if (data.edge === 'dock-bottom') dockToPage('bottom');
+                else snapToEdge(data.edge);
+            };
+            snapButtonsContainer.appendChild(btn);
+        });
         uiContainer.appendChild(snapButtonsContainer);
 
 
@@ -3944,6 +4088,7 @@
         // Finalize UI Setup
         setupEffectsCanvas(); // Initialize canvas for effects
         applyTheme();         // Apply current theme and settings-based styles
+        applyDockMode();      // Adjust page margins if docked
         setupDragging();      // Enable UI dragging
 
         // Initial UI state (minimized or full)
@@ -4071,6 +4216,7 @@
         loadSettings(); // Load settings early
         loadTasks();
         loadNotes();
+        loadScheduleSettings();
         loadSchedules();
         startScheduleChecker();
         initAffirmations();
