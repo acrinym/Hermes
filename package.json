@@ -1,0 +1,10 @@
+{
+  "name": "hermes-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/core",
+    "hermes-extension",
+    "server",
+    "hermes-extension/hermes-react-refactor"
+  ]
+}

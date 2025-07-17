@@ -3,9 +3,8 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '../store';
-import { SkippedField } from '../services/heuristicsService';
+import { SkippedField, ProfileData } from '@hermes/core';
 import { updateProfile, saveProfile } from '../store/profileSlice';
-import { ProfileData } from '../services/heuristicsService';
 
 interface TrainerPanelProps {
   skippedFields: SkippedField[];

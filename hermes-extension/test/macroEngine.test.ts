@@ -1,4 +1,4 @@
-import { MacroEngine } from '../src/macroEngine.ts';
+import { MacroEngine } from '@hermes/core';
 
 beforeAll(() => {
   (global as any).chrome = {

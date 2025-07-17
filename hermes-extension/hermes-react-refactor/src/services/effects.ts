@@ -1,4 +1,4 @@
-import { startSnowflakes, startLasers, startCube, stopEffects } from './effectsEngine';
+import { startSnowflakes, startLasers, startCube, stopEffects } from '@hermes/core';
 
 export function initEffects() {
   startSnowflakes();
