@@ -200,6 +200,23 @@ Hermes works in any Chromium-based browser and Firefox 109+. The same build can 
 - Background service worker stores data in Chrome storage.
 - Modular design—fork or extend as desired.
 
+## 📦 Monorepo Architecture
+
+This repo now uses **npm workspaces**. Shared logic lives in `packages/core`, a
+TypeScript library consumed by both the main extension and the React refactor.
+Each workspace has its own `package.json` but dependencies are installed from
+the repo root.
+
+```
+packages/
+  core/        <- reusable form filler, macro engine and effects modules
+hermes-extension/       <- MV3 extension source
+hermes-extension/hermes-react-refactor/ <- React prototype
+server/        <- Express API for macro automation
+```
+
+Run `npm install` at the repo root to bootstrap all packages.
+
 ---
 ## 📡 API Usage
 

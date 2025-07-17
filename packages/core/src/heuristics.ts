@@ -1,5 +1,3 @@
-// hermes-react-refactor/src/services/heuristicsService.ts
-
 export interface ProfileData {
   [key: string]: string;
 }

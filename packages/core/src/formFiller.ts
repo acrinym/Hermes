@@ -1,10 +1,12 @@
-// hermes-react-refactor/src/services/formFillerService.ts
+import { ProfileData, SkippedField, matchProfileKey, getAssociatedLabelText } from './heuristics';
 
-import { ProfileData, SkippedField, matchProfileKey, getAssociatedLabelText } from './heuristicsService';
-import { getSettings } from './settingsService';
+export interface FormFillSettings {
+  collectSkipped?: boolean;
+  overwriteExisting?: boolean;
+  logSkipped?: boolean;
+}
 
-export async function fillForm(profile: ProfileData): Promise<SkippedField[]> {
-  const settings = await getSettings();
+export async function fillForm(profile: ProfileData, settings: FormFillSettings): Promise<SkippedField[]> {
 
   const skipped: SkippedField[] = [];
   const collectSkipped = settings.collectSkipped ?? false;

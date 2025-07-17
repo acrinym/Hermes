@@ -5,12 +5,12 @@ import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import App from './App';
-import { MacroEngine } from './services/macroEngineService';
+import { MacroEngine } from '@hermes/core';
 import { initEffects } from './services/effects';
 
 // --- Important Singleton Setup ---
 // Instantiate the macro engine and pass it the store's dispatch function
-export const macroEngine = new MacroEngine(store.dispatch);
+export const macroEngine = new MacroEngine();
 // ---
 
 // Check if the app is already injected

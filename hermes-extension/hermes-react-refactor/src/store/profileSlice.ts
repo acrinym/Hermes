@@ -2,7 +2,7 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { saveDataToBackground, getInitialData } from '../services/storageService';
-import { ProfileData } from '../services/heuristicsService';
+import { ProfileData } from '@hermes/core';
 
 export interface ProfileState {
   profile: ProfileData;

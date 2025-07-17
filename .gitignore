@@ -1,6 +1,7 @@
 node_modules/
 hermes-extension/node_modules/
 hermes-extension/dist/
+packages/core/dist/
 # Node dependencies
 server/node_modules/
 hermes-extension/node_modules/
