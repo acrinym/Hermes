@@ -5,3 +5,4 @@ export * from './heuristics';
 export * from './root';
 export * from './storage';
 export * from './debug';
+export { t, setTranslationFunction } from './i18n';

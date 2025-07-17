@@ -4,8 +4,11 @@ import { initEffects } from './effects.ts';
 import { initMacros } from './macros.ts';
 import { ensureSiteConfig } from './domScanner.ts';
 import { checkOnboarding } from './onboarding.ts';
+import { setTranslationFunction } from './debug.ts';
+import { t } from '../i18n.js';
 
 export function init() {
+  setTranslationFunction(t);
   initUI();
   initEffects();
   initMacros();

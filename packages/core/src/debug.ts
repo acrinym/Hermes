@@ -1,4 +1,4 @@
-import { t } from '../../../hermes-extension/i18n.js';
+import { t } from './i18n';
 declare const chrome: any;
 
 export function addDebugLog(type: string, target: string | null = null, details: any = {}): void {
