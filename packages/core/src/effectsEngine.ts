@@ -1,4 +1,5 @@
-import { getRoot } from './root';
+// Use explicit extension for ESM compatibility 😄
+import { getRoot } from './root.js';
 import * as THREE from 'three';
 
 let canvas: HTMLCanvasElement | null = null;

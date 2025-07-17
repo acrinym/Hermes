@@ -1,4 +1,5 @@
-import { ProfileData, SkippedField, matchProfileKey, getAssociatedLabelText } from './heuristics';
+// Explicit extension ensures Node ESM can resolve this import.
+import { ProfileData, SkippedField, matchProfileKey, getAssociatedLabelText } from './heuristics.js';
 
 export interface FormFillSettings {
   collectSkipped?: boolean;

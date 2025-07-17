@@ -56,7 +56,8 @@ const App: React.FC = () => {
   };
 
   const handleFill = async () => {
-    const skipped = await fillForm(profile);
+    // Provide default settings when filling so the call matches the new API
+    const skipped = await fillForm(profile, {});
     if (skipped.length > 0) {
       alert(`${skipped.length} field(s) were not filled. Use the 'Train' button to improve accuracy.`);
     } else {

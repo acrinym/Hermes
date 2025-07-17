@@ -1,7 +1,7 @@
-import { saveDataToBackground, getInitialData } from './storage/index';
-import { addDebugLog } from './debug';
+import { saveDataToBackground, getInitialData } from './storage/index.js';
+import { addDebugLog } from './debug.js';
 
-interface MacroEvent {
+export interface MacroEvent {
   type: string;
   selector: string | null;
   value?: string | null;

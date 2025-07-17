@@ -4,7 +4,8 @@ import { fillForm, ProfileData, SkippedField } from '@hermes/core';
 import { saveDataToBackground } from './storageService';
 
 export async function startHeuristicTraining(profile: ProfileData): Promise<SkippedField[]> {
-  const skipped = await fillForm(profile);
+  // Pass default settings so fillForm doesn't expect them from callers
+  const skipped = await fillForm(profile, {});
   return skipped;
 }
 
