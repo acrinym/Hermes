@@ -22,5 +22,8 @@
     "react-redux": "^9.0.0",
     "@reduxjs/toolkit": "^2.2.3",
     "@types/react-redux": "^7.1.25"
+  },
+  "dependencies": {
+    "@hermes/core": "file:../../packages/core"
   }
 }

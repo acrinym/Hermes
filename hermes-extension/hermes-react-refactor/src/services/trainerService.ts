@@ -1,7 +1,6 @@
 // hermes-react-refactor/src/services/trainerService.ts
 
-import { fillForm } from './formFillerService';
-import { ProfileData, SkippedField } from './heuristicsService';
+import { fillForm, ProfileData, SkippedField } from '@hermes/core';
 import { saveDataToBackground } from './storageService';
 
 export async function startHeuristicTraining(profile: ProfileData): Promise<SkippedField[]> {

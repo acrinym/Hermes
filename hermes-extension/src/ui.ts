@@ -1,14 +1,15 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
-import { macroEngine } from './macroEngine.ts';
+import { macroEngine } from '@hermes/core';
 import { initMacros, playMacro } from './macros.ts';
-import { fillForm } from './formFiller.ts';
+import { fillForm } from '@hermes/core';
+import { getSettings } from './settings.ts';
 import { runHeuristicTrainerSession } from './trainer.ts';
 import { applyTheme } from './theme.ts';
 import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { getInitialData, saveDataToBackground } from './storage/index.ts';
-import { startSnowflakes, startLasers, startCube, stopEffects, setEffect } from './effectsEngine.ts';
+import { startSnowflakes, startLasers, startCube, stopEffects, setEffect } from '@hermes/core';
 import { showHelp } from './help.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
@@ -101,7 +102,10 @@ export async function initUI() {
   };
 
   // ----- Main Button Row -----
-  createButton(t('FILL'), () => fillForm(profileData));
+  createButton(t('FILL'), async () => {
+    const settings = await getSettings();
+    fillForm(profileData, settings);
+  });
   createButton(t('TRAIN'), () => runHeuristicTrainerSession(profileData));
   createButton(t('REC'), () => macroEngine.startRecording());
   createButton(t('STOP'), () => macroEngine.stopRecording());

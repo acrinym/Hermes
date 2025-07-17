@@ -2,7 +2,7 @@
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { saveDataToBackground, getInitialData } from '../services/storageService';
-import { MacroEvent } from '../services/macroEngineService';
+import { MacroEvent } from '@hermes/core';
 
 export interface MacrosState {
   macros: Record<string, MacroEvent[]>;

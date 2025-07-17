@@ -33,5 +33,8 @@
     "three": "^0.161.0",
     "@types/chrome": "^0.0.234",
     "@types/node": "^20.8.10"
+  },
+  "dependencies": {
+    "@hermes/core": "file:../packages/core"
   }
 }

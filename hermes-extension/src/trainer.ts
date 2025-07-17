@@ -1,9 +1,11 @@
-import { fillForm } from './formFiller.ts';
+import { fillForm } from '@hermes/core';
+import { getSettings } from './settings.ts';
 import { ProfileData, SkippedField } from './heuristics.ts';
 import { saveDataToBackground } from './storage/index.ts';
 
 export async function runHeuristicTrainerSession(profile: ProfileData) {
-  const skipped: SkippedField[] = await fillForm(profile);
+  const settings = await getSettings();
+  const skipped: SkippedField[] = await fillForm(profile, settings);
   for (const s of skipped) {
     const chosen = prompt(`Profile key for field "${s.label}"`, s.guess || '');
     if (chosen) {

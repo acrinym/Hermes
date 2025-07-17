@@ -9,6 +9,11 @@
     "jsx": "react-jsx",
     "moduleResolution": "node",
     "esModuleInterop": true,
+    "baseUrl": "./",
+    "paths": {
+      "@hermes/core": ["../../packages/core/src"],
+      "@hermes/core/*": ["../../packages/core/src/*"]
+    },
     "types": ["chrome", "node"]
   },
   "include": ["src/**/*"]
