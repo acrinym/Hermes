@@ -6,6 +6,7 @@
     "checkJs": false,
     "outDir": "dist",
     "allowImportingTsExtensions": true,
+    "noEmit": true,
     "jsx": "react-jsx",
     "moduleResolution": "node",
     "esModuleInterop": true,
