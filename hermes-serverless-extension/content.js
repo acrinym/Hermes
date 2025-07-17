@@ -26,6 +26,7 @@
     const DEBUG_MODE_KEY = 'hermes_debug_mode';
     const POSITION_KEY = 'hermes_position';
     const WHITELIST_KEY = 'hermes_whitelist';
+    const DOCK_MODE_KEY = 'hermes_dock_mode';
     const THEME_KEY = 'hermes_theme';
     const BUNCHED_STATE_KEY = 'hermes_bunched_state';
     const EFFECTS_STATE_KEY = 'hermes_effects_state';
@@ -70,6 +71,7 @@
     let fieldSelectMode = false;
     let isMinimized = false;
     let minimizedContainer = null;
+    let dockMode = GM_getValue(DOCK_MODE_KEY, 'none');
     let theme = GM_getValue(THEME_KEY, 'dark');
     let isBunched = GM_getValue(BUNCHED_STATE_KEY, false);
     let effectsMode = GM_getValue(EFFECTS_STATE_KEY, 'none');
@@ -82,6 +84,21 @@
     let pomodoroRemaining = 0;
     let pomodoroMode = 'work';
     let affirmOverlay = null;
+    let activeRequests = 0;
+
+    const originalFetch = window.fetch;
+    if (originalFetch) {
+        window.fetch = function(...args) {
+            activeRequests++;
+            return originalFetch.apply(this, args).finally(() => { activeRequests--; });
+        };
+    }
+    const originalXhrSend = XMLHttpRequest.prototype.send;
+    XMLHttpRequest.prototype.send = function(...args) {
+        activeRequests++;
+        this.addEventListener('loadend', () => { activeRequests--; }, { once: true });
+        return originalXhrSend.apply(this, args);
+    };
 
     const themeOptions = {
         light: { name: 'Light', emoji: '☀️' },
@@ -986,7 +1003,32 @@
 
     // =================== Macro Engine ===================
     function recordEvent(e) {
-        if (!isRecording || !e.target) return;
+        if (!isRecording) return;
+        if (e.type === 'hermesWaitForSelector') {
+            const selector = e.detail && e.detail.selector;
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForSelector',
+                selector,
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: selector, details: ev });
+            return;
+        }
+        if (e.type === 'hermesWaitForNetworkIdle') {
+            const timeout = e.detail && e.detail.timeout;
+            const ev = {
+                type: 'waitForNetworkIdle',
+                timeout: timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000,
+                timestamp: Date.now()
+            };
+            recordedEvents.push(ev);
+            debugLogs.push({ timestamp: Date.now(), type: 'record', target: 'networkIdle', details: ev });
+            return;
+        }
+        if (!e.target) return;
         if (e.target.closest('#hermes-shadow-host')) return;
         const selector = getRobustSelector(e.target);
         if (!selector) return;
@@ -1024,7 +1066,7 @@
         if (!currentMacroName) {
             isRecording = false; return;
         }
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.addEventListener(type, recordEvent, true);
@@ -1037,7 +1079,7 @@
     function stopRecording() {
         if (!isRecording) return;
         isRecording = false;
-        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit'];
+        const types = ['click', 'input', 'change', 'mousedown', 'mouseup', 'keydown', 'keyup', 'focusin', 'focusout', 'submit', 'hermesWaitForSelector', 'hermesWaitForNetworkIdle'];
         if (currentSettings.macro && currentSettings.macro.recordMouseMoves) types.push('mousemove');
         types.forEach(type => {
             document.removeEventListener(type, recordEvent, true);
@@ -1074,6 +1116,41 @@
                 return;
             }
             const eventDetail = macroToPlay[index];
+            if (eventDetail.type === 'waitForSelector') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.selectorWaitTimeout) || 5000;
+                const poll = () => {
+                    if (document.querySelector(eventDetail.selector)) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForSelector timeout:', eventDetail.selector);
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(poll, 100);
+                    }
+                };
+                poll();
+                return;
+            } else if (eventDetail.type === 'waitForNetworkIdle') {
+                const start = Date.now();
+                const timeout = eventDetail.timeout || (currentSettings.macro && currentSettings.macro.networkIdleTimeout) || 2000;
+                const check = () => {
+                    if (activeRequests === 0) {
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else if (Date.now() - start >= timeout) {
+                        console.warn('Hermes: waitForNetworkIdle timeout');
+                        index++;
+                        setTimeout(executeEvent, 10);
+                    } else {
+                        setTimeout(check, 100);
+                    }
+                };
+                check();
+                return;
+            }
             let element = document.querySelector(eventDetail.selector);
             if (!element && currentSettings.macro && currentSettings.macro.useCoordinateFallback) {
                 if (eventDetail.path && Array.isArray(eventDetail.path)) {
@@ -1167,6 +1244,13 @@
             console.log('Hermes: Macro deleted:', macroName);
         }
     }
+
+    window.hermesAddWaitForSelector = (selector, timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForSelector', { detail: { selector, timeout } }));
+    };
+    window.hermesAddWaitForNetworkIdle = (timeout) => {
+        document.dispatchEvent(new CustomEvent('hermesWaitForNetworkIdle', { detail: { timeout } }));
+    };
 
     // =================== Hotkey Support ===================
     let recordHotkeyParsed = null;
@@ -3528,8 +3612,43 @@
     }
 
     // =================== UI Dragging & Snapping ===================
+    function applyDockMode() {
+        if (!uiContainer || !minimizedContainer) return;
+        const container = isMinimized ? minimizedContainer : uiContainer;
+        const height = container.getBoundingClientRect().height + 10;
+        if (dockMode === 'top') {
+            uiContainer.style.top = '0px';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.top = '0px';
+            minimizedContainer.style.bottom = '';
+            document.body.style.marginTop = `${height}`;
+            document.body.style.marginBottom = '';
+        } else if (dockMode === 'bottom') {
+            uiContainer.style.bottom = '0px';
+            uiContainer.style.top = '';
+            minimizedContainer.style.bottom = '0px';
+            minimizedContainer.style.top = '';
+            document.body.style.marginBottom = `${height}`;
+            document.body.style.marginTop = '';
+        } else {
+            document.body.style.marginTop = '';
+            document.body.style.marginBottom = '';
+            uiContainer.style.bottom = '';
+            minimizedContainer.style.bottom = '';
+            uiContainer.style.top = `${state.position.top}px`;
+            minimizedContainer.style.top = `${state.position.top}px`;
+        }
+    }
+
+    function dockToPage(position) {
+        dockMode = position;
+        GM_setValue(DOCK_MODE_KEY, dockMode);
+        applyDockMode();
+    }
+
     function snapToEdge(edge) {
         if (!uiContainer || !minimizedContainer) return;
+        dockToPage('none');
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
         const uiRect = uiContainer.getBoundingClientRect();
@@ -3582,6 +3701,8 @@
         dragHandle.onmousedown = (e) => {
             if (e.target !== dragHandle && e.target.tagName === 'BUTTON') return;
             e.preventDefault();
+
+            dockToPage('none');
 
             dragging = true;
             justDragged = false;
@@ -3657,6 +3778,7 @@
 
             }
             updateEffectsRendering(); // Crucial to stop/start animations
+            applyDockMode();
             debugLogs.push({
                 timestamp: Date.now(),
                 type: 'ui',
@@ -3930,8 +4052,31 @@
             snapButtonsContainer.style.flexDirection = 'row'; // Or 'column' if preferred for bunched
             snapButtonsContainer.style.justifyContent = 'center';
         }
-        const snapButtonsData = [ /* ... as before ... */ ];
-        snapButtonsData.forEach(data => { /* ... as before ... */ });
+        const snapButtonsData = [
+            { edge: 'top-left', label: '↖' },
+            { edge: 'top', label: '↑' },
+            { edge: 'top-right', label: '↗' },
+            { edge: 'left', label: '←' },
+            { edge: 'right', label: '→' },
+            { edge: 'bottom-left', label: '↙' },
+            { edge: 'bottom', label: '↓' },
+            { edge: 'bottom-right', label: '↘' },
+            { edge: 'dock-top', label: '⤒' },
+            { edge: 'dock-bottom', label: '⤓' }
+        ];
+        snapButtonsData.forEach(data => {
+            const btn = document.createElement('button');
+            btn.className = 'hermes-button hermes-snap-button';
+            btn.textContent = data.label;
+            btn.title = data.edge;
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                if (data.edge === 'dock-top') dockToPage('top');
+                else if (data.edge === 'dock-bottom') dockToPage('bottom');
+                else snapToEdge(data.edge);
+            };
+            snapButtonsContainer.appendChild(btn);
+        });
         uiContainer.appendChild(snapButtonsContainer);
 
 
@@ -3945,6 +4090,7 @@
         setupEffectsCanvas(); // Initialize canvas for effects
         applyTheme();         // Apply current theme and settings-based styles
         setupDragging();      // Enable UI dragging
+        applyDockMode();      // Adjust page margins if docked
 
         // Initial UI state (minimized or full)
         if (isWhitelisted()) {
