@@ -297,6 +297,16 @@ cd ../hermes-extension && npm test
 
 ---
 
+## 🛡️ Secure Deployment
+
+To comply with HIPAA and government security requirements:
+
+- **Encrypt traffic** – enable HTTPS and store secrets via environment variables.
+- **Restrict permissions** – load only the minimum extension permissions and keep filesystem access read-only.
+- **Authenticate API calls** – secure the server with token or basic authentication and rotate credentials regularly.
+
+---
+
 ## 📬 Feedback / Contributions
 
 PRs are welcome. For suggestions or issues, please use the Issues tab.
