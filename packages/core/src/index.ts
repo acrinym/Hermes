@@ -1,8 +1,10 @@
 // Explicit file extensions are required for ESM consumers like Jest. 😄
-export * from './formFiller.js';
-export * from './macroEngine.js';
-export * from './effectsEngine.js';
-export * from './heuristics.js';
-export * from './root.js';
-export * from './storage/index.js';
-export * from './debug.js';
+export * from './formFiller';
+export * from './macroEngine';
+export * from './effectsEngine';
+export * from './heuristics';
+export * from './root';
+export * from './storage';
+export * from './debug';
+export { t, setTranslationFunction } from './i18n';
+
