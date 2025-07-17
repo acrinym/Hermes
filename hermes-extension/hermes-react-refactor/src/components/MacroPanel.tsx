@@ -11,7 +11,9 @@ const MacroPanel: React.FC = () => {
   const { macros } = useSelector((state: RootState) => state.macros);
 
   const handlePlay = (name: string) => {
-    macroEngine.play(name, macros);
+    // Play the macro by name. The macro engine manages its own store so we
+    // simply call play with the macro name. 🎬
+    macroEngine.play(name);
   };
 
   const handleDelete = (name: string) => {
