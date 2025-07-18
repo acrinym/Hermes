@@ -689,7 +689,7 @@ export function analyzeForms() {
       fields: Array.from(fields).map(field => ({
         tag: field.tagName,
         type: (field as HTMLInputElement).type || 'N/A',
-        name: field.name || 'N/A',
+        name: (field as HTMLInputElement).name || 'N/A',
         id: field.id || 'N/A',
         label: getAssociatedLabelText(field) || 'N/A',
         selector: getRobustSelector(field)

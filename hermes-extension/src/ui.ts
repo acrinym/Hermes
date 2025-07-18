@@ -7,6 +7,7 @@ import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
+import { configDiscovery, FormPattern, PlatformConfig } from './configDiscovery.ts';
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { t } from '../i18n.js';
 
@@ -229,6 +230,9 @@ export async function initUI() {
   if (!isAllowed(location.hostname, data.whitelist || [])) {
     toggleMinimizedUI(true);
   }
+
+  // --- Config Discovery UI
+  setupDiscoveryUI();
 
   // Debug
   lazyLoadDebug().then(m => m.setupDebugControls());
@@ -484,4 +488,195 @@ function closeAllSubmenus(except?: HTMLElement) {
   [macroMenu, themeMenu, effectsMenu].forEach(menu => {
     if (menu && menu !== except) menu.style.display = 'none';
   });
+}
+
+// === Config Discovery UI ===
+function setupDiscoveryUI() {
+  // Discovery button
+  const discoveryButton = document.createElement('button');
+  discoveryButton.id = 'hermes-discovery-button';
+  discoveryButton.className = 'hermes-button';
+  discoveryButton.innerHTML = '🔍 Discovery';
+  discoveryButton.title = 'Start/Stop Config Discovery';
+  discoveryButton.onclick = () => toggleDiscoveryPanel();
+  shadowRoot.appendChild(discoveryButton);
+
+  // Discovery status indicator
+  const discoveryStatus = document.createElement('div');
+  discoveryStatus.id = 'hermes-discovery-status';
+  discoveryStatus.style.cssText = 'font-size:10px;color:var(--hermes-disabled-text);text-align:center;margin-top:2px;';
+  discoveryStatus.textContent = 'Discovery Ready';
+  shadowRoot.appendChild(discoveryStatus);
+
+  updateDiscoveryStatus();
+}
+
+function updateDiscoveryStatus() {
+  const status = document.getElementById('hermes-discovery-status');
+  if (!status) return;
+
+  if (configDiscovery.isDiscoveryActive()) {
+    status.textContent = '🔍 Discovering...';
+    status.style.color = 'var(--hermes-success-text)';
+  } else {
+    status.textContent = 'Discovery Ready';
+    status.style.color = 'var(--hermes-disabled-text)';
+  }
+}
+
+function toggleDiscoveryPanel() {
+  const panelId = 'hermes-discovery-panel';
+  let panel = shadowRoot?.querySelector(`#${panelId}-container`) as HTMLElement;
+
+  if (!panel) {
+    const contentHtml = `
+      <div id="hermes-discovery-controls">
+        <button id="hermes-start-discovery" class="hermes-button" style="background:var(--hermes-success-text);color:var(--hermes-panel-bg);">Start Discovery</button>
+        <button id="hermes-stop-discovery" class="hermes-button" style="background:var(--hermes-error-text);color:var(--hermes-panel-bg);display:none;">Stop Discovery</button>
+      </div>
+      <div id="hermes-discovery-info" style="margin-top:10px;padding:10px;background:var(--hermes-panel-bg-secondary);border-radius:4px;">
+        <h4>Platform Detection</h4>
+        <div id="hermes-platform-info">Analyzing page...</div>
+      </div>
+      <div id="hermes-discovery-results" style="margin-top:10px;">
+        <h4>Discovered Patterns</h4>
+        <div id="hermes-patterns-list">No patterns discovered yet.</div>
+      </div>
+    `;
+    
+    panel = createModal(shadowRoot!, panelId, 'Config Discovery', contentHtml, '600px');
+    
+    const startBtn = panel.querySelector('#hermes-start-discovery') as HTMLButtonElement;
+    const stopBtn = panel.querySelector('#hermes-stop-discovery') as HTMLButtonElement;
+    
+    startBtn.onclick = async () => {
+      const domain = window.location.hostname;
+      await configDiscovery.startDiscovery(domain);
+      startBtn.style.display = 'none';
+      stopBtn.style.display = 'inline-block';
+      updateDiscoveryStatus();
+      updateDiscoveryInfo();
+      updateDiscoveryResults();
+    };
+    
+    stopBtn.onclick = async () => {
+      const config = await configDiscovery.stopDiscovery();
+      startBtn.style.display = 'inline-block';
+      stopBtn.style.display = 'none';
+      updateDiscoveryStatus();
+      updateDiscoveryInfo();
+      updateDiscoveryResults();
+      
+      if (config) {
+        showDiscoverySuccess(config);
+      }
+    };
+  }
+
+  if (panel) {
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    if (panel.style.display === 'flex') {
+      updateDiscoveryInfo();
+      updateDiscoveryResults();
+    }
+  }
+}
+
+function updateDiscoveryInfo() {
+  const infoDiv = document.getElementById('hermes-platform-info');
+  if (!infoDiv) return;
+
+  const session = configDiscovery.getCurrentSession();
+  if (session) {
+    const platform = detectPlatform();
+    const hints = session.metadata.platformHints;
+    
+    infoDiv.innerHTML = `
+      <p><strong>Domain:</strong> ${session.domain}</p>
+      <p><strong>Platform:</strong> ${platform}</p>
+      <p><strong>Forms Found:</strong> ${session.metadata.formsCount}</p>
+      <p><strong>Fields Found:</strong> ${session.metadata.fieldsCount}</p>
+      <p><strong>Hints:</strong> ${hints.join(', ') || 'None detected'}</p>
+    `;
+  } else {
+    infoDiv.innerHTML = '<p>No active discovery session.</p>';
+  }
+}
+
+function updateDiscoveryResults() {
+  const resultsDiv = document.getElementById('hermes-patterns-list');
+  if (!resultsDiv) return;
+
+  const patterns = configDiscovery.getDiscoveredPatterns();
+  
+  if (patterns.length === 0) {
+    resultsDiv.innerHTML = '<p>No patterns discovered yet.</p>';
+    return;
+  }
+
+  resultsDiv.innerHTML = patterns.map(pattern => {
+    const largeTextFields = pattern.fields.filter(f => f.isLargeText);
+    const workNotesFields = pattern.fields.filter(f => f.textAreaConfig?.template === 'work_notes');
+    const notesFields = pattern.fields.filter(f => f.textAreaConfig?.template === 'notes');
+    
+    return `
+      <div style="margin-bottom:10px;padding:10px;border:1px solid var(--hermes-panel-border);border-radius:4px;">
+        <h5>${pattern.name}</h5>
+        <p><strong>Confidence:</strong> ${Math.round(pattern.confidence * 100)}%</p>
+        <p><strong>Fields:</strong> ${pattern.fields.length}</p>
+        ${largeTextFields.length > 0 ? `<p><strong>Large Text Areas:</strong> ${largeTextFields.length}</p>` : ''}
+        ${workNotesFields.length > 0 ? `<p><strong>Work Notes Fields:</strong> ${workNotesFields.length}</p>` : ''}
+        ${notesFields.length > 0 ? `<p><strong>Notes Fields:</strong> ${notesFields.length}</p>` : ''}
+        <details>
+          <summary>Field Details</summary>
+          <ul style="margin-top:5px;">
+            ${pattern.fields.map(field => {
+              let fieldInfo = `${field.label || field.name} (${field.type}) - ${Math.round(field.confidence * 100)}%`;
+              if (field.isLargeText) {
+                fieldInfo += ' 📝';
+                if (field.textAreaConfig?.template) {
+                  fieldInfo += ` [${field.textAreaConfig.template}]`;
+                }
+              }
+              return `<li>${fieldInfo}</li>`;
+            }).join('')}
+          </ul>
+        </details>
+      </div>
+    `;
+  }).join('');
+}
+
+function showDiscoverySuccess(config: PlatformConfig) {
+  const successHtml = `
+    <div style="text-align:center;padding:20px;">
+      <h3>✅ Discovery Complete!</h3>
+      <p><strong>Platform:</strong> ${config.platform}</p>
+      <p><strong>Patterns Found:</strong> ${config.patterns.length}</p>
+      <p><strong>Macros Generated:</strong> ${config.macros.length}</p>
+      <p>Config has been saved and is ready for use!</p>
+    </div>
+  `;
+  
+  const successModal = createModal(shadowRoot!, 'hermes-discovery-success', 'Discovery Success', successHtml, '400px');
+  successModal.style.display = 'flex';
+  
+  // Auto-close after 3 seconds
+  setTimeout(() => {
+    successModal.style.display = 'none';
+  }, 3000);
+}
+
+function detectPlatform(): string {
+  const url = window.location.href.toLowerCase();
+  const title = document.title.toLowerCase();
+  
+  if (url.includes('servicenow') || title.includes('service now')) return 'ServiceNow';
+  if (url.includes('remedy') || title.includes('bmc remedy')) return 'BMC Remedy';
+  if (url.includes('salesforce') || title.includes('salesforce')) return 'Salesforce';
+  if (url.includes('jira') || title.includes('jira')) return 'Jira';
+  if (url.includes('zendesk') || title.includes('zendesk')) return 'Zendesk';
+  if (url.includes('freshdesk') || title.includes('freshdesk')) return 'Freshdesk';
+  
+  return 'Unknown Platform';
 }
