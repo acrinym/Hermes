@@ -1,6 +1,9 @@
 // Config Discovery System for Enterprise Platforms
 // This system automatically discovers form patterns and creates configs for new websites
 
+// Import backend API
+import { backendAPI } from './backendConfig';
+
 export interface FormField {
   selector: string;
   type: string;
@@ -849,18 +852,27 @@ export class ConfigDiscoveryService {
     }
   }
 
-  // Upload config to server (for enterprise features)
+  // Upload config to Recreated backend server
   private async uploadConfig(config: PlatformConfig): Promise<void> {
-    // This would upload to your config repository
-    // For now, we'll just log it
-    console.log('📤 Hermes: Config ready for upload:', config);
-    
-    // TODO: Implement actual upload to config repository
-    // await fetch('/api/configs', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(config)
-    // });
+    try {
+      // Use the backend API to upload config
+      await backendAPI.uploadConfig(config);
+      console.log('📤 Hermes: Config uploaded successfully to Recreated backend');
+    } catch (error) {
+      console.error('Error uploading config to Recreated backend:', error);
+      // Fallback to local storage
+      await this.saveConfig(config);
+    }
+  }
+
+  // Get authentication token for backend API
+  private async getAuthToken(): Promise<string> {
+    try {
+      const data = await getInitialData();
+      return data.authToken || '';
+    } catch (error) {
+      return '';
+    }
   }
 
   // Get discovered patterns

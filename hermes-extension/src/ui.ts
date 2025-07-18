@@ -10,6 +10,7 @@ import { createModal } from './ui/components.js';
 import { configDiscovery, FormPattern, PlatformConfig } from './configDiscovery.ts';
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { t } from '../i18n.js';
+import { initializeBackendAPI } from './backendConfig.ts';
 
 // Lazy load heavy features
 const lazyLoadTrainer = () => import('./trainer.ts').then(m => m.runHeuristicTrainerSession);
@@ -78,6 +79,9 @@ export async function initUI() {
   profileData = data.profile || {};
   const theme = data.theme || 'dark';
   const settings = await loadSettings();
+
+  // Initialize backend API connection to Recreated folder
+  await initializeBackendAPI();
 
   // ----- SHADOW DOM SETUP -----
   shadowHost = document.createElement('div');
@@ -190,6 +194,17 @@ export async function initUI() {
 
   // Allowlist
   allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
+
+  // Backend Configuration
+  createButton('BACKEND', () => {
+    import('./backendSetup.ts').then(m => m.setupBackendWithAutoDetection().then(success => {
+      if (success) {
+        console.log('✅ Backend configured successfully');
+      } else {
+        console.log('⚠️ Backend configuration failed, check server is running');
+      }
+    }));
+  });
 
   // Debug
   let debugEnabled = !!data.debugMode;
