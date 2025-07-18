@@ -10,7 +10,8 @@ module.exports = {
   },
   output: {
     filename: '[name].js',
-    path: path.resolve(__dirname, 'dist')
+    path: path.resolve(__dirname, 'dist'),
+    clean: true
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js', '.jsx']
@@ -23,7 +24,19 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env', '@babel/preset-typescript', '@babel/preset-react']
+            presets: [
+              ['@babel/preset-env', { 
+                targets: 'chrome 88',
+                modules: false,
+                useBuiltIns: 'usage',
+                corejs: 3
+              }],
+              '@babel/preset-typescript',
+              ['@babel/preset-react', { runtime: 'automatic' }]
+            ],
+            plugins: [
+              '@babel/plugin-transform-runtime'
+            ]
           }
         }
       },
@@ -33,7 +46,18 @@ module.exports = {
         use: {
           loader: 'babel-loader',
           options: {
-            presets: ['@babel/preset-env', '@babel/preset-react']
+            presets: [
+              ['@babel/preset-env', { 
+                targets: 'chrome 88',
+                modules: false,
+                useBuiltIns: 'usage',
+                corejs: 3
+              }],
+              ['@babel/preset-react', { runtime: 'automatic' }]
+            ],
+            plugins: [
+              '@babel/plugin-transform-runtime'
+            ]
           }
         }
       }
@@ -41,5 +65,29 @@ module.exports = {
   },
   plugins: [
     new ForkTsCheckerWebpackPlugin()
-  ]
+  ],
+  optimization: {
+    splitChunks: {
+      chunks: 'all',
+      cacheGroups: {
+        vendor: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+          priority: 10
+        }
+      }
+    },
+    minimize: true,
+    usedExports: true,
+    sideEffects: false
+  },
+  performance: {
+    hints: 'warning',
+    maxEntrypointSize: 500000,
+    maxAssetSize: 500000
+  },
+  externals: {
+    chrome: 'chrome'
+  }
 };

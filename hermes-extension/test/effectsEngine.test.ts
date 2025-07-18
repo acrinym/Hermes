@@ -1,4 +1,4 @@
-import { startCube, getEffect, stopEffects } from '@hermes/core';
+import { startCube, getEffect, stopEffects } from '../src/localCore';
 import { setRoot } from '../src/root.ts';
 
 jest.mock('three', () => {

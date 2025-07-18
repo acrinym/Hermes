@@ -8,4 +8,4 @@ export {
   setupDebugControls,
   setTranslationFunction,
   t
-} from '@hermes/core';
+} from './localCore';

@@ -1,1 +1,1 @@
-export * from '@hermes/core';
+export * from './localCore';

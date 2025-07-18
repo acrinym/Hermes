@@ -1,1 +1,1 @@
-export { setRoot, getRoot } from '@hermes/core';
+export { setRoot, getRoot } from './localCore';

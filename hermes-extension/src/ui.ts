@@ -1,36 +1,49 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
-import { macroEngine } from '@hermes/core';
-import { initMacros, playMacro } from './macros.ts';
-import { fillForm } from '@hermes/core';
+import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect } from './localCore.ts';
 import { getSettings } from './settings.ts';
-import { runHeuristicTrainerSession } from './trainer.ts';
 import { applyTheme } from './theme.ts';
 import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
-import { getInitialData, saveDataToBackground } from './storage/index.ts';
-import { startSnowflakes, startLasers, startCube, stopEffects, setEffect } from '@hermes/core';
-import { showHelp } from './help.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
-import {
-  setupDebugControls,
-  toggleLogViewer,
-  addDebugLog,
-  startMutationObserver,
-  stopMutationObserver
-} from './debug.ts';
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
-import { toggleOverlays, initOverlays } from './overlays.ts';
-import { initAffirmations } from './productivity.tsx';
-import { initScratchPad, toggleScratchPad } from './scratchPad.ts';
-import { initTasks, toggleTasks } from './tasks.ts';
-import { toggleTimer } from './timer.ts';
-import { initSchedule, toggleSchedule } from './schedule.ts';
-import { sniffForms } from './sniffer.ts';
-import { importProfileFromFile, exportProfile } from './profile.ts';
-import { initHotkeys } from './hotkeys.ts';
 import { t } from '../i18n.js';
+
+// Lazy load heavy features
+const lazyLoadTrainer = () => import('./trainer.ts').then(m => m.runHeuristicTrainerSession);
+const lazyLoadHelp = () => import('./help.ts').then(m => m.showHelp);
+const lazyLoadDebug = () => import('./debug.ts').then(m => ({
+  setupDebugControls: m.setupDebugControls,
+  toggleLogViewer: m.toggleLogViewer,
+  addDebugLog: m.addDebugLog,
+  startMutationObserver: m.startMutationObserver,
+  stopMutationObserver: m.stopMutationObserver
+}));
+const lazyLoadOverlays = () => import('./overlays.ts').then(m => ({
+  toggleOverlays: m.toggleOverlays,
+  initOverlays: m.initOverlays
+}));
+const lazyLoadProductivity = () => import('./productivity.tsx').then(m => m.initAffirmations);
+const lazyLoadScratchPad = () => import('./scratchPad.ts').then(m => ({
+  initScratchPad: m.initScratchPad,
+  toggleScratchPad: m.toggleScratchPad
+}));
+const lazyLoadTasks = () => import('./tasks.ts').then(m => ({
+  initTasks: m.initTasks,
+  toggleTasks: m.toggleTasks
+}));
+const lazyLoadTimer = () => import('./timer.ts').then(m => m.toggleTimer);
+const lazyLoadSchedule = () => import('./schedule.ts').then(m => ({
+  initSchedule: m.initSchedule,
+  toggleSchedule: m.toggleSchedule
+}));
+const lazyLoadSniffer = () => import('./sniffer.ts').then(m => m.sniffForms);
+const lazyLoadProfile = () => import('./profile.ts').then(m => ({
+  importProfileFromFile: m.importProfileFromFile,
+  exportProfile: m.exportProfile
+}));
+const lazyLoadHotkeys = () => import('./hotkeys.ts').then(m => m.initHotkeys);
 
 // Shadow DOM root globals
 let shadowHost: HTMLDivElement;
@@ -106,7 +119,7 @@ export async function initUI() {
     const settings = await getSettings();
     fillForm(profileData, settings);
   });
-  createButton(t('TRAIN'), () => runHeuristicTrainerSession(profileData));
+  createButton(t('TRAIN'), () => lazyLoadTrainer().then(m => m(profileData)));
   createButton(t('REC'), () => macroEngine.startRecording());
   createButton(t('STOP'), () => macroEngine.stopRecording());
 
@@ -139,7 +152,7 @@ export async function initUI() {
 
   // Overlay button
   overlayBtn = createButton(t('OVERLAY'), () => {
-    toggleOverlays();
+    lazyLoadOverlays().then(m => m.toggleOverlays());
     overlayBtn.style.background = overlayBtn.style.background ? '' : 'lightgreen';
   });
   if (data.showOverlays) overlayBtn.style.background = 'lightgreen';
@@ -148,32 +161,31 @@ export async function initUI() {
   settingsBtn = createButton(t('SETTINGS'), () => toggleSettingsPanel(true));
 
   // Help
-  helpBtn = createButton(t('HELP'), () => showHelp());
+  helpBtn = createButton(t('HELP'), () => lazyLoadHelp().then(m => m()));
 
   // Logs
-  createButton(t('LOGS'), () => toggleLogViewer(true));
+  createButton(t('LOGS'), () => lazyLoadDebug().then(m => m.toggleLogViewer(true)));
 
   // Sniff forms
-  createButton(t('SNIFF'), () => sniffForms());
+  createButton(t('SNIFF'), () => lazyLoadSniffer().then(m => m()));
 
   // Import/Export profile
-  createButton(t('IMPORT_PROFILE'), async () => {
-    const obj = await importProfileFromFile();
+  createButton(t('IMPORT_PROFILE'), () => lazyLoadProfile().then(m => m.importProfileFromFile().then(obj => {
     if (obj) profileData = obj;
-  });
-  createButton(t('EXPORT_PROFILE'), () => exportProfile(profileData));
+  })));
+  createButton(t('EXPORT_PROFILE'), () => lazyLoadProfile().then(m => m.exportProfile(profileData)));
 
   // Scratch pad
-  createButton(t('SCRATCH_PAD'), () => toggleScratchPad(true));
+  createButton(t('SCRATCH_PAD'), () => lazyLoadScratchPad().then(m => m.toggleScratchPad(true)));
 
   // Tasks
-  tasksBtn = createButton(t('TASKS'), () => toggleTasks(true));
+  tasksBtn = createButton(t('TASKS'), () => lazyLoadTasks().then(m => m.toggleTasks(true)));
 
   // Pomodoro timer
-  timerBtn = createButton(t('TIMER'), () => toggleTimer(true));
+  timerBtn = createButton(t('TIMER'), () => lazyLoadTimer().then(m => m(true)));
 
   // Schedule macros
-  scheduleBtn = createButton(t('SCHEDULE'), () => toggleSchedule(true));
+  scheduleBtn = createButton(t('SCHEDULE'), () => lazyLoadSchedule().then(m => m.toggleSchedule(true)));
 
   // Allowlist
   allowBtn = createButton(t('ALLOWLIST'), () => toggleAllowPanel(true));
@@ -183,10 +195,10 @@ export async function initUI() {
   debugBtn = createButton(t('DEBUG'), () => {
     debugEnabled = !debugEnabled;
     debugEnabled
-      ? startMutationObserver(() => addDebugLog('mutation', 'dom', {}))
-      : stopMutationObserver();
+      ? lazyLoadDebug().then(m => m.startMutationObserver(() => m.addDebugLog('mutation', 'dom', {})))
+      : lazyLoadDebug().then(m => m.stopMutationObserver());
     saveDataToBackground('hermes_debug_mode_ext', debugEnabled);
-    addDebugLog('debug_toggle', null, { enabled: debugEnabled });
+    lazyLoadDebug().then(m => m.addDebugLog('debug_toggle', null, { enabled: debugEnabled }));
   });
 
   // Learn Mode
@@ -194,7 +206,7 @@ export async function initUI() {
   learnBtn = createButton(t('LEARN'), () => {
     learning = !learning;
     saveDataToBackground('hermes_learning_state_ext', learning);
-    addDebugLog('learning_toggle', null, { enabled: learning });
+    lazyLoadDebug().then(m => m.addDebugLog('learning_toggle', null, { enabled: learning }));
   });
 
   // Panel menu closers
@@ -204,15 +216,14 @@ export async function initUI() {
   // --- Init theme/effects
   applyTheme(theme);
   if (data.effectsMode) setEffect(data.effectsMode);
-  initOverlays(!!data.showOverlays);
-  initAffirmations(!!data.showAffirmations);
-  await initTasks();
-  await initScratchPad();
-  await initSchedule();
-  await initMacros();
+  lazyLoadOverlays().then(m => m.initOverlays(!!data.showOverlays));
+  lazyLoadProductivity().then(m => m(!!data.showAffirmations));
+  lazyLoadTasks().then(m => m.initTasks());
+  lazyLoadScratchPad().then(m => m.initScratchPad());
+  lazyLoadSchedule().then(m => m.initSchedule());
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
-  initHotkeys();
+  lazyLoadHotkeys().then(m => m());
 
   // --- Allowlist minimized logic
   if (!isAllowed(location.hostname, data.whitelist || [])) {
@@ -220,12 +231,14 @@ export async function initUI() {
   }
 
   // Debug
-  setupDebugControls();
-  if (debugEnabled) startMutationObserver(() => addDebugLog('mutation', 'dom', {}));
-  window.addEventListener('beforeunload', stopMutationObserver);
+  lazyLoadDebug().then(m => m.setupDebugControls());
+  if (debugEnabled) lazyLoadDebug().then(m => m.startMutationObserver(() => m.addDebugLog('mutation', 'dom', {})));
+  lazyLoadDebug().then(m => {
+    window.addEventListener('beforeunload', m.stopMutationObserver);
+  });
 
   // Help panel open state
-  if (data.helpPanelOpen) showHelp();
+  if (data.helpPanelOpen) lazyLoadHelp().then(m => m());
 }
 
 // === Macro Submenu Contents ===
@@ -260,7 +273,7 @@ function updateMacroSubmenuContents(menu: HTMLElement) {
       row.style.display = 'flex';
       row.style.gap = '4px';
       row.style.marginBottom = '4px';
-      const playBtn = createSubButton(name, () => { playMacro(name); menu.style.display = 'none'; });
+             const playBtn = createSubButton(name, () => { macroEngine.play(name); menu.style.display = 'none'; });
       playBtn.style.flexGrow = '1';
       const editBtn = createSubButton('✏️', () => toggleMacroEditor(true, name));
       const delBtn = createSubButton('🗑️', async () => {

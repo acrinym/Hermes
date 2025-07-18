@@ -1,4 +1,4 @@
-import { fillForm } from '@hermes/core';
+import { fillForm } from './localCore';
 import { getSettings } from './settings.ts';
 import { ProfileData, SkippedField } from './heuristics.ts';
 import { saveDataToBackground } from './storage/index.ts';

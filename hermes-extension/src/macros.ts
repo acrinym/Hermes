@@ -1,4 +1,4 @@
-import { macroEngine } from '@hermes/core';
+import { macroEngine } from './localCore';
 import { saveDataToBackground } from './storage/index.ts';
 
 declare const chrome: any;

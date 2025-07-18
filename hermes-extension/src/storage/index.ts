@@ -1,1 +1,1 @@
-export { saveDataToBackground, getInitialData } from '@hermes/core/storage';
+export { saveDataToBackground, getInitialData } from '../localCore';
