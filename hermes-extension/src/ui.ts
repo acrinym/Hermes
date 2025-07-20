@@ -1,6 +1,6 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
-import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect } from './localCore.ts';
+import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14 } from './localCore.ts';
 import { getSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
 import { themeOptions } from './themeOptions.ts';
@@ -406,6 +406,8 @@ function updateEffectsSubmenu(menu: HTMLElement) {
     { mode: 'none', name: 'None' },
     { mode: 'snow', name: 'Snowflakes' },
     { mode: 'laser', name: 'Lasers' },
+    { mode: 'laserV14', name: 'Lasers V14' },
+    { mode: 'strobeV14', name: 'Strobe V14' },
     { mode: 'cube', name: 'Cube 3D' }
   ];
   opts.forEach(opt => {
@@ -419,6 +421,8 @@ function updateEffectsSubmenu(menu: HTMLElement) {
       currentEffect = opt.mode;
       if (opt.mode === 'snow') startSnowflakes();
       else if (opt.mode === 'laser') startLasers();
+      else if (opt.mode === 'laserV14') startLasersV14();
+      else if (opt.mode === 'strobeV14') startStrobeV14();
       else if (opt.mode === 'cube') startCube();
       else stopEffects();
       saveDataToBackground('hermes_effects_state_ext', opt.mode);
