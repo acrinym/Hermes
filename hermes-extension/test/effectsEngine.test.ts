@@ -26,6 +26,14 @@ describe('startCube', () => {
     document.body.innerHTML = '';
     setRoot(document);
     (global as any).requestAnimationFrame = jest.fn();
+    HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+      beginPath: jest.fn(),
+      stroke: jest.fn(),
+      moveTo: jest.fn(),
+      lineTo: jest.fn(),
+      fillRect: jest.fn(),
+      clearRect: jest.fn()
+    } as any));
   });
 
   afterEach(() => {
