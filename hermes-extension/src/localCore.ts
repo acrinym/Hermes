@@ -290,11 +290,13 @@ let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let flakes: { x: number; y: number; r: number; s: number }[] = [];
 let lasers: { x: number; y: number; len: number; s: number }[] = [];
+let lasersV14: { x: number; y: number; len: number; s: number }[] = [];
 let confettiPieces: { x: number; y: number; vx: number; vy: number; color: string; size: number }[] = [];
 let bubbles: { x: number; y: number; r: number; vx: number; vy: number }[] = [];
 let strobeState = { phase: 0, opacity: 0 };
+let strobeStateV14 = { phase: 0, opacity: 0 };
 let running = false;
-let mode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe' = 'none';
+let mode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe' | 'laserV14' | 'strobeV14' = 'none';
 
 function initCanvas() {
   if (!canvas) {
@@ -385,24 +387,43 @@ export function startStrobe() {
   mode = 'strobe';
 }
 
+export function startLasersV14() {
+  initCanvas();
+  lasersV14 = [];
+  if (!running) { running = true; loop(); }
+  mode = 'laserV14';
+}
+
+export function startStrobeV14() {
+  initCanvas();
+  strobeStateV14 = { phase: 0, opacity: 0 };
+  if (!running) { running = true; loop(); }
+  mode = 'strobeV14';
+}
+
 export function stopEffects() {
   running = false;
   lasers = [];
+  lasersV14 = [];
   flakes = [];
   confettiPieces = [];
   bubbles = [];
+  strobeState = { phase: 0, opacity: 0 };
+  strobeStateV14 = { phase: 0, opacity: 0 };
   if (canvas) canvas.style.display = 'none';
   mode = 'none';
 }
 
-export function setEffect(newMode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe') {
+export function setEffect(newMode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe' | 'laserV14' | 'strobeV14') {
   if (newMode === 'none') { stopEffects(); return; }
   if (newMode === 'snow') { startSnowflakes(); return; }
   if (newMode === 'lasers') { startLasers(); return; }
+  if (newMode === 'laserV14') { startLasersV14(); return; }
   if (newMode === 'cube') { startLasers(); return; } // Simplified cube effect
   if (newMode === 'confetti') { startConfetti(); return; }
   if (newMode === 'bubbles') { startBubbles(); return; }
   if (newMode === 'strobe') { startStrobe(); return; }
+  if (newMode === 'strobeV14') { startStrobeV14(); return; }
 }
 
 export function getEffect() {
@@ -675,6 +696,7 @@ export function setTranslationFunction(translator: (key: string) => string) {
 // Cube effect (simplified)
 export function startCube() {
   startLasers(); // Use lasers as cube effect for now
+  mode = 'cube';
 }
 
 // Analysis sniffer
@@ -719,6 +741,23 @@ export class MacroEngine {
   private macros: Record<string, any[]> = {};
   private recording = false;
   private events: any[] = [];
+  private settings: {
+    recordMouseMoves: boolean;
+    mouseMoveInterval: number;
+    useCoordinateFallback: boolean;
+    relativeCoordinates: boolean;
+    similarityThreshold: number;
+    selectorWaitTimeout: number;
+    networkIdleTimeout: number;
+  } = {
+    recordMouseMoves: false,
+    mouseMoveInterval: 200,
+    useCoordinateFallback: false,
+    relativeCoordinates: true,
+    similarityThreshold: 0.5,
+    selectorWaitTimeout: 5000,
+    networkIdleTimeout: 2000
+  };
 
   async init() {
     // Load macros from storage
@@ -757,7 +796,16 @@ export class MacroEngine {
 
       switch (event.type) {
         case 'click':
-          element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          let x = event.clientX;
+          let y = event.clientY;
+          if (this.settings.relativeCoordinates && event.offsetX != null && event.offsetY != null && event.rectW && event.rectH) {
+            const rect = (element as HTMLElement).getBoundingClientRect();
+            const scaleX = rect.width / event.rectW;
+            const scaleY = rect.height / event.rectH;
+            x = rect.left + event.offsetX * scaleX;
+            y = rect.top + event.offsetY * scaleY;
+          }
+          element.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x || 0, clientY: y || 0 }));
           break;
         case 'input':
           (element as HTMLInputElement).value = event.value;
@@ -781,8 +829,8 @@ export class MacroEngine {
     return saveDataToBackground('hermes_macros_ext', this.macros);
   }
 
-  updateSettings(settings: any) {
-    // Update macro settings
+  updateSettings(settings: Partial<typeof this.settings>) {
+    this.settings = { ...this.settings, ...settings };
   }
 
   exportMacros(format: 'json' | 'xml' = 'json', names?: string[]): string {
@@ -866,6 +914,28 @@ function loop() {
       lasers = lasers.filter(l => l.y < canvas!.height);
       break;
 
+    case 'laserV14':
+      if (Math.random() < 0.05 && lasersV14.length < 200) {
+        lasersV14.push({
+          x: Math.random() * canvas.width,
+          y: 0,
+          len: 20 + Math.random() * 50,
+          s: 5 + Math.random() * 10
+        });
+      }
+      lasersV14.forEach(l => {
+        if (!ctx) return;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(255,0,0,0.7)';
+        ctx.lineWidth = 2;
+        ctx.moveTo(l.x, l.y);
+        ctx.lineTo(l.x, l.y - l.len);
+        ctx.stroke();
+        l.y += l.s;
+      });
+      lasersV14 = lasersV14.filter(l => l.y < canvas!.height + l.len);
+      break;
+
     case 'confetti':
       confettiPieces.forEach(p => {
         p.x += p.vx;
@@ -897,6 +967,14 @@ function loop() {
       strobeState.opacity = Math.sin(strobeState.phase) * 0.5 + 0.5;
       if (!ctx) return;
       ctx.fillStyle = `rgba(255,255,255,${strobeState.opacity})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      break;
+
+    case 'strobeV14':
+      strobeStateV14.phase += 0.1;
+      if (!ctx) return;
+      const alpha = (Math.sin(strobeStateV14.phase) * 0.5 + 0.5) * 0.2;
+      ctx.fillStyle = `rgba(255,255,255,${alpha})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       break;
   }
