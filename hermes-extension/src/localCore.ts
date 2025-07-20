@@ -741,6 +741,23 @@ export class MacroEngine {
   private macros: Record<string, any[]> = {};
   private recording = false;
   private events: any[] = [];
+  private settings: {
+    recordMouseMoves: boolean;
+    mouseMoveInterval: number;
+    useCoordinateFallback: boolean;
+    relativeCoordinates: boolean;
+    similarityThreshold: number;
+    selectorWaitTimeout: number;
+    networkIdleTimeout: number;
+  } = {
+    recordMouseMoves: false,
+    mouseMoveInterval: 200,
+    useCoordinateFallback: false,
+    relativeCoordinates: true,
+    similarityThreshold: 0.5,
+    selectorWaitTimeout: 5000,
+    networkIdleTimeout: 2000
+  };
 
   async init() {
     // Load macros from storage
@@ -779,7 +796,16 @@ export class MacroEngine {
 
       switch (event.type) {
         case 'click':
-          element.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+          let x = event.clientX;
+          let y = event.clientY;
+          if (this.settings.relativeCoordinates && event.offsetX != null && event.offsetY != null && event.rectW && event.rectH) {
+            const rect = (element as HTMLElement).getBoundingClientRect();
+            const scaleX = rect.width / event.rectW;
+            const scaleY = rect.height / event.rectH;
+            x = rect.left + event.offsetX * scaleX;
+            y = rect.top + event.offsetY * scaleY;
+          }
+          element.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: x || 0, clientY: y || 0 }));
           break;
         case 'input':
           (element as HTMLInputElement).value = event.value;
@@ -803,8 +829,8 @@ export class MacroEngine {
     return saveDataToBackground('hermes_macros_ext', this.macros);
   }
 
-  updateSettings(settings: any) {
-    // Update macro settings
+  updateSettings(settings: Partial<typeof this.settings>) {
+    this.settings = { ...this.settings, ...settings };
   }
 
   exportMacros(format: 'json' | 'xml' = 'json', names?: string[]): string {

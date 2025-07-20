@@ -81,9 +81,11 @@ export const defaultSettings = {
     "maxOpacity": 0.2,
     "_comment_maxOpacity": "Maximum opacity during strobe. Default: 0.2. Range: 0.0-1.0.",
     "color": "rgba(255, 255, 255, {alpha})",
-    "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
+  "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
   }
   },
+  "_comment_syncInterval": "Minutes between automatic sync with server. 0 disables.",
+  "syncInterval": 0,
   "_comment_macro": "Settings for macro recording/playback and heuristics.",
   "macro": {
   "recordMouseMoves": false,
@@ -95,7 +97,11 @@ export const defaultSettings = {
   "useCoordinateFallback": false,
   "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
   "similarityThreshold": 0.5,
-  "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+  "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5.",
+  "selectorWaitTimeout": 5000,
+  "_comment_selectorWaitTimeout": "Default timeout in ms for waitForSelector events. Default: 5000.",
+  "networkIdleTimeout": 2000,
+  "_comment_networkIdleTimeout": "Default timeout in ms for waitForNetworkIdle events. Default: 2000."
   },
   "_comment_recordHotkey": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
   "recordHotkey": "Ctrl+Shift+R",
