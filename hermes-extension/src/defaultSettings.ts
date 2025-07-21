@@ -82,6 +82,34 @@ export const defaultSettings = {
     "_comment_maxOpacity": "Maximum opacity during strobe. Default: 0.2. Range: 0.0-1.0.",
     "color": "rgba(255, 255, 255, {alpha})",
   "_comment_color": "Color for the simple strobe. Default: 'rgba(255, 255, 255, {alpha})'."
+  },
+  "_comment_confetti": "Settings for the 'Confetti' effect.",
+  "confetti": {
+    "density": 40,
+    "_comment_density": "Number of confetti pieces. Default: 40. Range: 10-200.",
+    "colors": ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff"],
+    "_comment_colors": "Array of colors for confetti squares.",
+    "size": 6,
+    "_comment_size": "Base size of confetti pieces in pixels.",
+    "gravity": 0.5,
+    "_comment_gravity": "Falling speed factor.",
+    "drift": 0.3,
+    "_comment_drift": "Sideways drift factor."
+  },
+  "_comment_bubbles": "Settings for the 'Bubbles' effect.",
+  "bubbles": {
+    "density": 40,
+    "_comment_density": "Number of bubbles. Default: 40. Range: 5-200.",
+    "sizeMin": 2,
+    "_comment_sizeMin": "Minimum bubble size in pixels. Default: 2.",
+    "sizeMax": 6,
+    "_comment_sizeMax": "Maximum bubble size in pixels. Default: 6.",
+    "speedMin": 0.5,
+    "_comment_speedMin": "Minimum rising speed. Default: 0.5.",
+    "speedMax": 1.5,
+    "_comment_speedMax": "Maximum rising speed. Default: 1.5.",
+    "color": "rgba(173,216,230,0.7)",
+    "_comment_color": "Color of bubbles. Default: 'rgba(173,216,230,0.7)'."
   }
   },
   "_comment_syncInterval": "Minutes between automatic sync with server. 0 disables.",
