@@ -274,6 +274,7 @@ In addition to manual playback, Hermes exposes a local automation API under `/ap
 
 Open `demo-site/index.html` directly in your browser to explore Hermes without running a server.  The page contains contact and login forms, a multi-step wizard and dynamic fields so you can try the form filler, heuristics and macro recorder.
 An embedded widget demonstrates filling elements inside iframes.  Simply load the file and activate the extension to begin experimenting.
+An additional `demo-site/accessibility.html` page showcases high-contrast styles and a macro playground geared toward users with limited dexterity.
 
 
 ---
