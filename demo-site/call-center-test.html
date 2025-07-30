@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Call Center Test Site</title>
+  <style>
+    :root {
+      --primary-color: #2563eb;
+      --secondary-color: #64748b;
+      --success-color: #059669;
+      --warning-color: #d97706;
+      --danger-color: #dc2626;
+      --bg-color: #f8fafc;
+      --text-color: #1e293b;
+      --border-color: #e2e8f0;
+      --card-bg: #ffffff;
+    }
+
+    [data-theme="high-contrast"] {
+      --bg-color: #000000;
+      --text-color: #ffffff;
+      --card-bg: #1a1a1a;
+      --border-color: #ffffff;
+      --primary-color: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: all 0.3s ease;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 6px;
+      background: var(--primary-color);
+      color: white;
+      padding: 8px;
+      text-decoration: none;
+      z-index: 1000;
+    }
+
+    .skip-link:focus {
+      top: 6px;
+    }
+
+    header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+
+    .accessibility-tools {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 0.375rem;
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .btn:focus {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+
+    .btn-secondary {
+      background: var(--secondary-color);
+    }
+
+    .btn-success {
+      background: var(--success-color);
+    }
+
+    .btn-warning {
+      background: var(--warning-color);
+    }
+
+    .btn-danger {
+      background: var(--danger-color);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+
+    .main-content {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .sidebar {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      height: fit-content;
+    }
+
+    .content-area {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+    }
+
+    .section {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 0.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-color);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      font-size: 1rem;
+      background: var(--bg-color);
+      color: var(--text-color);
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .ticket-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .ticket-item {
+      padding: 1rem;
+      border: 1px solid var(--border-color);
+      border-radius: 0.375rem;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .ticket-item:hover {
+      background: var(--bg-color);
+      border-color: var(--primary-color);
+    }
+
+    .ticket-priority {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+    }
+
+    .priority-high {
+      background: #fef2f2;
+      color: var(--danger-color);
+    }
+
+    .priority-medium {
+      background: #fef3c7;
+      color: var(--warning-color);
+    }
+
+    .priority-low {
+      background: #f0fdf4;
+      color: var(--success-color);
+    }
+
+    .voice-controls {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .voice-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .recording-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .keyboard-shortcuts {
+      background: #f1f5f9;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .shortcut-key {
+      background: #374151;
+      color: white;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+    }
+
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      z-index: 1000;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); }
+      to { transform: translateX(0); }
+    }
+
+    .notification.success {
+      background: var(--success-color);
+    }
+
+    .notification.error {
+      background: var(--danger-color);
+    }
+
+    .search-box {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .search-box input {
+      padding-left: 2.5rem;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--secondary-color);
+    }
+
+    @media (max-width: 1024px) {
+      .main-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* High contrast mode improvements */
+    [data-theme="high-contrast"] .btn {
+      border: 2px solid currentColor;
+    }
+    
+    [data-theme="high-contrast"] input:focus,
+    [data-theme="high-contrast"] textarea:focus,
+    [data-theme="high-contrast"] select:focus {
+      border-color: #4ade80;
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  
+  <header>
+    <div class="header-content">
+      <div class="logo">🚀 Hermes Call Center Test Site</div>
+      <div class="accessibility-tools">
+        <button id="highContrastToggle" class="btn btn-secondary" aria-pressed="false">
+          High Contrast
+        </button>
+        <button id="voiceToggle" class="btn btn-secondary" aria-pressed="false">
+          🎤 Voice Input
+        </button>
+        <button id="keyboardHelp" class="btn btn-secondary">
+          ⌨️ Shortcuts
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <main id="main-content" class="main-content">
+      <!-- Left Sidebar -->
+      <aside class="sidebar">
+        <h2>Quick Actions</h2>
+        <div class="quick-actions">
+          <button class="btn btn-success" onclick="newTicket()">New Ticket</button>
+          <button class="btn btn-warning" onclick="fillDemoData()">Demo Fill</button>
+          <button class="btn btn-secondary" onclick="clearForms()">Clear All</button>
+        </div>
+
+        <div class="voice-controls">
+          <h3>Voice Controls</h3>
+          <div class="voice-status">
+            <span id="voiceStatus">Voice input: Off</span>
+            <div id="recordingIndicator" class="recording-indicator hidden"></div>
+          </div>
+          <p>Say "new ticket", "fill form", or "search customer" to get started.</p>
+        </div>
+
+        <div class="keyboard-shortcuts">
+          <h3>Keyboard Shortcuts</h3>
+          <div class="shortcut-item">
+            <span>New Ticket</span>
+            <span class="shortcut-key">Ctrl+N</span>
+          </div>
+          <div class="shortcut-item">
+            <span>Search</span>
+            <span class="shortcut-key">Ctrl+F</span>
+          </div>
+          <div class="shortcut-item">
+            <span>Save</span>
+            <span class="shortcut-key">Ctrl+S</span>
+          </div>
+          <div class="shortcut-item">
+            <span>Fill Demo</span>
+            <span class="shortcut-key">Ctrl+D</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Main Content Area -->
+      <section class="content-area">
+        <div id="ticketForm" class="section">
+          <h2>Create New Ticket</h2>
+          <form id="newTicketForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ticketId">Ticket ID</label>
+                <input type="text" id="ticketId" name="ticketId" value="" readonly>
+              </div>
+              <div class="form-group">
+                <label for="priority">Priority</label>
+                <select id="priority" name="priority" required>
+                  <option value="">Select Priority</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="customerName">Customer Name</label>
+                <input type="text" id="customerName" name="customerName" required 
+                       autocomplete="name" placeholder="Enter customer name">
+              </div>
+              <div class="form-group">
+                <label for="customerEmail">Customer Email</label>
+                <input type="email" id="customerEmail" name="customerEmail" 
+                       autocomplete="email" placeholder="customer@example.com">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="customerPhone">Phone Number</label>
+                <input type="tel" id="customerPhone" name="customerPhone" 
+                       autocomplete="tel" placeholder="(555) 123-4567">
+              </div>
+              <div class="form-group">
+                <label for="category">Category</label>
+                <select id="category" name="category" required>
+                  <option value="">Select Category</option>
+                  <option value="technical">Technical Support</option>
+                  <option value="billing">Billing Inquiry</option>
+                  <option value="account">Account Management</option>
+                  <option value="sales">Sales Inquiry</option>
+                  <option value="complaint">Complaint</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="subject">Subject</label>
+              <input type="text" id="subject" name="subject" required 
+                     placeholder="Brief description of the issue">
+            </div>
+
+            <div class="form-group">
+              <label for="description">Description</label>
+              <textarea id="description" name="description" rows="4" required 
+                        placeholder="Detailed description of the customer's issue or request"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="assignedTo">Assigned To</label>
+                <select id="assignedTo" name="assignedTo">
+                  <option value="">Unassigned</option>
+                  <option value="agent1">Agent Smith</option>
+                  <option value="agent2">Agent Johnson</option>
+                  <option value="agent3">Agent Williams</option>
+                  <option value="supervisor">Supervisor Davis</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                  <option value="open">Open</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="waiting">Waiting for Customer</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-success">Create Ticket</button>
+            <button type="button" class="btn btn-secondary" onclick="clearForms()">Clear Form</button>
+          </form>
+        </div>
+
+        <div id="customerLookup" class="section">
+          <h2>Customer Lookup</h2>
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="customerSearch" placeholder="Search by name, email, or phone...">
+          </div>
+          <div id="customerResults"></div>
+        </div>
+      </section>
+
+      <!-- Right Sidebar -->
+      <aside class="sidebar">
+        <h2>Recent Tickets</h2>
+        <div class="ticket-list" id="ticketList">
+          <!-- Tickets will be populated here -->
+        </div>
+
+        <h2>Call Scripts</h2>
+        <div class="section">
+          <button class="btn btn-secondary" onclick="loadScript('greeting')">Greeting Script</button>
+          <button class="btn btn-secondary" onclick="loadScript('technical')">Technical Script</button>
+          <button class="btn btn-secondary" onclick="loadScript('billing')">Billing Script</button>
+          <div id="scriptArea" class="hidden">
+            <h4>Script:</h4>
+            <p id="scriptContent"></p>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script>
+    // Global state
+    let voiceRecognition = null;
+    let isVoiceActive = false;
+    let ticketCounter = 1001;
+    let tickets = [];
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function() {
+      generateTicketId();
+      loadSampleTickets();
+      initializeVoiceRecognition();
+      setupKeyboardShortcuts();
+      setupFormValidation();
+    });
+
+    // Accessibility Functions
+    function toggleHighContrast() {
+      const isHighContrast = document.body.getAttribute('data-theme') === 'high-contrast';
+      document.body.setAttribute('data-theme', isHighContrast ? '' : 'high-contrast');
+      document.getElementById('highContrastToggle').setAttribute('aria-pressed', !isHighContrast);
+      showNotification(`High contrast ${!isHighContrast ? 'enabled' : 'disabled'}`, 'success');
+    }
+
+    function toggleVoiceInput() {
+      if (!voiceRecognition) {
+        showNotification('Voice recognition not supported in this browser', 'error');
+        return;
+      }
+
+      isVoiceActive = !isVoiceActive;
+      document.getElementById('voiceToggle').setAttribute('aria-pressed', isVoiceActive);
+      document.getElementById('recordingIndicator').classList.toggle('hidden', !isVoiceActive);
+      
+      if (isVoiceActive) {
+        voiceRecognition.start();
+        document.getElementById('voiceStatus').textContent = 'Voice input: Listening...';
+      } else {
+        voiceRecognition.stop();
+        document.getElementById('voiceStatus').textContent = 'Voice input: Off';
+      }
+    }
+
+    function initializeVoiceRecognition() {
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        voiceRecognition = new SpeechRecognition();
+        voiceRecognition.continuous = true;
+        voiceRecognition.interimResults = true;
+
+        voiceRecognition.onresult = function(event) {
+          const lastResult = event.results[event.results.length - 1];
+          if (lastResult.isFinal) {
+            processVoiceCommand(lastResult[0].transcript.toLowerCase().trim());
+          }
+        };
+
+        voiceRecognition.onerror = function(event) {
+          console.error('Voice recognition error:', event.error);
+          showNotification('Voice recognition error: ' + event.error, 'error');
+        };
+      }
+    }
+
+    function processVoiceCommand(command) {
+      console.log('Voice command:', command);
+      
+      if (command.includes('new ticket')) {
+        newTicket();
+        showNotification('Started new ticket', 'success');
+      } else if (command.includes('fill form') || command.includes('demo data')) {
+        fillDemoData();
+        showNotification('Filled demo data', 'success');
+      } else if (command.includes('search customer')) {
+        document.getElementById('customerSearch').focus();
+        showNotification('Ready to search customer', 'success');
+      } else if (command.includes('high priority')) {
+        document.getElementById('priority').value = 'high';
+        showNotification('Set priority to high', 'success');
+      } else if (command.includes('technical support')) {
+        document.getElementById('category').value = 'technical';
+        showNotification('Set category to technical support', 'success');
+      } else if (command.includes('clear form')) {
+        clearForms();
+        showNotification('Cleared forms', 'success');
+      }
+    }
+
+    // Keyboard shortcuts
+    function setupKeyboardShortcuts() {
+      document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey) {
+          switch(e.key) {
+            case 'n':
+              e.preventDefault();
+              newTicket();
+              break;
+            case 'f':
+              e.preventDefault();
+              document.getElementById('customerSearch').focus();
+              break;
+            case 's':
+              e.preventDefault();
+              document.getElementById('newTicketForm').requestSubmit();
+              break;
+            case 'd':
+              e.preventDefault();
+              fillDemoData();
+              break;
+          }
+        }
+      });
+    }
+
+    // Ticket Functions
+    function generateTicketId() {
+      document.getElementById('ticketId').value = 'TKT-' + (ticketCounter++);
+    }
+
+    function newTicket() {
+      clearForms();
+      generateTicketId();
+      document.getElementById('customerName').focus();
+    }
+
+    function fillDemoData() {
+      const demoData = {
+        customerName: 'John Smith',
+        customerEmail: 'john.smith@example.com',
+        customerPhone: '(555) 123-4567',
+        priority: 'medium',
+        category: 'technical',
+        subject: 'Cannot access account dashboard',
+        description: 'Customer reports that they cannot log into their account dashboard. They receive an error message saying "Invalid credentials" even though they are sure they are using the correct username and password. They last accessed their account successfully 3 days ago.',
+        assignedTo: 'agent1',
+        status: 'open'
+      };
+
+      Object.keys(demoData).forEach(key => {
+        const field = document.getElementById(key);
+        if (field) {
+          field.value = demoData[key];
+          // Trigger change event for form validation
+          field.dispatchEvent(new Event('change'));
+        }
+      });
+
+      showNotification('Demo data filled successfully', 'success');
+    }
+
+    function clearForms() {
+      document.getElementById('newTicketForm').reset();
+      document.getElementById('customerSearch').value = '';
+      document.getElementById('customerResults').innerHTML = '';
+      generateTicketId();
+    }
+
+    function setupFormValidation() {
+      document.getElementById('newTicketForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const ticket = Object.fromEntries(formData);
+        ticket.id = document.getElementById('ticketId').value;
+        ticket.created = new Date().toLocaleString();
+        
+        tickets.unshift(ticket);
+        updateTicketList();
+        
+        showNotification('Ticket created successfully!', 'success');
+        setTimeout(() => {
+          newTicket();
+        }, 1000);
+      });
+
+      // Real-time validation
+      document.querySelectorAll('input[required], select[required], textarea[required]').forEach(field => {
+        field.addEventListener('blur', function() {
+          if (!this.value.trim()) {
+            this.style.borderColor = 'var(--danger-color)';
+          } else {
+            this.style.borderColor = 'var(--border-color)';
+          }
+        });
+      });
+    }
+
+    function loadSampleTickets() {
+      const sampleTickets = [
+        {
+          id: 'TKT-1001',
+          customerName: 'Alice Johnson',
+          subject: 'Billing discrepancy',
+          priority: 'high',
+          status: 'open',
+          created: '2024-01-15 09:30'
+        },
+        {
+          id: 'TKT-1002', 
+          customerName: 'Bob Wilson',
+          subject: 'Password reset request',
+          priority: 'medium',
+          status: 'in-progress',
+          created: '2024-01-15 10:15'
+        },
+        {
+          id: 'TKT-1003',
+          customerName: 'Carol Davis',
+          subject: 'Feature request',
+          priority: 'low',
+          status: 'waiting',
+          created: '2024-01-15 11:00'
+        }
+      ];
+      
+      tickets = sampleTickets;
+      updateTicketList();
+    }
+
+    function updateTicketList() {
+      const ticketList = document.getElementById('ticketList');
+      ticketList.innerHTML = tickets.map(ticket => `
+        <div class="ticket-item" onclick="loadTicket('${ticket.id}')">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <strong>${ticket.id}</strong>
+            <span class="ticket-priority priority-${ticket.priority}">${ticket.priority}</span>
+          </div>
+          <div style="font-size: 0.9rem; color: var(--secondary-color);">${ticket.customerName}</div>
+          <div style="font-size: 0.85rem; margin-top: 0.25rem;">${ticket.subject}</div>
+          <div style="font-size: 0.75rem; color: var(--secondary-color); margin-top: 0.25rem;">${ticket.created}</div>
+        </div>
+      `).join('');
+    }
+
+    function loadTicket(ticketId) {
+      const ticket = tickets.find(t => t.id === ticketId);
+      if (ticket) {
+        // Fill form with ticket data
+        Object.keys(ticket).forEach(key => {
+          const field = document.getElementById(key);
+          if (field) {
+            field.value = ticket[key];
+          }
+        });
+        showNotification(`Loaded ticket ${ticketId}`, 'success');
+      }
+    }
+
+    // Customer search
+    document.getElementById('customerSearch').addEventListener('input', function(e) {
+      const query = e.target.value.toLowerCase();
+      if (query.length < 2) {
+        document.getElementById('customerResults').innerHTML = '';
+        return;
+      }
+
+      // Simulate customer search results
+      const mockCustomers = [
+        { name: 'John Smith', email: 'john.smith@example.com', phone: '(555) 123-4567', id: 'CUST-001' },
+        { name: 'Jane Doe', email: 'jane.doe@example.com', phone: '(555) 234-5678', id: 'CUST-002' },
+        { name: 'Mike Johnson', email: 'mike.johnson@example.com', phone: '(555) 345-6789', id: 'CUST-003' }
+      ];
+
+      const results = mockCustomers.filter(customer => 
+        customer.name.toLowerCase().includes(query) ||
+        customer.email.toLowerCase().includes(query) ||
+        customer.phone.includes(query)
+      );
+
+      document.getElementById('customerResults').innerHTML = results.map(customer => `
+        <div class="ticket-item" onclick="selectCustomer('${customer.name}', '${customer.email}', '${customer.phone}')">
+          <strong>${customer.name}</strong> (${customer.id})
+          <div style="font-size: 0.9rem; color: var(--secondary-color);">${customer.email}</div>
+          <div style="font-size: 0.9rem; color: var(--secondary-color);">${customer.phone}</div>
+        </div>
+      `).join('');
+    });
+
+    function selectCustomer(name, email, phone) {
+      document.getElementById('customerName').value = name;
+      document.getElementById('customerEmail').value = email;
+      document.getElementById('customerPhone').value = phone;
+      document.getElementById('customerSearch').value = '';
+      document.getElementById('customerResults').innerHTML = '';
+      showNotification(`Selected customer: ${name}`, 'success');
+    }
+
+    // Call scripts
+    function loadScript(type) {
+      const scripts = {
+        greeting: "Hello, thank you for calling our support line. My name is [Agent Name]. How may I assist you today?",
+        technical: "I understand you're experiencing a technical issue. Let me gather some information to help resolve this. Can you please describe what happened when the issue first occurred?",
+        billing: "I see you have a billing inquiry. I'll be happy to help you with that. Can you please provide your account number or the email address associated with your account?"
+      };
+
+      document.getElementById('scriptContent').textContent = scripts[type];
+      document.getElementById('scriptArea').classList.remove('hidden');
+    }
+
+    // Utility functions
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+
+    // Event listeners
+    document.getElementById('highContrastToggle').addEventListener('click', toggleHighContrast);
+    document.getElementById('voiceToggle').addEventListener('click', toggleVoiceInput);
+    document.getElementById('keyboardHelp').addEventListener('click', function() {
+      showNotification('Keyboard shortcuts are displayed in the left sidebar', 'success');
+    });
+
+    // Demo link for testing Hermes features
+    function createHermesTestScenarios() {
+      console.log('Hermes Test Scenarios:');
+      console.log('1. Record a macro to fill the demo data');
+      console.log('2. Create a macro to navigate between form fields');
+      console.log('3. Test form filling with different customer profiles');
+      console.log('4. Practice using voice commands with ticket creation');
+      console.log('5. Test accessibility features with keyboard navigation');
+    }
+
+    // Call on page load
+    createHermesTestScenarios();
+  </script>
+</body>
+</html>
