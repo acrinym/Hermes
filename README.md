@@ -17,6 +17,7 @@
 - 🗒️ **Task list panel** for quick to-dos
 - ⏲️ **Pomodoro timer** to stay focused
 - 📝 **Scratch pad** for notes and Drive backups
+- ✂️ **Snippet library** for reusable text
 - 🙌 **Affirmation overlay** for positive motivation
 - 🕵️ **Form sniffer** to log page fields
 - 📌 **Dockable toolbar** for top or bottom placement
@@ -99,6 +100,7 @@
 
 ### 📈 Productivity Tools
 - Scratch pad for notes and Drive backups
+- Snippet library for reusable text
 - Task list manager
 - Pomodoro timer with alerts
 - Optional affirmation overlay

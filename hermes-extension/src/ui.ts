@@ -31,6 +31,10 @@ const lazyLoadScratchPad = () => import('./scratchPad.ts').then(m => ({
   initScratchPad: m.initScratchPad,
   toggleScratchPad: m.toggleScratchPad
 }));
+const lazyLoadSnippets = () => import('./snippets.ts').then(m => ({
+  initSnippets: m.initSnippets,
+  toggleSnippets: m.toggleSnippets
+}));
 const lazyLoadTasks = () => import('./tasks.ts').then(m => ({
   initTasks: m.initTasks,
   toggleTasks: m.toggleTasks
@@ -183,6 +187,9 @@ export async function initUI() {
   // Scratch pad
   createButton(t('SCRATCH_PAD'), () => lazyLoadScratchPad().then(m => m.toggleScratchPad(true)));
 
+  // Snippets
+  createButton(t('SNIPPETS'), () => lazyLoadSnippets().then(m => m.toggleSnippets(true)));
+
   // Tasks
   tasksBtn = createButton(t('TASKS'), () => lazyLoadTasks().then(m => m.toggleTasks(true)));
 
@@ -236,6 +243,7 @@ export async function initUI() {
   lazyLoadProductivity().then(m => m(!!data.showAffirmations));
   lazyLoadTasks().then(m => m.initTasks());
   lazyLoadScratchPad().then(m => m.initScratchPad());
+  lazyLoadSnippets().then(m => m.initSnippets());
   lazyLoadSchedule().then(m => m.initSchedule());
   await macroEngine.init();
   if (settings.macro) macroEngine.updateSettings(settings.macro);
