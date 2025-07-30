@@ -11,14 +11,23 @@
     .step { display: none; }
     .step.active { display: block; }
     iframe { width: 100%; border: 1px solid #ccc; height: 300px; }
+    body.high-contrast { background: #000; color: #fff; }
+    body.high-contrast input,
+    body.high-contrast textarea {
+      background: #000;
+      color: #fff;
+      border: 1px solid #fff;
+    }
   </style>
 </head>
 <body>
-  <h1>Hermes Extension Interactive Demo</h1>
+  <a href="#main" class="skip-link">Skip to main content</a>
+  <button id="contrastToggle" aria-pressed="false">Toggle High Contrast</button>
+  <h1 id="main">Hermes Extension Interactive Demo</h1>
   <p>Use this page to practice form filling, record macros and test dynamic elements.</p>
   <section id="contact">
-    <h2>Contact Form</h2>
-    <form id="contactForm">
+    <h2 id="contactHeading">Contact Form</h2>
+    <form id="contactForm" aria-labelledby="contactHeading">
       <label>First Name <input name="first" type="text"></label>
       <label>Last Name <input name="last" type="text"></label>
       <label>Email <input name="email" type="email"></label>
@@ -28,8 +37,8 @@
     </form>
   </section>
   <section id="login">
-    <h2>Login Form</h2>
-    <form id="loginForm">
+    <h2 id="loginHeading">Login Form</h2>
+    <form id="loginForm" aria-labelledby="loginHeading">
       <label>Username <input name="username" type="text" autocomplete="off"></label>
       <label>Password <input name="password" type="password" autocomplete="new-password"></label>
       <button type="submit">Log In</button>
@@ -65,6 +74,10 @@
     <iframe src="widget.html"></iframe>
   </section>
   <script>
+    document.getElementById('contrastToggle').addEventListener('click', () => {
+      const pressed = document.body.classList.toggle('high-contrast');
+      document.getElementById('contrastToggle').setAttribute('aria-pressed', pressed);
+    });
     document.getElementById('contactForm').addEventListener('submit', e => {
       e.preventDefault();
       alert('Contact form submitted!');

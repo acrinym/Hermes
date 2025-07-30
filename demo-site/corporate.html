@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hermes Corporate Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1em auto; max-width: 900px; }
+    section { margin-bottom: 2em; }
+    label { display: block; margin-bottom: 0.5em; }
+    form { padding: 1em; border: 1px solid #ddd; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.5em; }
+    body.high-contrast { background: #000; color: #fff; }
+    body.high-contrast input,
+    body.high-contrast textarea { background: #000; color: #fff; border: 1px solid #fff; }
+  </style>
+</head>
+<body>
+  <a href="#main" class="skip-link">Skip to main content</a>
+  <button id="contrastToggle" aria-pressed="false">Toggle High Contrast</button>
+  <h1 id="main">Corporate Data Entry</h1>
+  <p>This form mimics a typical enterprise workflow. Use Hermes to record macros and fill repetitive fields.</p>
+  <form id="corpForm" aria-labelledby="main">
+    <section>
+      <h2>Employee Info</h2>
+      <label>First Name <input name="first" type="text" required></label>
+      <label>Last Name <input name="last" type="text" required></label>
+      <label>Employee ID <input name="empId" type="text" required></label>
+      <label>Email <input name="email" type="email" required></label>
+      <label>Department <input name="dept" type="text"></label>
+    </section>
+    <section>
+      <h2>Address</h2>
+      <label>Street <input name="street" type="text"></label>
+      <label>City <input name="city" type="text"></label>
+      <label>State <input name="state" type="text"></label>
+      <label>Zip <input name="zip" type="text"></label>
+    </section>
+    <section>
+      <h2>Expense Items</h2>
+      <table aria-label="Expense line items">
+        <thead>
+          <tr><th>Description</th><th>Amount</th></tr>
+        </thead>
+        <tbody id="expenseBody">
+          <tr>
+            <td><input name="desc1" type="text" aria-label="Description 1"></td>
+            <td><input name="amt1" type="number" step="0.01" aria-label="Amount 1"></td>
+          </tr>
+        </tbody>
+      </table>
+      <button id="addRow" type="button">Add Row</button>
+    </section>
+    <button type="submit">Submit</button>
+  </form>
+  <script>
+    document.getElementById('contrastToggle').addEventListener('click', () => {
+      const pressed = document.body.classList.toggle('high-contrast');
+      document.getElementById('contrastToggle').setAttribute('aria-pressed', pressed);
+    });
+    document.getElementById('corpForm').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Corporate form submitted!');
+    });
+    document.getElementById('addRow').addEventListener('click', () => {
+      const tbody = document.getElementById('expenseBody');
+      const count = tbody.children.length + 1;
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><input name="desc${count}" type="text" aria-label="Description ${count}"></td>` +
+                     `<td><input name="amt${count}" type="number" step="0.01" aria-label="Amount ${count}"></td>`;
+      tbody.appendChild(tr);
+    });
+  </script>
+</body>
+</html>
