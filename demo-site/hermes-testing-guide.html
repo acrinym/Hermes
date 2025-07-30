@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hermes Production Readiness Testing Guide</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+
+    .test-section {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .test-step {
+      background: #f1f5f9;
+      border-left: 4px solid #3b82f6;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 0.5rem 0.5rem 0;
+    }
+
+    .success-criteria {
+      background: #f0fdf4;
+      border-left: 4px solid #059669;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 0.5rem 0.5rem 0;
+    }
+
+    .warning {
+      background: #fef3c7;
+      border-left: 4px solid #d97706;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 0.5rem 0.5rem 0;
+    }
+
+    .checklist {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .checklist-item {
+      background: white;
+      border: 1px solid #e2e8f0;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .checklist-item input[type="checkbox"] {
+      margin-top: 0.25rem;
+    }
+
+    .btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      font-weight: 500;
+    }
+
+    .btn:hover {
+      background: #2563eb;
+    }
+
+    .btn-success {
+      background: #059669;
+    }
+
+    .btn-success:hover {
+      background: #047857;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-family: 'Courier New', monospace;
+    }
+
+    .keyboard-combo {
+      background: #374151;
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-family: monospace;
+      font-size: 0.875rem;
+    }
+
+    .progress-tracker {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin: 2rem 0;
+    }
+
+    .progress-bar {
+      background: #e2e8f0;
+      height: 0.5rem;
+      border-radius: 0.25rem;
+      overflow: hidden;
+      margin: 1rem 0;
+    }
+
+    .progress-fill {
+      background: #059669;
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🚀 Hermes Production Readiness Testing Guide</h1>
+    <p>Complete verification checklist for call center deployment</p>
+  </div>
+
+  <div class="progress-tracker">
+    <h3>Testing Progress</h3>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <p id="progressText">0% Complete - Ready to start testing</p>
+  </div>
+
+  <div class="test-section">
+    <h2>🎯 Test Environment Setup</h2>
+    <div class="test-step">
+      <h4>Step 1: Access the Test Site</h4>
+      <p>Navigate to: <a href="call-center-test.html" class="btn btn-success">Call Center Test Site</a></p>
+      <p>Ensure the page loads completely with all sections visible: Quick Actions, Ticket Form, Customer Lookup, and Recent Tickets.</p>
+    </div>
+
+    <div class="success-criteria">
+      <h4>✅ Success Criteria:</h4>
+      <ul>
+        <li>Page loads within 3 seconds</li>
+        <li>All buttons and forms are clickable</li>
+        <li>No JavaScript errors in browser console</li>
+        <li>Responsive design works on your screen size</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🎤 Accessibility Features Testing</h2>
+    
+    <div class="test-step">
+      <h4>Test 1: High Contrast Mode</h4>
+      <ol>
+        <li>Click the "High Contrast" button in the header</li>
+        <li>Verify the page switches to high contrast colors</li>
+        <li>Navigate through all form fields using Tab key</li>
+        <li>Toggle back to normal mode</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 2: Voice Input (Chrome/Edge only)</h4>
+      <ol>
+        <li>Click the "🎤 Voice Input" button</li>
+        <li>Grant microphone permissions when prompted</li>
+        <li>Say "new ticket" - should clear form and focus on customer name</li>
+        <li>Say "fill form" - should populate demo data</li>
+        <li>Say "high priority" - should set priority dropdown</li>
+        <li>Say "technical support" - should set category</li>
+      </ol>
+    </div>
+
+    <div class="warning">
+      <strong>Note:</strong> Voice recognition requires HTTPS or localhost. If testing on HTTP, voice features will show error messages.
+    </div>
+
+    <div class="test-step">
+      <h4>Test 3: Keyboard Shortcuts</h4>
+      <div class="checklist">
+        <div class="checklist-item">
+          <input type="checkbox" id="ctrl-n">
+          <label for="ctrl-n"><span class="keyboard-combo">Ctrl+N</span> - Creates new ticket</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="ctrl-f">
+          <label for="ctrl-f"><span class="keyboard-combo">Ctrl+F</span> - Focus customer search</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="ctrl-s">
+          <label for="ctrl-s"><span class="keyboard-combo">Ctrl+S</span> - Submit current form</label>
+        </div>
+        <div class="checklist-item">
+          <input type="checkbox" id="ctrl-d">
+          <label for="ctrl-d"><span class="keyboard-combo">Ctrl+D</span> - Fill demo data</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="success-criteria">
+      <h4>✅ Accessibility Success Criteria:</h4>
+      <ul>
+        <li>High contrast mode provides clear visual distinction</li>
+        <li>All elements are keyboard navigable</li>
+        <li>Voice commands work reliably (on supported browsers)</li>
+        <li>Screen reader compatibility (test with narrator if available)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🎫 Ticket System Testing</h2>
+    
+    <div class="test-step">
+      <h4>Test 4: Manual Ticket Creation</h4>
+      <ol>
+        <li>Fill out the ticket form manually with realistic data</li>
+        <li>Test all required field validations</li>
+        <li>Submit the ticket</li>
+        <li>Verify it appears in the Recent Tickets list</li>
+        <li>Click on the created ticket to load it back into the form</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 5: Demo Data and Form Clearing</h4>
+      <ol>
+        <li>Click "Demo Fill" button</li>
+        <li>Verify all fields populate with sample data</li>
+        <li>Submit the form</li>
+        <li>Click "Clear All" button</li>
+        <li>Verify form is reset with new ticket ID</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 6: Customer Lookup</h4>
+      <ol>
+        <li>Type "john" in the customer search box</li>
+        <li>Click on a search result</li>
+        <li>Verify customer details populate in the ticket form</li>
+        <li>Test search with email and phone number</li>
+      </ol>
+    </div>
+
+    <div class="success-criteria">
+      <h4>✅ Ticket System Success Criteria:</h4>
+      <ul>
+        <li>All form validations work correctly</li>
+        <li>Tickets are created and displayed properly</li>
+        <li>Customer search returns relevant results</li>
+        <li>Form auto-population works without errors</li>
+        <li>Ticket IDs increment automatically</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🤖 Hermes Extension Testing</h2>
+    
+    <div class="warning">
+      <strong>Prerequisites:</strong> Hermes extension must be installed and enabled in your browser.
+    </div>
+
+    <div class="test-step">
+      <h4>Test 7: Macro Recording</h4>
+      <ol>
+        <li>Open Hermes extension panel</li>
+        <li>Start macro recording</li>
+        <li>Click "Demo Fill" button</li>
+        <li>Change priority to "High"</li>
+        <li>Add additional text to description field</li>
+        <li>Stop recording and save macro as "Quick Ticket Fill"</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 8: Macro Playback</h4>
+      <ol>
+        <li>Clear the form using "Clear All"</li>
+        <li>Play back the "Quick Ticket Fill" macro</li>
+        <li>Verify all actions are replayed correctly</li>
+        <li>Adjust playback speed if needed</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 9: Form Profile Creation</h4>
+      <ol>
+        <li>Fill out a ticket with your personal test data</li>
+        <li>Use Hermes to create a form profile</li>
+        <li>Clear the form</li>
+        <li>Use Hermes to fill the form with your profile</li>
+        <li>Verify all fields are populated correctly</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 10: Advanced Macro Features</h4>
+      <ol>
+        <li>Record a macro that includes customer search</li>
+        <li>Add wait steps for dynamic content</li>
+        <li>Test macro with different customer names</li>
+        <li>Export and import macro files</li>
+      </ol>
+    </div>
+
+    <div class="success-criteria">
+      <h4>✅ Hermes Extension Success Criteria:</h4>
+      <ul>
+        <li>Macros record all user actions accurately</li>
+        <li>Playback works consistently across multiple runs</li>
+        <li>Form profiles capture all field mappings</li>
+        <li>Wait steps prevent timing issues</li>
+        <li>Export/import functions work properly</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>⏱️ Performance and Repetitive Motion Testing</h2>
+    
+    <div class="test-step">
+      <h4>Test 11: Speed and Efficiency</h4>
+      <ol>
+        <li>Time manual ticket creation (without Hermes)</li>
+        <li>Time ticket creation using Hermes macros</li>
+        <li>Calculate time savings percentage</li>
+        <li>Test rapid ticket creation (create 10 tickets in a row)</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 12: Repetitive Motion Reduction</h4>
+      <ol>
+        <li>Count mouse clicks for manual ticket creation</li>
+        <li>Count mouse clicks using Hermes automation</li>
+        <li>Test voice commands for hands-free operation</li>
+        <li>Verify keyboard shortcuts reduce mouse dependency</li>
+      </ol>
+    </div>
+
+    <div class="success-criteria">
+      <h4>✅ Performance Success Criteria:</h4>
+      <ul>
+        <li>Hermes reduces ticket creation time by 50%+</li>
+        <li>Mouse clicks reduced by 70%+</li>
+        <li>Voice commands work for basic operations</li>
+        <li>No performance lag during automation</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>🔍 Edge Cases and Error Handling</h2>
+    
+    <div class="test-step">
+      <h4>Test 13: Error Scenarios</h4>
+      <ol>
+        <li>Try to submit empty forms</li>
+        <li>Enter invalid email formats</li>
+        <li>Test very long text in description field</li>
+        <li>Interrupt macro playback mid-execution</li>
+        <li>Test with browser back/forward buttons</li>
+      </ol>
+    </div>
+
+    <div class="test-step">
+      <h4>Test 14: Browser Compatibility</h4>
+      <ol>
+        <li>Test in Chrome (primary support)</li>
+        <li>Test in Edge (secondary support)</li>
+        <li>Verify graceful degradation in other browsers</li>
+        <li>Test on different screen resolutions</li>
+      </ol>
+    </div>
+
+    <div class="success-criteria">
+      <h4>✅ Error Handling Success Criteria:</h4>
+      <ul>
+        <li>Form validation prevents invalid submissions</li>
+        <li>Error messages are clear and helpful</li>
+        <li>Macros handle interruptions gracefully</li>
+        <li>No data loss during navigation</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>📋 Final Production Readiness Checklist</h2>
+    
+    <div class="checklist">
+      <div class="checklist-item">
+        <input type="checkbox" id="accessibility-complete">
+        <label for="accessibility-complete">All accessibility features tested and working</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="ticket-system-complete">
+        <label for="ticket-system-complete">Ticket system functions correctly</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="hermes-recording-complete">
+        <label for="hermes-recording-complete">Macro recording captures all actions</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="hermes-playback-complete">
+        <label for="hermes-playback-complete">Macro playback works reliably</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="form-profiles-complete">
+        <label for="form-profiles-complete">Form profiles fill correctly</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="performance-complete">
+        <label for="performance-complete">Performance improvements verified</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="error-handling-complete">
+        <label for="error-handling-complete">Error scenarios handled properly</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="browser-compatibility-complete">
+        <label for="browser-compatibility-complete">Browser compatibility confirmed</label>
+      </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+      <button class="btn btn-success" onclick="generateReport()">Generate Test Report</button>
+    </div>
+  </div>
+
+  <script>
+    // Progress tracking
+    function updateProgress() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+      const progress = (checked.length / checkboxes.length) * 100;
+      
+      document.getElementById('progressFill').style.width = progress + '%';
+      document.getElementById('progressText').textContent = 
+        Math.round(progress) + '% Complete - ' + checked.length + ' of ' + checkboxes.length + ' tests passed';
+    }
+
+    // Add event listeners to checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', updateProgress);
+    });
+
+    // Generate test report
+    function generateReport() {
+      const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+      const checked = document.querySelectorAll('input[type="checkbox"]:checked');
+      const progress = (checked.length / checkboxes.length) * 100;
+      
+      const report = `
+HERMES PRODUCTION READINESS TEST REPORT
+======================================
+Generated: ${new Date().toLocaleString()}
+Progress: ${Math.round(progress)}% (${checked.length}/${checkboxes.length} tests passed)
+
+Test Results:
+${Array.from(checkboxes).map(cb => 
+  `${cb.checked ? '✅' : '❌'} ${cb.nextElementSibling.textContent}`
+).join('\n')}
+
+${progress >= 100 ? 
+  '🎉 ALL TESTS PASSED - HERMES IS READY FOR PRODUCTION!' : 
+  '⚠️  Some tests incomplete - please finish testing before production deployment.'
+}
+
+Recommendations:
+- Deploy Hermes to select call center agents first
+- Monitor macro performance in real call scenarios  
+- Collect feedback on accessibility features
+- Schedule regular macro maintenance reviews
+      `;
+      
+      // Create downloadable report
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hermes-test-report-' + new Date().toISOString().split('T')[0] + '.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      alert('Test report generated and downloaded!');
+    }
+
+    // Initialize progress
+    updateProgress();
+  </script>
+</body>
+</html>
