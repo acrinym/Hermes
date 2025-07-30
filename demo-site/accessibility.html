@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hermes Accessibility Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 900px;
+      margin: 1em auto;
+      background: #111;
+      color: #eee;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5em;
+      font-size: 1.1em;
+    }
+    input,
+    textarea,
+    button {
+      font-size: 1.1em;
+      padding: 0.4em;
+      margin-top: 0.2em;
+    }
+    button {
+      cursor: pointer;
+    }
+    fieldset {
+      border: 1px solid #888;
+      padding: 1em;
+      margin-bottom: 1.5em;
+    }
+  </style>
+</head>
+<body>
+  <h1>Hermes Accessibility Demo</h1>
+  <p>This page showcases Hermes features that reduce repetitive typing and help users with limited dexterity.</p>
+
+  <section>
+    <h2>Accessible Contact Form</h2>
+    <form id="a11yContact">
+      <fieldset>
+        <legend>Personal Details</legend>
+        <label for="a11y-first">First Name</label>
+        <input id="a11y-first" name="first" type="text" autocomplete="given-name" tabindex="1" />
+
+        <label for="a11y-last">Last Name</label>
+        <input id="a11y-last" name="last" type="text" autocomplete="family-name" tabindex="2" />
+
+        <label for="a11y-email">Email</label>
+        <input id="a11y-email" name="email" type="email" autocomplete="email" tabindex="3" />
+      </fieldset>
+      <fieldset>
+        <legend>Organization</legend>
+        <label for="a11y-company">Company</label>
+        <input id="a11y-company" name="company" type="text" autocomplete="organization" tabindex="4" />
+
+        <label for="a11y-role">Role</label>
+        <input id="a11y-role" name="role" type="text" tabindex="5" />
+      </fieldset>
+      <button type="submit" tabindex="6">Send</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Macro Playground</h2>
+    <p>Use Hermes to record a macro that fills the form above. Replaying the macro saves repetitive typing.</p>
+    <button id="fillDemo" tabindex="7">Autofill Demo Data</button>
+  </section>
+
+  <script>
+    document.getElementById('a11yContact').addEventListener('submit', e => {
+      e.preventDefault();
+      alert('Submitted!');
+    });
+
+    document.getElementById('fillDemo').addEventListener('click', () => {
+      (document.getElementById('a11y-first')).value = 'Jane';
+      (document.getElementById('a11y-last')).value = 'Doe';
+      (document.getElementById('a11y-email')).value = 'jane@example.com';
+      (document.getElementById('a11y-company')).value = 'Acme Corp';
+      (document.getElementById('a11y-role')).value = 'Manager';
+    });
+  </script>
+</body>
+</html>
