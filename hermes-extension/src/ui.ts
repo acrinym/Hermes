@@ -1,6 +1,6 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
-import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe } from './localCore.ts';
+import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe, getRoot } from './localCore.ts';
 import { getSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
 import { themeOptions } from './themeOptions.ts';
@@ -266,6 +266,46 @@ export async function initUI() {
 
   // Help panel open state
   if (data.helpPanelOpen) lazyLoadHelp().then(m => m());
+
+  // First-run welcome modal
+  checkFirstRun();
+}
+
+function checkFirstRun() {
+  const FIRST_RUN_KEY = 'hermes_first_run_ext';
+  getInitialData().then(data => {
+    const isFirstRun = !data || data[FIRST_RUN_KEY] === undefined;
+    if (isFirstRun) {
+      showFirstRunModal();
+      saveDataToBackground(FIRST_RUN_KEY, false);
+    }
+  });
+}
+
+function showFirstRunModal() {
+  const root = getRoot();
+  const modalId = 'hermes-first-run-modal';
+  
+  if (root instanceof ShadowRoot && root.querySelector(`#${modalId}`)) return;
+  
+  const contentHtml = `
+    <p>Welcome to <strong>Hermes</strong>! Here's a quick overview:</p>
+    <ul style="list-style:disc;padding-left:20px;margin:10px 0;">
+      <li><strong>Fill</strong> - auto-fill forms using your profile</li>
+      <li><strong>Train</strong> - improve field detection accuracy</li>
+      <li><strong>Record/Stop</strong> - capture macros for automation</li>
+      <li><strong>Play</strong> - replay saved macros</li>
+      <li><strong>Settings</strong> - customize behavior and themes</li>
+    </ul>
+    <p>Drag the ☰ handle to move the toolbar anywhere on the page.</p>
+    <p style="color:var(--hermes-secondary-text);font-size:0.9em;">This message will only appear once.</p>`;
+  
+  createModal(modalId, 'Hermes Quick Start', contentHtml, '450px');
+  
+  const modal = root instanceof ShadowRoot ? root.querySelector(`#${modalId}`) : document.querySelector(`#${modalId}`);
+  if (modal) {
+    modal.style.display = 'block';
+  }
 }
 
 // === Macro Submenu Contents ===
