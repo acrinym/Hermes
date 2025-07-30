@@ -71,8 +71,7 @@ export async function setupEnvironment(environment: keyof typeof BACKEND_ENVIRON
   }
 
   await setupBackend({
-    baseUrl: envConfig.baseUrl,
-    description: envConfig.description
+    baseUrl: envConfig.baseUrl
   });
 }
 

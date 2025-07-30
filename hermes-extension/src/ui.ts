@@ -303,7 +303,7 @@ function showFirstRunModal() {
   createModal(modalId, 'Hermes Quick Start', contentHtml, '450px');
   
   const modal = root instanceof ShadowRoot ? root.querySelector(`#${modalId}`) : document.querySelector(`#${modalId}`);
-  if (modal) {
+  if (modal && modal instanceof HTMLElement) {
     modal.style.display = 'block';
   }
 }
