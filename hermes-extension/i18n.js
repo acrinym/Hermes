@@ -60,6 +60,11 @@ export const translations = {
     OK: 'OK',
     IMPORT_FAILED: 'Import Failed',
     ALLOWED_DOMAINS: 'Allowed Domains',
+    SNIPPETS: 'Snippets',
+    NEW_SNIPPET: 'New snippet...',
+    NEW_CATEGORY: 'New category name',
+    COPY: 'Copy',
+    SAVE: 'Save',
     ADD: 'Add',
     ONBOARD_TITLE: 'Welcome to Hermes',
     ONBOARD_MSG: 'Use the toolbar to fill forms and record macros. Open settings with the gear icon.'
@@ -125,6 +130,11 @@ export const translations = {
     OK: 'Aceptar',
     IMPORT_FAILED: 'Fall\u00f3 la importaci\u00f3n',
     ALLOWED_DOMAINS: 'Dominios permitidos',
+    SNIPPETS: 'Fragmentos',
+    NEW_SNIPPET: 'Nuevo fragmento...',
+    NEW_CATEGORY: 'Nombre de categor\u00eda',
+    COPY: 'Copiar',
+    SAVE: 'Guardar',
     ADD: 'A\u00f1adir',
     ONBOARD_TITLE: 'Bienvenido a Hermes',
     ONBOARD_MSG: 'Usa la barra para grabar macros o rellenar formularios. Abre ajustes con el icono de engranaje.'
