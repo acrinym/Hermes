@@ -392,12 +392,13 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
       <select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>
       <textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
     `;
-    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Marco</button>`;
+    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Macro</button><button id="hermes-macro-edit-add-wait">Add Wait</button>`;
     panelContainer = createModal(shadowRoot, panelId, t('MACRO_EDITOR'), contentHtml, '700px', buttonsHtml);
     const panel = panelContainer.querySelector(`#${panelId}`) as HTMLElement;
     const selectEl = panel.querySelector('#hermes-macro-edit-select') as HTMLSelectElement;
     const textArea = panel.querySelector('#hermes-macro-edit-text') as HTMLTextAreaElement;
     const saveBtn = panel.querySelector('#hermes-macro-edit-save') as HTMLButtonElement;
+    const waitBtn = panel.querySelector('#hermes-macro-edit-add-wait') as HTMLButtonElement;
 
     const populate = () => {
       selectEl.innerHTML = macroEngine.list().map(n => `<option value="${n}">${n}</option>`).join('');
@@ -420,6 +421,16 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
         const errContainer = createModal(shadowRoot, 'json-error-modal', t('INVALID_JSON'), `<p>${e.message}</p>`, '300px', `<button id="err-ok-btn">${t('OK')}</button>`);
         errContainer.style.display = 'flex';
         (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
+      }
+    };
+
+    waitBtn.onclick = () => {
+      try {
+        const arr = textArea.value ? JSON.parse(textArea.value) : [];
+        arr.push({ type: 'wait', duration: 1000 });
+        textArea.value = JSON.stringify(arr, null, 2);
+      } catch (e) {
+        alert('Invalid JSON in macro');
       }
     };
     populate();

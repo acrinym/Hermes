@@ -790,7 +790,12 @@ export class MacroEngine {
       if (!instant) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-      
+
+      if (event.type === 'wait') {
+        await new Promise(res => setTimeout(res, event.duration || 0));
+        continue;
+      }
+
       const element = document.querySelector(event.selector);
       if (!element) continue;
 
