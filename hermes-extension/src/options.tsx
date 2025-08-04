@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
 import { AffirmationToggle } from './productivity.tsx';
+import { applyTheme } from './theme.ts';
 declare const chrome: any;
 
 const THEME_KEY = 'hermes_theme_ext';
@@ -27,6 +28,10 @@ function OptionsApp() {
       setCurrent(data[THEME_KEY] || 'dark');
     });
   }, []);
+
+  useEffect(() => {
+    applyTheme(current);
+  }, [current]);
 
   const saveTheme = (val: string) => {
     setCurrent(val);
@@ -62,11 +67,28 @@ function OptionsApp() {
   const allThemes = { ...builtIn, ...custom };
 
   return (
-    <div>
+    <div
+      style={{
+        background: 'var(--hermes-panel-bg)',
+        color: 'var(--hermes-panel-text)',
+        padding: '10px',
+        border: '1px solid var(--hermes-panel-border)',
+        lineHeight: 'var(--hermes-line-height)'
+      }}
+    >
       <h1>{t('HERMES_OPTIONS')}</h1>
       <label>
         {t('THEME_LABEL')}
-        <select value={current} onChange={e => saveTheme(e.target.value)} id="themeSelect">
+        <select
+          value={current}
+          onChange={e => saveTheme(e.target.value)}
+          id="themeSelect"
+          style={{
+            background: 'var(--hermes-input-bg)',
+            color: 'var(--hermes-input-text)',
+            border: '1px solid var(--hermes-input-border)'
+          }}
+        >
           {Object.keys(allThemes).map(key => (
             <option key={key} value={key}>
               {allThemes[key].emoji} {allThemes[key].name}
@@ -75,9 +97,23 @@ function OptionsApp() {
         </select>
       </label>
       <div>
-        <button onClick={exportThemes} id="exportThemes">{t('EXPORT_THEMES')}</button>
-        <input id="importFile" type="file" accept="application/json" style={{ display: 'none' }} onChange={e => importThemes(e.target.files)} />
-        <button onClick={() => document.getElementById('importFile')!.click()} id="importThemes">{t('IMPORT_THEMES')}</button>
+        <button onClick={exportThemes} id="exportThemes" className="hermes-button">
+          {t('EXPORT_THEMES')}
+        </button>
+        <input
+          id="importFile"
+          type="file"
+          accept="application/json"
+          style={{ display: 'none' }}
+          onChange={e => importThemes(e.target.files)}
+        />
+        <button
+          onClick={() => document.getElementById('importFile')!.click()}
+          id="importThemes"
+          className="hermes-button"
+        >
+          {t('IMPORT_THEMES')}
+        </button>
       </div>
       <AffirmationToggle />
     </div>
