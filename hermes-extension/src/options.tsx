@@ -54,6 +54,9 @@ function OptionsApp() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordHotkey, setRecordHotkey] = useState('');
   const [playHotkey, setPlayHotkey] = useState('');
+  const [voiceCommands, setVoiceCommands] = useState<{ phrase: string; action: string }[]>([]);
+  const [newPhrase, setNewPhrase] = useState('');
+  const [newAction, setNewAction] = useState('newTicket');
   const [configs, setConfigs] = useState<Record<string, string>>({});
   const [domain, setDomain] = useState('');
   const [configText, setConfigText] = useState('');
@@ -87,6 +90,25 @@ function OptionsApp() {
           setPlayHotkey(s.playMacroHotkey || '');
         } catch {}
       });
+      chrome.storage.local.get(['hermes_voice_commands_ext'], data => {
+        try {
+          const cmds = data.hermes_voice_commands_ext ? JSON.parse(data.hermes_voice_commands_ext) : [];
+          if (Array.isArray(cmds) && cmds.length) setVoiceCommands(cmds);
+          else setVoiceCommands([
+            { phrase: 'new ticket', action: 'newTicket' },
+            { phrase: 'fill form', action: 'fillForm' },
+            { phrase: 'high priority', action: 'highPriority' },
+            { phrase: 'technical support', action: 'technicalSupport' }
+          ]);
+        } catch {
+          setVoiceCommands([
+            { phrase: 'new ticket', action: 'newTicket' },
+            { phrase: 'fill form', action: 'fillForm' },
+            { phrase: 'high priority', action: 'highPriority' },
+            { phrase: 'technical support', action: 'technicalSupport' }
+          ]);
+        }
+      });
     }
     chrome.storage.local.get([DOMAIN_CONFIGS_KEY], data => {
       let stored = {};
@@ -117,6 +139,28 @@ function OptionsApp() {
       a.click();
       URL.revokeObjectURL(url);
     });
+  };
+
+  const addVoiceCommand = () => {
+    if (!newPhrase) return;
+    setVoiceCommands([...voiceCommands, { phrase: newPhrase, action: newAction }]);
+    setNewPhrase('');
+  };
+
+  const updateVoiceCommand = (idx: number, field: 'phrase' | 'action', value: string) => {
+    const copy = [...voiceCommands];
+    copy[idx] = { ...copy[idx], [field]: value };
+    setVoiceCommands(copy);
+  };
+
+  const deleteVoiceCommand = (idx: number) => {
+    const copy = [...voiceCommands];
+    copy.splice(idx, 1);
+    setVoiceCommands(copy);
+  };
+
+  const saveVoiceCommands = () => {
+    chrome.storage.local.set({ hermes_voice_commands_ext: JSON.stringify(voiceCommands) });
   };
 
   const importThemes = (files: FileList | null) => {
@@ -358,6 +402,75 @@ function OptionsApp() {
           Save
         </button>
       </div>
+      <h2 style={{ marginTop: '20px' }}>Voice Commands</h2>
+      <div>
+        <input
+          value={newPhrase}
+          onChange={e => setNewPhrase(e.target.value)}
+          placeholder="Command phrase"
+          style={{
+            background: 'var(--hermes-input-bg)',
+            color: 'var(--hermes-input-text)',
+            border: '1px solid var(--hermes-input-border)',
+            marginRight: '4px'
+          }}
+        />
+        <select
+          value={newAction}
+          onChange={e => setNewAction(e.target.value)}
+          style={{
+            background: 'var(--hermes-input-bg)',
+            color: 'var(--hermes-input-text)',
+            border: '1px solid var(--hermes-input-border)',
+            marginRight: '4px'
+          }}
+        >
+          <option value="newTicket">New Ticket</option>
+          <option value="fillForm">Fill Form</option>
+          <option value="highPriority">High Priority</option>
+          <option value="technicalSupport">Technical Support</option>
+        </select>
+        <button onClick={addVoiceCommand} className="hermes-button">
+          Add
+        </button>
+        <button onClick={saveVoiceCommands} className="hermes-button" style={{ marginLeft: '4px' }}>
+          Save
+        </button>
+      </div>
+      <ul>
+        {voiceCommands.map((vc, i) => (
+          <li key={i} style={{ marginTop: '4px' }}>
+            <input
+              value={vc.phrase}
+              onChange={e => updateVoiceCommand(i, 'phrase', e.target.value)}
+              style={{
+                background: 'var(--hermes-input-bg)',
+                color: 'var(--hermes-input-text)',
+                border: '1px solid var(--hermes-input-border)',
+                marginRight: '4px'
+              }}
+            />
+            <select
+              value={vc.action}
+              onChange={e => updateVoiceCommand(i, 'action', e.target.value)}
+              style={{
+                background: 'var(--hermes-input-bg)',
+                color: 'var(--hermes-input-text)',
+                border: '1px solid var(--hermes-input-border)',
+                marginRight: '4px'
+              }}
+            >
+              <option value="newTicket">New Ticket</option>
+              <option value="fillForm">Fill Form</option>
+              <option value="highPriority">High Priority</option>
+              <option value="technicalSupport">Technical Support</option>
+            </select>
+            <button onClick={() => deleteVoiceCommand(i)} className="hermes-button">
+              🗑️
+            </button>
+          </li>
+        ))}
+      </ul>
       <h2 style={{ marginTop: '20px' }}>Tools</h2>
       <div>
         <button onClick={() => toggleScratchPad(true)} className="hermes-button">

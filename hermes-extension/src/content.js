@@ -7,6 +7,7 @@ const lazyLoadEffects = () => import('./effects.ts').then(m => m.initEffects());
 const lazyLoadMacros = () => import('./macros.ts').then(m => m.initMacros());
 const lazyLoadOnboarding = () => import('./onboarding.ts').then(m => m.checkOnboarding());
 const lazyLoadDomScanner = () => import('./domScanner.ts').then(m => m.ensureSiteConfig());
+const lazyLoadVoice = () => import('./voiceCommands.ts').then(m => m.initVoiceCommands());
 
 export async function init() {
   // Initialize core UI first
@@ -19,7 +20,8 @@ export async function init() {
         lazyLoadEffects(),
         lazyLoadMacros(),
         lazyLoadOnboarding(),
-        lazyLoadDomScanner()
+        lazyLoadDomScanner(),
+        lazyLoadVoice()
       ]);
     } catch (error) {
       console.warn('Hermes: Some features failed to load:', error);
