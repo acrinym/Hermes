@@ -376,6 +376,18 @@ export class BackendAPI {
 // Global backend API instance
 export const backendAPI = new BackendAPI();
 
+// Reload backend configuration at runtime when storage changes
+if (typeof chrome !== 'undefined' && chrome.storage) {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.hermes_backend_config) {
+      const newCfg: BackendConfig =
+        changes.hermes_backend_config.newValue || DEFAULT_BACKEND_CONFIG;
+      Object.assign(backendAPI, new BackendAPI(newCfg));
+      backendAPI.loadConnectorTokens();
+    }
+  });
+}
+
 // Load backend configuration from storage
 export async function loadBackendConfig(): Promise<BackendConfig> {
   try {

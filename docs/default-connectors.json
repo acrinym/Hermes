@@ -1,0 +1,26 @@
+{
+  "salesforce": {
+    "baseUrl": "",
+    "apiVersion": "v57.0",
+    "authEndpoint": "/services/oauth2/token",
+    "dataRoute": "/services/data",
+    "mapping": {},
+    "credentials": {
+      "clientId": "",
+      "clientSecret": "",
+      "username": "",
+      "password": ""
+    }
+  },
+  "bmcHelix": {
+    "baseUrl": "",
+    "apiVersion": "v1",
+    "authEndpoint": "/api/jwt/login",
+    "dataRoute": "/api/arsys/v1",
+    "mapping": {},
+    "credentials": {
+      "username": "",
+      "password": ""
+    }
+  }
+}
