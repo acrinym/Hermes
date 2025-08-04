@@ -10,6 +10,7 @@ import { configDiscovery, FormPattern, PlatformConfig } from './configDiscovery.
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { t } from '../i18n.js';
 import { initializeBackendAPI } from './backendConfig.ts';
+import { initHighContrast } from './highContrast.ts';
 
 // Lazy load heavy features
 const lazyLoadTrainer = () => import('./trainer.ts').then(m => m.runHeuristicTrainerSession);
@@ -91,6 +92,8 @@ export async function initUI() {
   shadowHost.id = 'hermes-shadow-host';
   document.body.appendChild(shadowHost);
   shadowRoot = shadowHost.attachShadow({ mode: 'open' });
+
+  await initHighContrast();
 
   // ----- UI ROOT -----
   const container = setupUI(undefined, data.dockMode || 'none', data.isBunched, data.uiPosition);

@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { t } from '../i18n.js';
 import { AffirmationToggle } from './productivity.tsx';
 import { applyTheme } from './theme.ts';
+import { initHighContrast, setHighContrast } from './highContrast.ts';
 import {
   initMacros,
   listMacros,
@@ -56,6 +57,7 @@ function OptionsApp() {
   const [configs, setConfigs] = useState<Record<string, string>>({});
   const [domain, setDomain] = useState('');
   const [configText, setConfigText] = useState('');
+  const [highContrast, setHighContrastState] = useState(false);
 
   useEffect(() => {
     chrome.storage.local.get([THEME_KEY, CUSTOM_THEMES_KEY, 'hermes_built_in_themes'], data => {
@@ -65,6 +67,10 @@ function OptionsApp() {
       setCustom(customThemes);
       setCurrent(data[THEME_KEY] || 'dark');
     });
+  }, []);
+
+  useEffect(() => {
+    initHighContrast().then(setHighContrastState);
   }, []);
 
   useEffect(() => {
@@ -201,6 +207,12 @@ function OptionsApp() {
     chrome.storage.local.set({ [DOMAIN_CONFIGS_KEY]: JSON.stringify(updated) });
   };
 
+  const toggleHighContrast = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.checked;
+    setHighContrastState(val);
+    setHighContrast(val);
+  };
+
   const exportConfig = () => {
     if (!domain) return;
     const blob = new Blob([configText], { type: 'application/json' });
@@ -290,6 +302,9 @@ function OptionsApp() {
           {t('IMPORT_THEMES')}
         </button>
       </div>
+      <label style={{ marginTop: '10px', display: 'block' }}>
+        <input type="checkbox" checked={highContrast} onChange={toggleHighContrast} /> {t('HIGH_CONTRAST_MODE')}
+      </label>
       <AffirmationToggle />
       <h2>Macros</h2>
       <div>
