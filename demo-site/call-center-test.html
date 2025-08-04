@@ -363,6 +363,45 @@
       border-color: #4ade80;
       box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.3);
     }
+
+    .hermes-panel {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      width: 350px;
+      height: 400px;
+      border: 2px solid var(--border-color);
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      z-index: 2000;
+    }
+
+    .overlay.hidden {
+      display: none;
+    }
+
+    .overlay-content {
+      max-width: 600px;
+      background: var(--card-bg);
+      color: var(--text-color);
+      padding: 2rem;
+      border-radius: 0.5rem;
+    }
   </style>
 </head>
 <body>
@@ -380,6 +419,9 @@
         </button>
         <button id="keyboardHelp" class="btn btn-secondary">
           ⌨️ Shortcuts
+        </button>
+        <button id="accessibilityGuide" class="btn btn-secondary">
+          ♿ Guide
         </button>
       </div>
     </div>
@@ -550,17 +592,33 @@
     </main>
   </div>
 
+  <iframe id="hermesPanel" src="widget.html" title="Hermes demo panel" class="hermes-panel" aria-label="Hermes demo panel"></iframe>
+
+  <div id="accessibilityOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="overlayTitle" tabindex="-1">
+    <div class="overlay-content">
+      <h2 id="overlayTitle">Accessibility & Voice Guide</h2>
+      <ul>
+        <li>Use the "Skip to main content" link at the top.</li>
+        <li>Toggle high contrast mode with the button or press Alt+H.</li>
+        <li>Voice commands: say "new ticket", "fill form", or "search customer".</li>
+      </ul>
+      <button id="closeOverlay" class="btn btn-secondary">Close</button>
+    </div>
+  </div>
+
   <script>
     // Global state
     let voiceRecognition = null;
     let isVoiceActive = false;
     let ticketCounter = 1001;
     let tickets = [];
+    let salesforceCustomers = [];
 
     // Initialize the application
     document.addEventListener('DOMContentLoaded', function() {
       generateTicketId();
       loadSampleTickets();
+      loadSalesforceData();
       initializeVoiceRecognition();
       setupKeyboardShortcuts();
       setupFormValidation();
@@ -591,6 +649,16 @@
         voiceRecognition.stop();
         document.getElementById('voiceStatus').textContent = 'Voice input: Off';
       }
+    }
+
+    function showAccessibilityOverlay() {
+      const overlay = document.getElementById('accessibilityOverlay');
+      overlay.classList.remove('hidden');
+      overlay.focus();
+    }
+
+    function hideAccessibilityOverlay() {
+      document.getElementById('accessibilityOverlay').classList.add('hidden');
     }
 
     function initializeVoiceRecognition() {
@@ -784,6 +852,25 @@
       `).join('');
     }
 
+    async function loadSalesforceData() {
+      const res = await fetch('sample-salesforce-data.json');
+      const data = await res.json();
+      salesforceCustomers = data.contacts;
+      renderCustomerResults(salesforceCustomers);
+      showNotification('Sample Salesforce data loaded', 'success');
+    }
+
+    function renderCustomerResults(customers) {
+      const container = document.getElementById('customerResults');
+      container.innerHTML = customers.map(customer => `
+        <div class="ticket-item" onclick="selectCustomer('${customer.name}', '${customer.email}', '${customer.phone}')">
+          <strong>${customer.name}</strong> (${customer.id})
+          <div style="font-size: 0.9rem; color: var(--secondary-color);">${customer.email}</div>
+          <div style="font-size: 0.9rem; color: var(--secondary-color);">${customer.phone}</div>
+        </div>
+      `).join('');
+    }
+
     function loadTicket(ticketId) {
       const ticket = tickets.find(t => t.id === ticketId);
       if (ticket) {
@@ -802,30 +889,17 @@
     document.getElementById('customerSearch').addEventListener('input', function(e) {
       const query = e.target.value.toLowerCase();
       if (query.length < 2) {
-        document.getElementById('customerResults').innerHTML = '';
+        renderCustomerResults(salesforceCustomers);
         return;
       }
 
-      // Simulate customer search results
-      const mockCustomers = [
-        { name: 'John Smith', email: 'john.smith@example.com', phone: '(555) 123-4567', id: 'CUST-001' },
-        { name: 'Jane Doe', email: 'jane.doe@example.com', phone: '(555) 234-5678', id: 'CUST-002' },
-        { name: 'Mike Johnson', email: 'mike.johnson@example.com', phone: '(555) 345-6789', id: 'CUST-003' }
-      ];
-
-      const results = mockCustomers.filter(customer => 
+      const results = salesforceCustomers.filter(customer =>
         customer.name.toLowerCase().includes(query) ||
         customer.email.toLowerCase().includes(query) ||
         customer.phone.includes(query)
       );
 
-      document.getElementById('customerResults').innerHTML = results.map(customer => `
-        <div class="ticket-item" onclick="selectCustomer('${customer.name}', '${customer.email}', '${customer.phone}')">
-          <strong>${customer.name}</strong> (${customer.id})
-          <div style="font-size: 0.9rem; color: var(--secondary-color);">${customer.email}</div>
-          <div style="font-size: 0.9rem; color: var(--secondary-color);">${customer.phone}</div>
-        </div>
-      `).join('');
+      renderCustomerResults(results);
     });
 
     function selectCustomer(name, email, phone) {
@@ -866,6 +940,13 @@
     document.getElementById('voiceToggle').addEventListener('click', toggleVoiceInput);
     document.getElementById('keyboardHelp').addEventListener('click', function() {
       showNotification('Keyboard shortcuts are displayed in the left sidebar', 'success');
+    });
+    document.getElementById('accessibilityGuide').addEventListener('click', showAccessibilityOverlay);
+    document.getElementById('closeOverlay').addEventListener('click', hideAccessibilityOverlay);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        hideAccessibilityOverlay();
+      }
     });
 
     // Demo link for testing Hermes features

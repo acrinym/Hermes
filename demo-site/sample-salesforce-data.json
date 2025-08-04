@@ -1,0 +1,22 @@
+{
+  "contacts": [
+    {
+      "id": "SF-001",
+      "name": "Alice Johnson",
+      "email": "alice.johnson@example.com",
+      "phone": "(555) 101-2020"
+    },
+    {
+      "id": "SF-002",
+      "name": "Bob Robertson",
+      "email": "bob.robertson@example.com",
+      "phone": "(555) 303-4040"
+    },
+    {
+      "id": "SF-003",
+      "name": "Carol Smith",
+      "email": "carol.smith@example.com",
+      "phone": "(555) 505-6060"
+    }
+  ]
+}
