@@ -22,7 +22,13 @@ import { toggleScratchPad, initScratchPad } from './scratchPad.ts';
 import { toggleSnippets, initSnippets } from './snippets.ts';
 import { toggleTasks, initTasks } from './tasks.ts';
 import { toggleTimer } from './timer.ts';
-import { backendAPI, initializeBackendAPI } from './backendConfig.ts';
+import {
+  backendAPI,
+  initializeBackendAPI,
+  loadBackendConfig,
+  saveBackendConfig,
+  SaaSConnectorConfig
+} from './backendConfig.ts';
 declare const chrome: any;
 
 const THEME_KEY = 'hermes_theme_ext';
@@ -62,6 +68,16 @@ function OptionsApp() {
   const [domain, setDomain] = useState('');
   const [configText, setConfigText] = useState('');
   const [highContrast, setHighContrastState] = useState(false);
+  const [connectorSettings, setConnectorSettings] = useState<Record<string, SaaSConnectorConfig>>({});
+  const [newConnector, setNewConnector] = useState('');
+
+  const inputStyle = {
+    background: 'var(--hermes-input-bg)',
+    color: 'var(--hermes-input-text)',
+    border: '1px solid var(--hermes-input-border)',
+    marginRight: '4px',
+    marginTop: '4px'
+  };
 
   useEffect(() => {
     chrome.storage.local.get([THEME_KEY, CUSTOM_THEMES_KEY, 'hermes_built_in_themes'], data => {
@@ -123,6 +139,7 @@ function OptionsApp() {
       setConfigs({ ...builtinConfigs, ...stored });
     });
     initializeBackendAPI();
+    loadBackendConfig().then(cfg => setConnectorSettings(cfg.saas || {}));
   }, []);
 
   useEffect(() => {
@@ -166,6 +183,61 @@ function OptionsApp() {
 
   const saveVoiceCommands = () => {
     chrome.storage.local.set({ hermes_voice_commands_ext: JSON.stringify(voiceCommands) });
+  };
+
+  const updateConnectorField = (name, field, value) => {
+    setConnectorSettings(prev => ({
+      ...prev,
+      [name]: { ...prev[name], [field]: value }
+    }));
+  };
+
+  const updateConnectorCred = (name, field, value) => {
+    setConnectorSettings(prev => ({
+      ...prev,
+      [name]: {
+        ...prev[name],
+        credentials: { ...prev[name].credentials, [field]: value }
+      }
+    }));
+  };
+
+  const updateConnectorMapping = (name, value) => {
+    let mapping = {};
+    try {
+      mapping = JSON.parse(value);
+    } catch {}
+    updateConnectorField(name, 'mapping', mapping);
+  };
+
+  const addConnector = () => {
+    if (!newConnector) return;
+    setConnectorSettings(prev => ({
+      ...prev,
+      [newConnector]: {
+        baseUrl: '',
+        apiVersion: '',
+        authEndpoint: '',
+        dataRoute: '',
+        mapping: {},
+        credentials: {}
+      }
+    }));
+    setNewConnector('');
+  };
+
+  const removeConnector = name => {
+    setConnectorSettings(prev => {
+      const copy = { ...prev };
+      delete copy[name];
+      return copy;
+    });
+  };
+
+  const saveConnectors = () => {
+    loadBackendConfig().then(cfg => {
+      saveBackendConfig({ ...cfg, saas: connectorSettings });
+    });
   };
 
   const importThemes = (files: FileList | null) => {
@@ -491,6 +563,102 @@ function OptionsApp() {
         <button onClick={() => toggleTimer(true)} className="hermes-button" style={{ marginLeft: '4px' }}>
           {t('TIMER')}
         </button>
+      </div>
+      <h2 style={{ marginTop: '20px' }}>Connector Settings</h2>
+      <div>
+        {Object.entries(connectorSettings).map(([name, cfg]) => (
+          <div
+            key={name}
+            style={{
+              border: '1px solid var(--hermes-input-border)',
+              padding: '4px',
+              marginBottom: '10px'
+            }}
+          >
+            <strong>{name}</strong>
+            <div>
+              <input
+                value={cfg.baseUrl}
+                onChange={e => updateConnectorField(name, 'baseUrl', e.target.value)}
+                placeholder="Base URL"
+                style={inputStyle}
+              />
+              <input
+                value={cfg.apiVersion}
+                onChange={e => updateConnectorField(name, 'apiVersion', e.target.value)}
+                placeholder="API Version"
+                style={inputStyle}
+              />
+              <input
+                value={cfg.authEndpoint}
+                onChange={e => updateConnectorField(name, 'authEndpoint', e.target.value)}
+                placeholder="Auth Endpoint"
+                style={inputStyle}
+              />
+              <input
+                value={cfg.dataRoute}
+                onChange={e => updateConnectorField(name, 'dataRoute', e.target.value)}
+                placeholder="Data Route"
+                style={inputStyle}
+              />
+              <textarea
+                value={JSON.stringify(cfg.mapping, null, 2)}
+                onChange={e => updateConnectorMapping(name, e.target.value)}
+                placeholder="Mapping JSON"
+                style={{
+                  ...inputStyle,
+                  width: '100%',
+                  height: '80px'
+                }}
+              />
+              <input
+                value={cfg.credentials.clientId || ''}
+                onChange={e => updateConnectorCred(name, 'clientId', e.target.value)}
+                placeholder="Client ID"
+                style={inputStyle}
+              />
+              <input
+                value={cfg.credentials.clientSecret || ''}
+                onChange={e => updateConnectorCred(name, 'clientSecret', e.target.value)}
+                placeholder="Client Secret"
+                type="password"
+                style={inputStyle}
+              />
+              <input
+                value={cfg.credentials.username || ''}
+                onChange={e => updateConnectorCred(name, 'username', e.target.value)}
+                placeholder="Username"
+                style={inputStyle}
+              />
+              <input
+                value={cfg.credentials.password || ''}
+                onChange={e => updateConnectorCred(name, 'password', e.target.value)}
+                placeholder="Password"
+                type="password"
+                style={inputStyle}
+              />
+              <button
+                onClick={() => removeConnector(name)}
+                className="hermes-button"
+                style={{ marginLeft: '4px' }}
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        ))}
+        <div>
+          <input
+            value={newConnector}
+            onChange={e => setNewConnector(e.target.value)}
+            placeholder="Connector name"
+            style={inputStyle}
+          />
+          <button onClick={addConnector} className="hermes-button">Add</button>
+          <button onClick={saveConnectors} className="hermes-button" style={{ marginLeft: '4px' }}>
+            Save
+          </button>
+        </div>
       </div>
       <h2 style={{ marginTop: '20px' }}>{t('DOMAIN_CONFIGS')}</h2>
       <div>
