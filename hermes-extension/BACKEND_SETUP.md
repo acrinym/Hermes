@@ -161,12 +161,73 @@ The extension connects to these backend endpoints:
 - **Discovery**: `/api/v1/discovery` - Config discovery sessions
 - **Auth**: `/api/v1/auth` - Authentication
 
+## 🧩 Connector Examples
+
+Below are minimal cURL samples from official vendor docs to verify connector access:
+
+### Salesforce
+
+```bash
+# OAuth token request
+curl https://login.salesforce.com/services/oauth2/token \
+  -d 'grant_type=password' \
+  -d 'client_id=YOUR_CLIENT_ID' \
+  -d 'client_secret=YOUR_CLIENT_SECRET' \
+  -d 'username=YOUR_USERNAME' \
+  -d 'password=YOUR_PASSWORD'
+
+# Query an account record
+curl https://yourInstance.salesforce.com/services/data/v57.0/sobjects/Account/001D000000IqhSL \
+  -H 'Authorization: Bearer <access_token>'
+```
+
+### BMC Helix
+
+```bash
+# Retrieve JWT token
+curl -X POST https://helix.example.com/api/jwt/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"secret"}'
+
+# Create an incident
+curl -X POST https://helix.example.com/api/arsys/v1/entry/HPD:IncidentInterface_Create \
+  -H 'Authorization: AR-JWT <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"values":{"Description":"Network outage","Impact":"2-Moderate"}}'
+```
+
+### BMC Remedy
+
+```bash
+# Login
+curl -X POST http://remedy.example.com/api/jwt/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"Demo","password":"secret"}'
+
+# Create an incident
+curl -X POST http://remedy.example.com/api/arsys/v1/entry/HPD:IncidentInterface_Create \
+  -H 'Authorization: AR-JWT <token>' \
+  -H 'Content-Type: application/json' \
+  -d '{"values":{"Description":"Printer jam","Urgency":"4-Low"}}'
+```
+
+Adjust URLs and payloads to match your instance.
+
+## 🔐 GitHub Environment Variables
+
+Set these variables before building or running the extension:
+
+- `GITHUB_RAW_BASE`: Base URL for raw content (default `https://raw.githubusercontent.com`)
+- `GITHUB_API_BASE`: REST API base URL (default `https://api.github.com`)
+- `GITHUB_TOKEN`: Personal access token for authenticated requests. **Never store tokens in Chrome storage—use environment variables or your OS keychain instead.**
+
 ## 🔒 Security
 
 - **Local Development**: Uses HTTP for localhost connections
 - **Production**: Always use HTTPS for remote connections
 - **Authentication**: Backend supports Bearer token authentication
 - **CORS**: Backend must allow requests from the extension origin
+- **Token Safety**: Avoid persisting access tokens in Chrome storage
 
 ## 📝 Configuration Validation
 
