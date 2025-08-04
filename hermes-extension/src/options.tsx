@@ -236,8 +236,18 @@ function OptionsApp() {
 
   const saveConnectors = () => {
     loadBackendConfig().then(cfg => {
-      saveBackendConfig({ ...cfg, saas: connectorSettings });
+      const sanitized = JSON.parse(JSON.stringify(connectorSettings));
+      Object.values(sanitized).forEach(c => {
+        if (c.credentials) delete c.credentials.token;
+      });
+      saveBackendConfig({ ...cfg, saas: sanitized });
     });
+  };
+
+  const handleAuthenticate = async name => {
+    const ok = await backendAPI.authenticateConnector(name);
+    if (ok) updateConnectorCred(name, 'token', '');
+    alert(ok ? 'Authentication successful' : 'Authentication failed');
   };
 
   const importThemes = (files: FileList | null) => {
@@ -637,6 +647,20 @@ function OptionsApp() {
                 type="password"
                 style={inputStyle}
               />
+              <input
+                value={cfg.credentials.token || ''}
+                onChange={e => updateConnectorCred(name, 'token', e.target.value)}
+                placeholder="API Key"
+                type="password"
+                style={inputStyle}
+              />
+              <button
+                onClick={() => handleAuthenticate(name)}
+                className="hermes-button"
+                style={{ marginLeft: '4px' }}
+              >
+                Authenticate
+              </button>
               <button
                 onClick={() => removeConnector(name)}
                 className="hermes-button"
