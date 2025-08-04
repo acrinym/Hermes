@@ -3,7 +3,6 @@
 import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe, getRoot } from './localCore.ts';
 import { getSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
-import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
@@ -94,7 +93,7 @@ export async function initUI() {
   shadowRoot = shadowHost.attachShadow({ mode: 'open' });
 
   // ----- UI ROOT -----
-  const container = setupUI(undefined, data.dockMode || 'none');
+  const container = setupUI(undefined, data.dockMode || 'none', data.isBunched, data.uiPosition);
   shadowRoot.appendChild(container);
 
   // ----- Panel Menus -----
@@ -429,9 +428,11 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
 }
 
 // === Theme and Effects Panels ===
-function updateThemeSubmenu(menu: HTMLElement) {
+async function updateThemeSubmenu(menu: HTMLElement) {
   menu.innerHTML = '';
-  Object.entries(themeOptions).forEach(([key, opt]) => {
+  const data = await getInitialData();
+  const allThemes = { ...(data.builtInThemes || {}), ...(data.customThemes || {}) };
+  Object.entries(allThemes).forEach(([key, opt]) => {
     const btn = document.createElement('button');
     btn.className = 'hermes-button';
     btn.textContent = `${opt.emoji} ${opt.name}`;
