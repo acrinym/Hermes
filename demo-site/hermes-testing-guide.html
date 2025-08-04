@@ -156,6 +156,10 @@
     <p id="progressText">0% Complete - Ready to start testing</p>
   </div>
 
+  <div class="warning">
+    <strong>Heads up:</strong> run through voice-command flows and macro recording in the call-center demo before marking these tests complete.
+  </div>
+
   <div class="test-section">
     <h2>🎯 Test Environment Setup</h2>
     <div class="test-step">
@@ -417,7 +421,8 @@
 
   <div class="test-section">
     <h2>📋 Final Production Readiness Checklist</h2>
-    
+    <p>Use this checklist to verify key features. When finished, click <em>Generate Test Report</em> to download your results or <em>Download Checklist</em> for an offline copy.</p>
+
     <div class="checklist">
       <div class="checklist-item">
         <input type="checkbox" id="accessibility-complete">
@@ -426,6 +431,10 @@
       <div class="checklist-item">
         <input type="checkbox" id="ticket-system-complete">
         <label for="ticket-system-complete">Ticket system functions correctly</label>
+      </div>
+      <div class="checklist-item">
+        <input type="checkbox" id="voice-flows-complete">
+        <label for="voice-flows-complete">Voice-command flows verified in call-center demo</label>
       </div>
       <div class="checklist-item">
         <input type="checkbox" id="hermes-recording-complete">
@@ -455,6 +464,7 @@
 
     <div style="text-align: center; margin-top: 2rem;">
       <button class="btn btn-success" onclick="generateReport()">Generate Test Report</button>
+      <button class="btn" style="margin-left: 1rem;" onclick="downloadChecklist()">Download Checklist</button>
     </div>
   </div>
 
@@ -514,6 +524,21 @@ Recommendations:
       URL.revokeObjectURL(url);
       
       alert('Test report generated and downloaded!');
+    }
+
+    function downloadChecklist() {
+      const labels = document.querySelectorAll('.checklist-item label');
+      const checklist = `HERMES TEST CHECKLIST\n=====================\n${Array.from(labels).map(l => '☐ ' + l.textContent).join('\n')}`;
+
+      const blob = new Blob([checklist], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hermes-test-checklist-' + new Date().toISOString().split('T')[0] + '.txt';
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Checklist downloaded!');
     }
 
     // Initialize progress
