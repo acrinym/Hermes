@@ -191,6 +191,25 @@ export class BackendAPI {
     }
   }
 
+  // Get customer data from a SaaS connector
+  async getCustomerData(
+    platform: string,
+    query: Record<string, unknown> = {}
+  ): Promise<any> {
+    const params = new URLSearchParams(query as Record<string, string>);
+    const qs = params.toString();
+    const url = `${this.config.endpoints.connectors}/${platform}/customer`;
+    return this.request(qs ? `${url}?${qs}` : url);
+  }
+
+  // Update customer data in a SaaS connector
+  async updateCustomerData(platform: string, data: any): Promise<void> {
+    await this.request(`${this.config.endpoints.connectors}/${platform}/customer`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
   // Sync with GitHub repository
   async syncWithGitHub(repoConfig: any): Promise<void> {
     await this.request(this.config.endpoints.sync, {
