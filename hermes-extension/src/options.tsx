@@ -5,6 +5,7 @@ import { t } from '../i18n.js';
 import { AffirmationToggle } from './productivity.tsx';
 import { applyTheme } from './theme.ts';
 import { initHighContrast, setHighContrast } from './highContrast.ts';
+import { NarratorToggle, initNarrator } from './narrator.tsx';
 import {
   initMacros,
   listMacros,
@@ -70,6 +71,10 @@ function OptionsApp() {
       setCustom(customThemes);
       setCurrent(data[THEME_KEY] || 'dark');
     });
+  }, []);
+
+  useEffect(() => {
+    initNarrator();
   }, []);
 
   useEffect(() => {
@@ -350,6 +355,7 @@ function OptionsApp() {
         <input type="checkbox" checked={highContrast} onChange={toggleHighContrast} /> {t('HIGH_CONTRAST_MODE')}
       </label>
       <AffirmationToggle />
+      <NarratorToggle />
       <h2>Macros</h2>
       <div>
         <button onClick={isRecording ? handleStop : handleRecord} className="hermes-button" id="recordMacro">

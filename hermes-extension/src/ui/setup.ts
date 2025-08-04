@@ -1,5 +1,6 @@
 import { t } from '../../i18n.js';
 import { saveDataToBackground } from '../storage/index.ts';
+import { speak } from '../narrator.tsx';
 
 let container: HTMLDivElement | null = null;
 let minimized: HTMLDivElement | null = null;
@@ -25,6 +26,8 @@ export function setupUI(
   container = document.createElement('div');
   container.id = 'hermes-ui-container';
   container.style.cssText = 'position:fixed;top:10px;left:10px;display:flex;gap:4px;background:var(--hermes-bg);color:var(--hermes-text);padding:4px;border:1px solid var(--hermes-border);z-index:2147483647;';
+  container.setAttribute('role', 'toolbar');
+  container.setAttribute('aria-label', t('HERMES_TOOLBAR'));
   container.style.top = `${position.top}px`;
   container.style.left = `${position.left}px`;
   root.appendChild(container);
@@ -35,13 +38,25 @@ export function setupUI(
   minimized.style.cssText = 'display:none;position:fixed;top:10px;left:10px;cursor:pointer;padding:2px;z-index:2147483647;background:var(--hermes-bg);border:1px solid var(--hermes-border);color:var(--hermes-text);';
   minimized.style.top = `${position.top}px`;
   minimized.style.left = `${position.left}px`;
+  minimized.setAttribute('role', 'button');
+  minimized.setAttribute('tabindex', '0');
+  minimized.setAttribute('aria-label', t('OPEN_TOOLBAR'));
   minimized.onclick = () => toggleMinimizedUI(false);
+  minimized.onkeydown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleMinimizedUI(false);
+    }
+  };
   root.appendChild(minimized);
 
   dragHandle = document.createElement('div');
   dragHandle.id = 'hermes-drag-handle';
   dragHandle.textContent = '☰';
   dragHandle.style.cssText = 'cursor:move;user-select:none;padding:0 4px;';
+  dragHandle.setAttribute('role', 'button');
+  dragHandle.setAttribute('aria-label', t('DRAG_TOOLBAR'));
+  dragHandle.tabIndex = 0;
   container.appendChild(dragHandle);
   setupDragging(dragHandle);
 
@@ -53,6 +68,7 @@ export function setupUI(
   bunchBtn.className = 'hermes-button';
   bunchBtn.id = 'hermes-bunch-button';
   bunchBtn.textContent = t('BUNCH');
+  bunchBtn.setAttribute('aria-label', t('BUNCH'));
   bunchBtn.onclick = () => {
     isBunched = !isBunched;
     if (container) container.classList.toggle('hermes-bunched', isBunched);
@@ -64,6 +80,8 @@ export function setupUI(
   minBtn.className = 'hermes-button';
   minBtn.id = 'hermes-minimize-button';
   minBtn.textContent = '_';
+  minBtn.setAttribute('aria-label', t('MINIMIZE'));
+  minBtn.title = t('MINIMIZE');
   minBtn.onclick = () => toggleMinimizedUI(true);
   container.appendChild(minBtn);
 
@@ -87,6 +105,8 @@ export function setupUI(
     const b = document.createElement('button');
     b.className = 'hermes-button';
     b.textContent = d.label;
+    b.setAttribute('aria-label', `Snap ${d.edge.replace(/-/g, ' ')}`);
+    b.title = `Snap ${d.edge.replace(/-/g, ' ')}`;
     b.onclick = () => {
       if (d.edge === 'dock-top') dockToPage('top');
       else if (d.edge === 'dock-bottom') dockToPage('bottom');
@@ -106,6 +126,7 @@ export function toggleMinimizedUI(minimize: boolean) {
   isMinimized = minimize;
   container.style.display = minimize ? 'none' : 'flex';
   minimized.style.display = minimize ? 'flex' : 'none';
+  speak(minimize ? t('TOOLBAR_MINIMIZED') : t('TOOLBAR_RESTORED'));
   if (!minimize) {
     container.style.left = `${position.left}px`;
     container.style.top = `${position.top}px`;
