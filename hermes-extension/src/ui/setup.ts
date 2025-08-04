@@ -9,18 +9,32 @@ let dragHandle: HTMLDivElement | null = null;
 let dockMode: 'none' | 'top' | 'bottom' = 'none';
 const position = { top: 10, left: 10 };
 
-export function setupUI(root: HTMLElement = document.body, initialDock: 'none' | 'top' | 'bottom' = 'none') {
+export function setupUI(
+  root: HTMLElement = document.body,
+  initialDock: 'none' | 'top' | 'bottom' = 'none',
+  initialBunched = false,
+  initialPos?: { top: number | null; left: number | null }
+) {
   if (container) return container;
+
+  if (initialPos) {
+    if (typeof initialPos.top === 'number') position.top = initialPos.top;
+    if (typeof initialPos.left === 'number') position.left = initialPos.left;
+  }
 
   container = document.createElement('div');
   container.id = 'hermes-ui-container';
   container.style.cssText = 'position:fixed;top:10px;left:10px;display:flex;gap:4px;background:var(--hermes-bg);color:var(--hermes-text);padding:4px;border:1px solid var(--hermes-border);z-index:2147483647;';
+  container.style.top = `${position.top}px`;
+  container.style.left = `${position.left}px`;
   root.appendChild(container);
 
   minimized = document.createElement('div');
   minimized.id = 'hermes-minimized-container';
   minimized.textContent = '🛠️';
   minimized.style.cssText = 'display:none;position:fixed;top:10px;left:10px;cursor:pointer;padding:2px;z-index:2147483647;background:var(--hermes-bg);border:1px solid var(--hermes-border);color:var(--hermes-text);';
+  minimized.style.top = `${position.top}px`;
+  minimized.style.left = `${position.left}px`;
   minimized.onclick = () => toggleMinimizedUI(false);
   root.appendChild(minimized);
 
@@ -32,6 +46,8 @@ export function setupUI(root: HTMLElement = document.body, initialDock: 'none' |
   setupDragging(dragHandle);
 
   dockMode = initialDock;
+  isBunched = initialBunched;
+  if (isBunched && container) container.classList.add('hermes-bunched');
 
   const bunchBtn = document.createElement('button');
   bunchBtn.className = 'hermes-button';
@@ -40,6 +56,7 @@ export function setupUI(root: HTMLElement = document.body, initialDock: 'none' |
   bunchBtn.onclick = () => {
     isBunched = !isBunched;
     if (container) container.classList.toggle('hermes-bunched', isBunched);
+    saveDataToBackground('hermes_bunched_state_ext', isBunched);
   };
   container.appendChild(bunchBtn);
 
@@ -133,6 +150,7 @@ function setupDragging(handle: HTMLElement) {
   });
   document.addEventListener('mouseup', () => {
     dragging = false;
+    saveDataToBackground('hermes_position_ext', position);
   });
 }
 
