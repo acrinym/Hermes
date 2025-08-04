@@ -33,6 +33,33 @@
 
 ---
 
+## 🚀 Getting Started
+
+### Installation
+1. Run `./setup.sh` to install server and extension dependencies.
+2. Build the extension: `cd hermes-extension && npm run build`.
+3. Load the `hermes-extension` folder in Chrome as an unpacked extension.
+
+### Highlights
+- Form filling, macro recording and heuristic training.
+- Voice commands and hotkeys for hands-free control.
+- High-contrast themes and other accessibility aids.
+
+### Enterprise Configuration
+By default the extension connects to `http://localhost:3000` using:
+- `configs` – `/api/v1/configs`
+- `connectors` – `/api/v1/connectors`
+- `sync` – `/api/v1/sync`
+- `discovery` – `/api/v1/discovery`
+- `auth` – `/api/v1/auth`
+Override the base URL or endpoints via `backendSetup.ts` or by editing the `hermes_backend_config` value in Chrome storage.
+
+### Voice Commands
+Define custom phrases in the Options page to trigger macros or UI actions. Voice recognition works over HTTPS or localhost.
+
+### Accessibility Tools
+Enable high-contrast themes, enlarge widgets and use voice or keyboard controls for easier navigation.
+
 ## 🌟 Features Overview
 
 ### ✏️ Form Filler
