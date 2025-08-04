@@ -66,6 +66,10 @@ export const translations = {
     COPY: 'Copy',
     SAVE: 'Save',
     ADD: 'Add',
+    LOAD: 'Load',
+    UPLOAD: 'Upload',
+    DOMAIN_CONFIGS: 'Domain Configs',
+    DOMAIN: 'Domain',
     ONBOARD_TITLE: 'Welcome to Hermes',
     ONBOARD_MSG: 'Use the toolbar to fill forms and record macros. Open settings with the gear icon.'
   },
@@ -136,6 +140,10 @@ export const translations = {
     COPY: 'Copiar',
     SAVE: 'Guardar',
     ADD: 'A\u00f1adir',
+    LOAD: 'Cargar',
+    UPLOAD: 'Subir',
+    DOMAIN_CONFIGS: 'Configs de Dominio',
+    DOMAIN: 'Dominio',
     ONBOARD_TITLE: 'Bienvenido a Hermes',
     ONBOARD_MSG: 'Usa la barra para grabar macros o rellenar formularios. Abre ajustes con el icono de engranaje.'
   }
