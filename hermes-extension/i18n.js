@@ -34,6 +34,7 @@ export const translations = {
     SCRATCH_PAD: 'Scratch Pad',
     TASKS: 'Tasks',
     TIMER: 'Timer',
+    HIGH_CONTRAST_MODE: 'High Contrast Mode',
     SCHEDULE: 'Schedule',
     SCHEDULE_MACROS: 'Schedule Macros',
     SELECT_MACROS: 'Select Macros',
@@ -66,6 +67,10 @@ export const translations = {
     COPY: 'Copy',
     SAVE: 'Save',
     ADD: 'Add',
+    LOAD: 'Load',
+    UPLOAD: 'Upload',
+    DOMAIN_CONFIGS: 'Domain Configs',
+    DOMAIN: 'Domain',
     ONBOARD_TITLE: 'Welcome to Hermes',
     ONBOARD_MSG: 'Use the toolbar to fill forms and record macros. Open settings with the gear icon.'
   },
@@ -104,6 +109,7 @@ export const translations = {
     SCRATCH_PAD: 'Bloc de notas',
     TASKS: 'Tareas',
     TIMER: 'Temporizador',
+    HIGH_CONTRAST_MODE: 'Modo de alto contraste',
     SCHEDULE: 'Programar',
     SCHEDULE_MACROS: 'Programar Macros',
     SELECT_MACROS: 'Elegir Macros',
@@ -136,6 +142,10 @@ export const translations = {
     COPY: 'Copiar',
     SAVE: 'Guardar',
     ADD: 'A\u00f1adir',
+    LOAD: 'Cargar',
+    UPLOAD: 'Subir',
+    DOMAIN_CONFIGS: 'Configs de Dominio',
+    DOMAIN: 'Dominio',
     ONBOARD_TITLE: 'Bienvenido a Hermes',
     ONBOARD_MSG: 'Usa la barra para grabar macros o rellenar formularios. Abre ajustes con el icono de engranaje.'
   }

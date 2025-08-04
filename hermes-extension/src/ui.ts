@@ -3,7 +3,6 @@
 import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe, getRoot } from './localCore.ts';
 import { getSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
-import { themeOptions } from './themeOptions.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
 import { setupUI, toggleMinimizedUI } from './ui/setup.ts';
 import { createModal } from './ui/components.js';
@@ -11,6 +10,7 @@ import { configDiscovery, FormPattern, PlatformConfig } from './configDiscovery.
 import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { t } from '../i18n.js';
 import { initializeBackendAPI } from './backendConfig.ts';
+import { initHighContrast } from './highContrast.ts';
 
 // Lazy load heavy features
 const lazyLoadTrainer = () => import('./trainer.ts').then(m => m.runHeuristicTrainerSession);
@@ -93,8 +93,10 @@ export async function initUI() {
   document.body.appendChild(shadowHost);
   shadowRoot = shadowHost.attachShadow({ mode: 'open' });
 
+  await initHighContrast();
+
   // ----- UI ROOT -----
-  const container = setupUI(undefined, data.dockMode || 'none');
+  const container = setupUI(undefined, data.dockMode || 'none', data.isBunched, data.uiPosition);
   shadowRoot.appendChild(container);
 
   // ----- Panel Menus -----
@@ -393,12 +395,13 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
       <select id="hermes-macro-edit-select" style="width:100%;margin-bottom:10px;"></select>
       <textarea id="hermes-macro-edit-text" style="width:100%;height:50vh;resize:vertical;font-family:monospace;padding:10px;box-sizing:border-box;"></textarea>
     `;
-    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Marco</button>`;
+    const buttonsHtml = `<button id="hermes-macro-edit-save">Save Macro</button><button id="hermes-macro-edit-add-wait">Add Wait</button>`;
     panelContainer = createModal(shadowRoot, panelId, t('MACRO_EDITOR'), contentHtml, '700px', buttonsHtml);
     const panel = panelContainer.querySelector(`#${panelId}`) as HTMLElement;
     const selectEl = panel.querySelector('#hermes-macro-edit-select') as HTMLSelectElement;
     const textArea = panel.querySelector('#hermes-macro-edit-text') as HTMLTextAreaElement;
     const saveBtn = panel.querySelector('#hermes-macro-edit-save') as HTMLButtonElement;
+    const waitBtn = panel.querySelector('#hermes-macro-edit-add-wait') as HTMLButtonElement;
 
     const populate = () => {
       selectEl.innerHTML = macroEngine.list().map(n => `<option value="${n}">${n}</option>`).join('');
@@ -423,15 +426,27 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
         (errContainer.querySelector('#err-ok-btn') as HTMLElement).onclick = () => errContainer.style.display = 'none';
       }
     };
+
+    waitBtn.onclick = () => {
+      try {
+        const arr = textArea.value ? JSON.parse(textArea.value) : [];
+        arr.push({ type: 'wait', duration: 1000 });
+        textArea.value = JSON.stringify(arr, null, 2);
+      } catch (e) {
+        alert('Invalid JSON in macro');
+      }
+    };
     populate();
   }
   if (panelContainer) panelContainer.style.display = show ? 'flex' : 'none';
 }
 
 // === Theme and Effects Panels ===
-function updateThemeSubmenu(menu: HTMLElement) {
+async function updateThemeSubmenu(menu: HTMLElement) {
   menu.innerHTML = '';
-  Object.entries(themeOptions).forEach(([key, opt]) => {
+  const data = await getInitialData();
+  const allThemes = { ...(data.builtInThemes || {}), ...(data.customThemes || {}) };
+  Object.entries(allThemes).forEach(([key, opt]) => {
     const btn = document.createElement('button');
     btn.className = 'hermes-button';
     btn.textContent = `${opt.emoji} ${opt.name}`;

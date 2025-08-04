@@ -92,8 +92,8 @@ function applyVars(themeName: string) {
       flex-direction: column;
     }
   `;
-
   const variablesCss = Object.entries(vars).reduce((acc, [key, value]) => `${acc}${key}:${value};`, '');
+  const hcVars = `--hermes-bg:#000;--hermes-text:#fff;--hermes-button-bg:#000;--hermes-button-text:#fff;--hermes-button-hover-bg:#222;--hermes-border:#fff;--hermes-panel-bg:#000;--hermes-panel-text:#fff;--hermes-panel-border:#fff;--hermes-input-bg:#000;--hermes-input-text:#fff;--hermes-input-border:#fff;`;
 
   if (root instanceof ShadowRoot) {
     style = root.getElementById('hermes-theme-style') as HTMLStyleElement | null;
@@ -102,7 +102,7 @@ function applyVars(themeName: string) {
       style.id = 'hermes-theme-style';
       root.appendChild(style);
     }
-    style.textContent = `:host{${variablesCss}} ${additionalCss}`;
+    style.textContent = `:host{${variablesCss}} ${additionalCss} :host(.high-contrast){${hcVars}}`;
   } else {
     style = document.getElementById('hermes-theme-style') as HTMLStyleElement | null;
     if (!style) {
@@ -110,7 +110,7 @@ function applyVars(themeName: string) {
       style.id = 'hermes-theme-style';
       document.head.appendChild(style);
     }
-    style.textContent = `:root{${variablesCss}} ${additionalCss}`;
+    style.textContent = `:root{${variablesCss}} ${additionalCss} body.high-contrast{${hcVars}}`;
   }
 }
 
