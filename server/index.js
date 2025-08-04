@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const schedule = require('node-schedule');
+const RemedyClient = require('./remedy');
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(express.json());
@@ -15,6 +16,15 @@ let profile = {};
 let operations = {};
 let schedules = {};
 let scheduleCounter = 0;
+let remedy;
+
+if (process.env.REMEDY_URL && process.env.REMEDY_USER && process.env.REMEDY_PASSWORD) {
+  remedy = new RemedyClient({
+    baseUrl: process.env.REMEDY_URL,
+    username: process.env.REMEDY_USER,
+    password: process.env.REMEDY_PASSWORD
+  });
+}
 
 function runMacro(macro) {
   const runId = Date.now().toString();
@@ -124,6 +134,19 @@ app.post('/api/fill', (req, res) => {
     operations[fillId].status = 'completed';
   }, 2000);
   res.json({ fillId, status: operations[fillId].status });
+});
+
+// POST /api/remedy/incident
+app.post('/api/remedy/incident', async (req, res) => {
+  if (!remedy) {
+    return res.status(500).json({ error: 'Remedy not configured' });
+  }
+  try {
+    const result = await remedy.createIncident(req.body || {});
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // GET /api/status/:id
