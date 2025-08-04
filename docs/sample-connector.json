@@ -1,0 +1,16 @@
+{
+  "exampleConnector": {
+    "baseUrl": "https://api.example.com",
+    "apiVersion": "v1",
+    "authEndpoint": "/oauth/token",
+    "dataRoute": "/data",
+    "mapping": {
+      "firstName": "contact.first_name",
+      "lastName": "contact.last_name"
+    },
+    "credentials": {
+      "clientId": "CLIENT_ID",
+      "clientSecret": "CLIENT_SECRET"
+    }
+  }
+}
