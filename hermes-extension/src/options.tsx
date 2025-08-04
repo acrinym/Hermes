@@ -20,10 +20,25 @@ import { toggleScratchPad, initScratchPad } from './scratchPad.ts';
 import { toggleSnippets, initSnippets } from './snippets.ts';
 import { toggleTasks, initTasks } from './tasks.ts';
 import { toggleTimer } from './timer.ts';
+import { backendAPI, initializeBackendAPI } from './backendConfig.ts';
 declare const chrome: any;
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
+const DOMAIN_CONFIGS_KEY = 'hermes_domain_configs_ext';
+
+// Load built-in domain configs bundled with the extension
+const builtinConfigs: Record<string, string> = {};
+try {
+  // @ts-ignore
+  const ctx = require.context('../configs', false, /\.json$/);
+  ctx.keys().forEach((key: string) => {
+    const domain = key.replace('./', '').replace('.json', '');
+    builtinConfigs[domain] = JSON.stringify(ctx(key), null, 2);
+  });
+} catch {
+  // require.context not available in tests
+}
 
 interface ThemeInfo {
   name: string;
@@ -38,6 +53,9 @@ function OptionsApp() {
   const [isRecording, setIsRecording] = useState(false);
   const [recordHotkey, setRecordHotkey] = useState('');
   const [playHotkey, setPlayHotkey] = useState('');
+  const [configs, setConfigs] = useState<Record<string, string>>({});
+  const [domain, setDomain] = useState('');
+  const [configText, setConfigText] = useState('');
 
   useEffect(() => {
     chrome.storage.local.get([THEME_KEY, CUSTOM_THEMES_KEY, 'hermes_built_in_themes'], data => {
@@ -64,6 +82,14 @@ function OptionsApp() {
         } catch {}
       });
     }
+    chrome.storage.local.get([DOMAIN_CONFIGS_KEY], data => {
+      let stored = {};
+      try {
+        stored = data[DOMAIN_CONFIGS_KEY] ? JSON.parse(data[DOMAIN_CONFIGS_KEY]) : {};
+      } catch {}
+      setConfigs({ ...builtinConfigs, ...stored });
+    });
+    initializeBackendAPI();
   }, []);
 
   useEffect(() => {
@@ -139,6 +165,78 @@ function OptionsApp() {
       chrome.storage.sync.set({ hermes_settings_v1_ext: json }, () => {});
       refreshHotkeys();
     });
+  };
+
+  const loadConfig = (d: string) => {
+    if (!d) return;
+    if (configs[d]) {
+      setDomain(d);
+      setConfigText(configs[d]);
+    } else {
+      backendAPI.getConfigs(d).then(cfgs => {
+        if (cfgs && cfgs.length) {
+          const text = JSON.stringify(cfgs[0], null, 2);
+          setConfigs(prev => ({ ...prev, [d]: text }));
+          setDomain(d);
+          setConfigText(text);
+        } else {
+          setDomain(d);
+          setConfigText('{}');
+        }
+      });
+    }
+  };
+
+  const saveConfig = () => {
+    if (!domain) return;
+    const updated = { ...configs, [domain]: configText };
+    setConfigs(updated);
+    chrome.storage.local.set({ [DOMAIN_CONFIGS_KEY]: JSON.stringify(updated) });
+  };
+
+  const deleteConfig = (d: string) => {
+    const updated = { ...configs };
+    delete updated[d];
+    setConfigs(updated);
+    chrome.storage.local.set({ [DOMAIN_CONFIGS_KEY]: JSON.stringify(updated) });
+  };
+
+  const exportConfig = () => {
+    if (!domain) return;
+    const blob = new Blob([configText], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${domain}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importConfig = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const obj = JSON.parse(reader.result as string);
+        const d = obj.domain || domain || '';
+        setDomain(d);
+        setConfigText(JSON.stringify(obj, null, 2));
+      } catch {
+        alert(t('INVALID_JSON'));
+      }
+    };
+    reader.readAsText(files[0]);
+  };
+
+  const uploadConfig = () => {
+    try {
+      const obj = JSON.parse(configText || '{}');
+      obj.domain = domain || obj.domain;
+      if (!obj.domain) return;
+      backendAPI.uploadConfig(obj);
+    } catch {
+      alert(t('INVALID_JSON'));
+    }
   };
 
   const allThemes = { ...builtIn, ...custom };
@@ -260,6 +358,71 @@ function OptionsApp() {
           {t('TIMER')}
         </button>
       </div>
+      <h2 style={{ marginTop: '20px' }}>{t('DOMAIN_CONFIGS')}</h2>
+      <div>
+        <input
+          value={domain}
+          onChange={e => setDomain(e.target.value)}
+          placeholder="example.com"
+          style={{
+            background: 'var(--hermes-input-bg)',
+            color: 'var(--hermes-input-text)',
+            border: '1px solid var(--hermes-input-border)',
+            marginRight: '4px'
+          }}
+        />
+        <button onClick={() => loadConfig(domain)} className="hermes-button">
+          {t('LOAD')}
+        </button>
+        <button onClick={saveConfig} className="hermes-button" style={{ marginLeft: '4px' }}>
+          {t('SAVE')}
+        </button>
+        <button onClick={uploadConfig} className="hermes-button" style={{ marginLeft: '4px' }}>
+          {t('UPLOAD')}
+        </button>
+        <button onClick={exportConfig} className="hermes-button" style={{ marginLeft: '4px' }}>
+          {t('EXPORT')}
+        </button>
+        <input
+          id="importConfigFile"
+          type="file"
+          accept="application/json"
+          style={{ display: 'none' }}
+          onChange={e => importConfig(e.target.files)}
+        />
+        <button
+          onClick={() => document.getElementById('importConfigFile')!.click()}
+          className="hermes-button"
+          style={{ marginLeft: '4px' }}
+        >
+          {t('IMPORT')}
+        </button>
+      </div>
+      <textarea
+        value={configText}
+        onChange={e => setConfigText(e.target.value)}
+        style={{
+          width: '100%',
+          height: '200px',
+          marginTop: '4px',
+          background: 'var(--hermes-input-bg)',
+          color: 'var(--hermes-input-text)',
+          border: '1px solid var(--hermes-input-border)'
+        }}
+      />
+      <ul>
+        {Object.keys(configs).map(d => (
+          <li key={d} style={{ marginTop: '4px' }}>
+            {d}
+            <button onClick={() => loadConfig(d)} className="hermes-button" style={{ marginLeft: '4px' }}>
+              {t('LOAD')}
+            </button>
+            <button onClick={() => deleteConfig(d)} className="hermes-button" style={{ marginLeft: '4px' }}>
+              🗑️
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
