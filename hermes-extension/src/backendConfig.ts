@@ -1,5 +1,20 @@
 // Backend Configuration for Hermes Extension
-// Manages connections to the Recreated backend server
+// Manages connections to the Recreated backend server and SaaS connectors
+
+export interface SaaSConnectorConfig {
+  baseUrl: string;
+  apiVersion: string;
+  authEndpoint: string;
+  dataRoute: string;
+  mapping: Record<string, unknown>;
+  credentials: {
+    clientId?: string;
+    clientSecret?: string;
+    username?: string;
+    password?: string;
+    token?: string;
+  };
+}
 
 export interface BackendConfig {
   baseUrl: string;
@@ -13,7 +28,36 @@ export interface BackendConfig {
   };
   timeout: number;
   retries: number;
+  saas?: Record<string, SaaSConnectorConfig>;
 }
+
+// Default connector configurations for common SaaS platforms
+export const DEFAULT_CONNECTORS: Record<string, SaaSConnectorConfig> = {
+  salesforce: {
+    baseUrl: '',
+    apiVersion: 'v57.0',
+    authEndpoint: '/services/oauth2/token',
+    dataRoute: '/services/data',
+    mapping: {},
+    credentials: {
+      clientId: '',
+      clientSecret: '',
+      username: '',
+      password: ''
+    }
+  },
+  bmcHelix: {
+    baseUrl: '',
+    apiVersion: 'v1',
+    authEndpoint: '/api/jwt/login',
+    dataRoute: '/api/arsys/v1',
+    mapping: {},
+    credentials: {
+      username: '',
+      password: ''
+    }
+  }
+};
 
 // Default configuration pointing to Recreated backend
 export const DEFAULT_BACKEND_CONFIG: BackendConfig = {
@@ -27,7 +71,8 @@ export const DEFAULT_BACKEND_CONFIG: BackendConfig = {
     auth: '/api/v1/auth'
   },
   timeout: 10000, // 10 seconds
-  retries: 3
+  retries: 3,
+  saas: DEFAULT_CONNECTORS
 };
 
 // Backend API client for Hermes Extension
