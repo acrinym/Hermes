@@ -79,6 +79,17 @@ export const DEFAULT_BACKEND_CONFIG: BackendConfig = {
 export class BackendAPI {
   private config: BackendConfig;
   private authToken: string | null = null;
+  private connectorTokens: Record<string, { token: string; type: 'oauth' | 'apiKey' }> = {};
+
+  private createTimeoutSignal(): AbortSignal {
+    const anySignal: any = AbortSignal as any;
+    if (typeof anySignal.timeout === 'function') {
+      return anySignal.timeout(this.config.timeout);
+    }
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), this.config.timeout);
+    return controller.signal;
+  }
 
   constructor(config: BackendConfig = DEFAULT_BACKEND_CONFIG) {
     this.config = config;
@@ -94,12 +105,106 @@ export class BackendAPI {
     return this.authToken;
   }
 
+  // Load connector tokens from secure storage
+  async loadConnectorTokens(): Promise<void> {
+    try {
+      const data = await new Promise<any>(resolve => {
+        chrome.storage.local.get('hermes_connector_tokens', res => resolve(res));
+      });
+      this.connectorTokens = data.hermes_connector_tokens || {};
+    } catch (error) {
+      console.error('Failed to load connector tokens:', error);
+    }
+  }
+
+  // Save connector tokens to secure storage
+  private async saveConnectorTokens(): Promise<void> {
+    try {
+      await new Promise<void>(resolve => {
+        chrome.storage.local.set({ hermes_connector_tokens: this.connectorTokens }, () => resolve());
+      });
+    } catch (error) {
+      console.error('Failed to save connector tokens:', error);
+    }
+  }
+
+  // Authenticate a SaaS connector via OAuth or API key
+  async authenticateConnector(platform: string): Promise<boolean> {
+    const cfg = this.config.saas?.[platform];
+    if (!cfg) return false;
+
+    if (cfg.baseUrl && !cfg.baseUrl.startsWith('https://') && !cfg.baseUrl.startsWith('http://localhost')) {
+      throw new Error('Connector baseUrl must use HTTPS');
+    }
+
+    try {
+      // API key based auth
+      if (cfg.credentials.token) {
+        this.connectorTokens[platform] = { token: cfg.credentials.token, type: 'apiKey' };
+        await this.saveConnectorTokens();
+        return true;
+      }
+
+      const authUrl = `${cfg.baseUrl}${cfg.authEndpoint}`;
+      const params = new URLSearchParams({
+        grant_type: 'password',
+        username: cfg.credentials.username || '',
+        password: cfg.credentials.password || '',
+        client_id: cfg.credentials.clientId || '',
+        client_secret: cfg.credentials.clientSecret || ''
+      });
+
+      let lastError: Error | null = null;
+
+      for (let attempt = 1; attempt <= this.config.retries; attempt++) {
+        try {
+          const response = await fetch(authUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString(),
+            signal: this.createTimeoutSignal()
+          });
+
+          if (!response.ok) {
+            throw new Error(`Connector auth error: ${response.status} ${response.statusText}`);
+          }
+
+          const data = await response.json();
+          const token = data.access_token || data.token;
+          if (!token) throw new Error('No token returned from connector auth');
+          this.connectorTokens[platform] = { token, type: 'oauth' };
+          await this.saveConnectorTokens();
+          return true;
+        } catch (error) {
+          lastError = error as Error;
+          if (attempt < this.config.retries) {
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          }
+        }
+      }
+
+      throw lastError || new Error('Connector authentication failed');
+    } catch (error) {
+      console.error(`Connector authentication failed for ${platform}:`, error);
+      return false;
+    }
+  }
+
+  // Get stored connector token
+  private getConnectorToken(platform: string): { token: string; type: 'oauth' | 'apiKey' } | undefined {
+    return this.connectorTokens[platform];
+  }
+
   // Make authenticated request to backend
   async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
+
+    if (!url.startsWith('https://') && !url.startsWith('http://localhost')) {
+      throw new Error('HTTPS is required for backend connections');
+    }
     
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
@@ -115,7 +220,7 @@ export class BackendAPI {
     const config: RequestInit = {
       ...options,
       headers,
-      signal: AbortSignal.timeout(this.config.timeout)
+      signal: this.createTimeoutSignal()
     };
 
     let lastError: Error | null = null;
@@ -180,6 +285,10 @@ export class BackendAPI {
   // Test platform connector
   async testConnector(platform: string, config: any): Promise<boolean> {
     try {
+      const cfg = this.config.saas?.[platform];
+      if (cfg && cfg.baseUrl && !cfg.baseUrl.startsWith('https://') && !cfg.baseUrl.startsWith('http://localhost')) {
+        throw new Error('Connector baseUrl must use HTTPS');
+      }
       await this.request(`${this.config.endpoints.connectors}/${platform}/test`, {
         method: 'POST',
         body: JSON.stringify(config)
@@ -198,16 +307,45 @@ export class BackendAPI {
   ): Promise<any> {
     const params = new URLSearchParams(query as Record<string, string>);
     const qs = params.toString();
+    const cfg = this.config.saas?.[platform];
+    if (cfg && cfg.baseUrl && !cfg.baseUrl.startsWith('https://') && !cfg.baseUrl.startsWith('http://localhost')) {
+      throw new Error('Connector baseUrl must use HTTPS');
+    }
     const url = `${this.config.endpoints.connectors}/${platform}/customer`;
-    return this.request(qs ? `${url}?${qs}` : url);
+    const tokenInfo = this.getConnectorToken(platform);
+    const urlWithQs = qs ? `${url}?${qs}` : url;
+    if (tokenInfo) {
+      const headers: HeadersInit = {};
+      if (tokenInfo.type === 'apiKey') headers['X-API-Key'] = tokenInfo.token;
+      else headers['Authorization'] = `Bearer ${tokenInfo.token}`;
+      return this.request(urlWithQs, { headers });
+    }
+    return this.request(urlWithQs);
   }
 
   // Update customer data in a SaaS connector
   async updateCustomerData(platform: string, data: any): Promise<void> {
-    await this.request(`${this.config.endpoints.connectors}/${platform}/customer`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+    const cfg = this.config.saas?.[platform];
+    if (cfg && cfg.baseUrl && !cfg.baseUrl.startsWith('https://') && !cfg.baseUrl.startsWith('http://localhost')) {
+      throw new Error('Connector baseUrl must use HTTPS');
+    }
+    const tokenInfo = this.getConnectorToken(platform);
+    const url = `${this.config.endpoints.connectors}/${platform}/customer`;
+    if (tokenInfo) {
+      const headers: HeadersInit = {};
+      if (tokenInfo.type === 'apiKey') headers['X-API-Key'] = tokenInfo.token;
+      else headers['Authorization'] = `Bearer ${tokenInfo.token}`;
+      await this.request(url, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers
+      });
+    } else {
+      await this.request(url, {
+        method: 'PUT',
+        body: JSON.stringify(data)
+      });
+    }
   }
 
   // Sync with GitHub repository
@@ -241,7 +379,9 @@ export const backendAPI = new BackendAPI();
 // Load backend configuration from storage
 export async function loadBackendConfig(): Promise<BackendConfig> {
   try {
-    const data = await chrome.storage.local.get('hermes_backend_config');
+    const data = await new Promise<any>(resolve => {
+      chrome.storage.local.get('hermes_backend_config', res => resolve(res));
+    });
     return data.hermes_backend_config || DEFAULT_BACKEND_CONFIG;
   } catch (error) {
     console.error('Failed to load backend config:', error);
@@ -252,7 +392,9 @@ export async function loadBackendConfig(): Promise<BackendConfig> {
 // Save backend configuration to storage
 export async function saveBackendConfig(config: BackendConfig): Promise<void> {
   try {
-    await chrome.storage.local.set({ hermes_backend_config: config });
+    await new Promise<void>(resolve => {
+      chrome.storage.local.set({ hermes_backend_config: config }, () => resolve());
+    });
   } catch (error) {
     console.error('Failed to save backend config:', error);
   }
@@ -263,11 +405,12 @@ export async function initializeBackendAPI(): Promise<void> {
   try {
     const config = await loadBackendConfig();
     Object.assign(backendAPI, new BackendAPI(config));
-    
+    await backendAPI.loadConnectorTokens();
+
     // Test connection
     const isConnected = await backendAPI.testConnection();
     console.log('🔗 Hermes: Backend connection status:', isConnected ? 'Connected' : 'Disconnected');
   } catch (error) {
     console.error('Failed to initialize backend API:', error);
   }
-} 
+}
