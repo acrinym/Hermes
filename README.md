@@ -254,6 +254,15 @@ Check the status of a macro or fill operation returned by the above calls.
 curl http://localhost:3000/api/status/<id>
 ```
 
+### `POST /api/remedy/incident`
+Create a Remedy incident using the configured credentials.
+
+```bash
+curl -X POST http://localhost:3000/api/remedy/incident \
+  -H "Content-Type: application/json" \
+  -d '{"Description":"test incident"}'
+```
+
 
 ## ⏰ Macro Scheduling
 
