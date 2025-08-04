@@ -72,7 +72,16 @@ export const translations = {
     DOMAIN_CONFIGS: 'Domain Configs',
     DOMAIN: 'Domain',
     ONBOARD_TITLE: 'Welcome to Hermes',
-    ONBOARD_MSG: 'Use the toolbar to fill forms and record macros. Open settings with the gear icon.'
+    ONBOARD_MSG: 'Use the toolbar to fill forms and record macros. Open settings with the gear icon.',
+    ENABLE_NARRATOR: 'Enable Narrator',
+    NARRATOR_ENABLED: 'Narrator enabled',
+    NARRATOR_DISABLED: 'Narrator disabled',
+    HERMES_TOOLBAR: 'Hermes toolbar',
+    OPEN_TOOLBAR: 'Open Hermes toolbar',
+    DRAG_TOOLBAR: 'Drag toolbar',
+    MINIMIZE: 'Minimize',
+    TOOLBAR_MINIMIZED: 'Toolbar minimized',
+    TOOLBAR_RESTORED: 'Toolbar restored'
   },
   es: {
     HERMES_OPTIONS: 'Opciones de Hermes',
@@ -147,7 +156,16 @@ export const translations = {
     DOMAIN_CONFIGS: 'Configs de Dominio',
     DOMAIN: 'Dominio',
     ONBOARD_TITLE: 'Bienvenido a Hermes',
-    ONBOARD_MSG: 'Usa la barra para grabar macros o rellenar formularios. Abre ajustes con el icono de engranaje.'
+    ONBOARD_MSG: 'Usa la barra para grabar macros o rellenar formularios. Abre ajustes con el icono de engranaje.',
+    ENABLE_NARRATOR: 'Activar narrador',
+    NARRATOR_ENABLED: 'Narrador activado',
+    NARRATOR_DISABLED: 'Narrador desactivado',
+    HERMES_TOOLBAR: 'Barra de Hermes',
+    OPEN_TOOLBAR: 'Abrir barra de Hermes',
+    DRAG_TOOLBAR: 'Mover barra',
+    MINIMIZE: 'Minimizar',
+    TOOLBAR_MINIMIZED: 'Barra minimizada',
+    TOOLBAR_RESTORED: 'Barra restaurada'
   }
 };
 

@@ -11,6 +11,7 @@ import { isAllowed, loadWhitelist, saveWhitelist } from './allowlist.ts';
 import { t } from '../i18n.js';
 import { initializeBackendAPI } from './backendConfig.ts';
 import { initHighContrast } from './highContrast.ts';
+import { initNarrator } from './narrator.tsx';
 
 // Lazy load heavy features
 const lazyLoadTrainer = () => import('./trainer.ts').then(m => m.runHeuristicTrainerSession);
@@ -86,6 +87,7 @@ export async function initUI() {
 
   // Initialize backend API connection to Recreated folder
   await initializeBackendAPI();
+  initNarrator();
 
   // ----- SHADOW DOM SETUP -----
   shadowHost = document.createElement('div');
