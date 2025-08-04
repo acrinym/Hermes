@@ -19,7 +19,7 @@ This directory contains a comprehensive test environment designed to verify Herm
   - Realistic call center workflows
 
 ### Testing Documentation
-- **`hermes-testing-guide.html`** - Step-by-step production readiness checklist
+- **`hermes-testing-guide.html`** - Step-by-step production readiness checklist with interactive performance metrics chart
 - **`index.html`** - Updated main demo page with navigation
 - **`accessibility.html`** - Existing accessibility demo
 - **`corporate.html`** - Corporate form demo

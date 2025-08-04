@@ -141,6 +141,7 @@
       transition: width 0.3s ease;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="header">
@@ -382,6 +383,26 @@
         <li>No performance lag during automation</li>
       </ul>
     </div>
+    <div class="test-step">
+      <h4>Interactive Metrics Tracker</h4>
+      <p>Enter your manual vs automated results:</p>
+      <div>
+        <label>Manual Time (ms):
+          <input type="number" id="manualTime" value="12000">
+        </label>
+        <label style="margin-left: 1rem;">Automated Time (ms):
+          <input type="number" id="autoTime" value="5000">
+        </label>
+        <label style="margin-left: 1rem;">Manual Clicks:
+          <input type="number" id="manualClicks" value="80">
+        </label>
+        <label style="margin-left: 1rem;">Automated Clicks:
+          <input type="number" id="autoClicks" value="20">
+        </label>
+        <button class="btn" style="margin-left: 1rem;" onclick="updateMetrics()">Update</button>
+      </div>
+      <canvas id="metricsChart" height="100" style="margin-top: 1rem;"></canvas>
+    </div>
   </div>
 
   <div class="test-section">
@@ -540,9 +561,51 @@ Recommendations:
 
       alert('Checklist downloaded!');
     }
+    
+    // Performance metrics chart
+    const metricsCtx = document.getElementById('metricsChart');
+    const metricsChart = new Chart(metricsCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Time Savings', 'Click Reduction'],
+        datasets: [
+          {
+            label: 'Result (%)',
+            data: [0, 0],
+            backgroundColor: ['#4ade80', '#60a5fa']
+          },
+          {
+            label: 'Target (%)',
+            data: [50, 70],
+            type: 'line',
+            borderColor: '#f87171',
+            borderWidth: 2
+          }
+        ]
+      },
+      options: {
+        scales: {
+          y: { beginAtZero: true, max: 100 }
+        }
+      }
+    });
 
-    // Initialize progress
+    function updateMetrics() {
+      const manualTime = Number(document.getElementById('manualTime').value);
+      const autoTime = Number(document.getElementById('autoTime').value);
+      const manualClicks = Number(document.getElementById('manualClicks').value);
+      const autoClicks = Number(document.getElementById('autoClicks').value);
+
+      const timeSaving = (1 - autoTime / manualTime) * 100;
+      const clickReduce = (1 - autoClicks / manualClicks) * 100;
+
+      metricsChart.data.datasets[0].data = [timeSaving, clickReduce];
+      metricsChart.update();
+    }
+
+    // Initialize progress and metrics
     updateProgress();
+    updateMetrics();
   </script>
 </body>
 </html>
