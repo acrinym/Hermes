@@ -40,7 +40,7 @@ chrome.action.onClicked.addListener((tab) => {
         // Script not there, inject it
         chrome.scripting.executeScript({
           target: { tabId: tab.id! },
-          files: ['content.js'],
+          files: [chrome.runtime.getURL('dist/content.js')],
         });
       } else {
         // Script is there, maybe tell it to show/hide
