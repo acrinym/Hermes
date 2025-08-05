@@ -4,7 +4,6 @@
   "workspaces": [
     "packages/core",
     "hermes-extension",
-    "server",
-    "hermes-extension/hermes-react-refactor"
+    "server"
   ]
 }
