@@ -1,5 +1,6 @@
 const path = require('path');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
+const webpack = require('webpack');
 
 module.exports = {
   mode: 'production',
@@ -74,7 +75,12 @@ module.exports = {
     ]
   },
   plugins: [
-    new ForkTsCheckerWebpackPlugin()
+    new ForkTsCheckerWebpackPlugin(),
+    // Build-time flags to toggle telemetry and feature sets 🎛️
+    new webpack.DefinePlugin({
+      'process.env.ENABLE_TELEMETRY': JSON.stringify(process.env.ENABLE_TELEMETRY ?? 'true'),
+      'process.env.FEATURE_SET': JSON.stringify(process.env.FEATURE_SET ?? 'default')
+    })
   ],
   optimization: {
     splitChunks: {
