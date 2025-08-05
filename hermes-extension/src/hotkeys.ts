@@ -1,6 +1,14 @@
 import { startRecording, stopRecording, playSelectedMacro, recording } from './macros.ts';
 import { getSettings } from './settings.ts';
 
+// Legacy -> new hotkey setting names 🎹
+// Allows us to keep supporting older stored settings while
+// moving toward the new structured `hotkeys` block.
+export const legacyHotkeyNameMap: Record<string, string> = {
+  recordHotkey: 'record',
+  playMacroHotkey: 'play',
+} as const;
+
 interface Hotkey {
   key: string;
   ctrl: boolean;
@@ -47,8 +55,14 @@ function handle(e: KeyboardEvent) {
 
 function updateFromSettings() {
   const s = getSettings();
-  recordHotkey = parseHotkey(String(s.recordHotkey || 'Ctrl+Shift+R'));
-  playHotkey = parseHotkey(String(s.playMacroHotkey || 'Ctrl+Shift+P'));
+  const hotkeyBlock = (s as any).hotkeys || {};
+
+  // Read new names first, fall back to legacy ones 😊
+  const record = hotkeyBlock[legacyHotkeyNameMap.recordHotkey] || s.recordHotkey;
+  const play = hotkeyBlock[legacyHotkeyNameMap.playMacroHotkey] || s.playMacroHotkey;
+
+  recordHotkey = parseHotkey(String(record || 'Ctrl+Shift+R'));
+  playHotkey = parseHotkey(String(play || 'Ctrl+Shift+P'));
 }
 
 export function initHotkeys() {

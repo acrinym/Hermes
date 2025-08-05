@@ -98,5 +98,26 @@ export const defaultSettings = {
     "_comment_useCoordinateFallback": "When elements can't be found by selector, use recorded x/y coordinates or DOM path.",
     "similarityThreshold": 0.5,
     "_comment_similarityThreshold": "Minimum similarity score (0-1) for heuristic field matching. Default: 0.5."
+  },
+  "_comment_hotkeys": "Keyboard shortcuts for macro recording and playback.",
+  "hotkeys": {
+    "record": "Ctrl+Shift+R",
+    "_comment_record": "Key combo to start/stop recording (e.g., Ctrl+Shift+R).",
+    "play": "Ctrl+Shift+P",
+    "_comment_play": "Key combo to play the last macro (e.g., Ctrl+Shift+P)."
   }
+} as const;
+
+// Mapping of legacy setting names to their shiny new counterparts ✨
+export const legacySettingNameMap: Record<string, string> = {
+  'recordHotkey': 'hotkeys.record',
+  'playMacroHotkey': 'hotkeys.play',
+  'macro.useCoords': 'macro.useCoordinateFallback',
+  'macro.recordMouse': 'macro.recordMouseMoves',
+  'macro.relativeCoords': 'macro.relativeCoordinates',
+  'macro.similarity': 'macro.similarityThreshold',
+  'effects.lasers': 'effects.lasersV13',
+  'effects.snow': 'effects.snowflakesV13',
+  'effects.snowflakes': 'effects.snowflakesV13',
+  'effects.strobe': 'effects.strobeV13',
 } as const;
