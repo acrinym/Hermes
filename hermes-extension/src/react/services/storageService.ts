@@ -1,5 +1,4 @@
 // src/react/services/storageService.ts
-
 import { browserApi } from '../utils/browserApi';
 
 const SETTINGS_KEY = 'hermes_settings_v1_ext';
@@ -17,7 +16,7 @@ export function saveDataToBackground(key: string, data: any): Promise<boolean> {
         if (response && response.success) {
           resolve(true);
         } else {
-          reject(response ? response.error : 'Unknown error');
+          reject(response.error || 'Failed to save data');
         }
       }
     );
@@ -49,6 +48,7 @@ export function exportBackup(): Promise<string> {
 export async function importBackup(file: File): Promise<void> {
   const text = await file.text();
   const parsed = JSON.parse(text);
+
   return new Promise((resolve, reject) => {
     browserApi.storage.local.set(
       {

@@ -4,55 +4,51 @@ import { browserApi } from '../utils/browserApi';
 const AFFIRM_KEY = 'hermes_affirmations_state_ext';
 let overlayEl: HTMLDivElement | null = null;
 
-function parseRGB(str: string): [number, number, number] {
-  const m = str.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  return m ? [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)] : [255, 255, 255];
+const affirmations = [
+  'You are capable of amazing things.',
+  'Your hard work will pay off.',
+  'Stay positive and strong.',
+  'Believe in your abilities.',
+  'Every step forward is a victory.',
+  'You are a problem-solving genius.',
+];
+
+function getRandomAffirmation() {
+  return affirmations[Math.floor(Math.random() * affirmations.length)];
 }
 
-function brightness([r, g, b]: [number, number, number]): number {
-  return (r * 299 + g * 587 + b * 114) / 1000;
-}
-
-function adjust([r, g, b]: [number, number, number], amt: number): [number, number, number] {
-  return [
-    Math.max(0, Math.min(255, r + amt)),
-    Math.max(0, Math.min(255, g + amt)),
-    Math.max(0, Math.min(255, b + amt))
-  ];
-}
-
-function getTextColor(): string {
-  const rgb = parseRGB(getComputedStyle(document.body).backgroundColor || 'rgb(255,255,255)');
-  const delta = brightness(rgb) > 128 ? -60 : 60;
-  const [r, g, b] = adjust(rgb, delta);
-  return `rgb(${r},${g},${b})`;
-}
-
-function showOverlay() {
+function showAffirmation() {
   if (!overlayEl) {
     overlayEl = document.createElement('div');
-    overlayEl.id = 'hermes-affirm';
-    overlayEl.textContent = 'You are doing great!';
-    overlayEl.style.cssText =
-      'position:fixed;bottom:10px;right:10px;padding:8px 12px;border-radius:4px;font-family:sans-serif;z-index:2147483647;pointer-events:none;';
+    overlayEl.style.position = 'fixed';
+    overlayEl.style.bottom = '20px';
+    overlayEl.style.right = '20px';
+    overlayEl.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+    overlayEl.style.color = 'white';
+    overlayEl.style.padding = '10px 20px';
+    overlayEl.style.borderRadius = '5px';
+    overlayEl.style.zIndex = '2147483647';
+    overlayEl.style.opacity = '0';
+    overlayEl.style.transition = 'opacity 0.5s';
     document.body.appendChild(overlayEl);
   }
-  overlayEl.style.color = getTextColor();
-  overlayEl.style.display = 'block';
-}
 
-function hideOverlay() {
-  if (overlayEl) overlayEl.style.display = 'none';
-}
+  overlayEl.textContent = getRandomAffirmation();
+  overlayEl.style.opacity = '1';
 
-export function initAffirmations(enabled: boolean) {
-  if (enabled) showOverlay();
+  setTimeout(() => {
+    if (overlayEl) {
+      overlayEl.style.opacity = '0';
+    }
+  }, 4000);
 }
 
 export function setAffirmations(enabled: boolean) {
-  saveDataToBackground(AFFIRM_KEY, enabled).catch(e => console.error('Affirm save failed', e));
-  if (enabled) showOverlay();
-  else hideOverlay();
+  saveDataToBackground(AFFIRM_KEY, enabled);
+  if (enabled) {
+    showAffirmation();
+    setInterval(showAffirmation, 600000); // every 10 minutes
+  }
 }
 
 export function getAffirmationState(): Promise<boolean> {

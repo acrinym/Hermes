@@ -1,9 +1,8 @@
 // src/react/background.ts
-
 import { browserApi } from './utils/browserApi';
 
 // Listen for messages from content scripts
-browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
+browserApi.runtime.onMessage.addListener((message: any, sender: any, sendResponse: any) => {
   if (message.type === 'SAVE_HERMES_DATA') {
     browserApi.storage.local.set({ [message.payload.key]: message.payload.value }, () => {
       if (browserApi.runtime.lastError) {
@@ -12,12 +11,12 @@ browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
         sendResponse({ success: true });
       }
     });
-    return true; // Indicates that the response is sent asynchronously
+    return true; // Indicates asynchronous response
   }
 
   if (message.type === 'GET_HERMES_INITIAL_DATA') {
     const keys = ['hermes_settings_v1_ext', 'hermes_profile_ext', 'hermes_macros_ext', 'hermes_theme_ext'];
-    browserApi.storage.local.get(keys, (result) => {
+    browserApi.storage.local.get(keys, (result: any) => {
       if (browserApi.runtime.lastError) {
         sendResponse({ error: browserApi.runtime.lastError.message });
       } else {
@@ -29,15 +28,15 @@ browserApi.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
       }
     });
-    return true; // Indicates that the response is sent asynchronously
+    return true; // Indicates asynchronous response
   }
 });
 
 // Setup for the extension icon click
-browserApi.action.onClicked.addListener((tab) => {
+browserApi.action.onClicked.addListener((tab: any) => {
   if (tab.id) {
     // Check if the content script is already there before injecting
-    browserApi.tabs.sendMessage(tab.id, { type: 'HERMES_PING' }, (response) => {
+    browserApi.tabs.sendMessage(tab.id, { type: 'HERMES_PING' }, (response: any) => {
       if (browserApi.runtime.lastError) {
         // Script not there, inject it
         browserApi.scripting.executeScript({
