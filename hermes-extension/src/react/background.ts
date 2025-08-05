@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/background.ts
+// src/react/background.ts
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

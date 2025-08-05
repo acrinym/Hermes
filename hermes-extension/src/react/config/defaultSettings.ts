@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/config/defaultSettings.ts
+// src/react/config/defaultSettings.ts
 
 export const defaultSettings = {
   "_comment_main_ui": "Settings for the main Hermes UI appearance.",

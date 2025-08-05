@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/App.tsx
+// src/react/App.tsx
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';

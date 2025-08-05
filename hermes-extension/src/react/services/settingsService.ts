@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/services/settingsService.ts
+// src/react/services/settingsService.ts
 
 import { store } from '../store';
 

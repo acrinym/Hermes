@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/components/ThemeSelector.tsx
+// src/react/components/ThemeSelector.tsx
 
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
