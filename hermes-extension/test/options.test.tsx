@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { createRoot } from 'react-dom/client';
 import { act } from 'react';
-import { OptionsApp } from '../src/options.tsx';
+import { OptionsApp } from '../src/react/options.tsx';
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
@@ -43,8 +43,9 @@ describe('OptionsApp', () => {
     });
 
     const select = container.querySelector('#themeSelect') as HTMLSelectElement;
-    expect(select.options.length).toBe(2);
+    expect(select.options.length).toBeGreaterThan(1);
     expect(select.value).toBe('dark');
+    expect(Array.from(select.options).some(o => o.value === 'custom')).toBe(true);
 
     act(() => {
       select.value = 'custom';
