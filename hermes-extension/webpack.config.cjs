@@ -3,7 +3,8 @@ const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const webpack = require('webpack');
 
 module.exports = {
-  mode: 'production',
+  // Use NODE_ENV if set, otherwise default to production 🚀
+  mode: process.env.NODE_ENV || 'production',
   entry: {
     background: './src/react/background.ts',
     content: './src/react/content.tsx',

@@ -369,7 +369,8 @@ PRs are welcome. For suggestions or issues, please use the Issues tab.
 1. `cd hermes-extension`
 2. (optional) Run `npm install` to install dev dependencies. The build script will install them automatically if missing.
 3. From inside `hermes-extension/`, run `npm run build` to bundle `src/` into a `dist/` folder. This `dist/` directory is excluded from version control via `.gitignore`.
-4. Load the `hermes-extension` directory in Chrome as an unpacked extension.
+4. For live-reloading builds during development, run `npm run dev` instead. 🎉
+5. Load the `hermes-extension` directory in Chrome as an unpacked extension.
 
 > **Author:** Justin
 
