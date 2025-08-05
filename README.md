@@ -6,6 +6,7 @@
 
 ## v4.0.0 Highlights
 - Unified UI across extension components
+- Extension UI now powered by React (source in `hermes-extension/src/react`)
 - Improved accessibility features
 - Voice input for hands-free commands
 - Enterprise connector support
@@ -47,7 +48,10 @@ See [CHANGELOG](CHANGELOG.md) for full release notes.
 ### Installation
 1. Run `./setup.sh` to install server and extension dependencies.
 2. Build the extension: `cd hermes-extension && npm run build`.
-3. Load the `hermes-extension` folder in Chrome as an unpacked extension.
+3. From inside `hermes-extension/`, run `npm run dev` to watch and rebuild files during development.
+4. Load the `hermes-extension` folder in Chrome as an unpacked extension.
+
+`npm run dev` automatically rebuilds the React UI as you edit files. Run `npm run build` again for a one-off rebuild if the watcher is stopped.
 
 ### Highlights
 - Form filling, macro recording and heuristic training.
