@@ -444,10 +444,18 @@ function toggleMacroEditor(show: boolean, macroName?: string) {
 }
 
 // === Theme and Effects Panels ===
+interface ThemeInfo {
+  name: string;
+  emoji: string;
+}
+
 async function updateThemeSubmenu(menu: HTMLElement) {
   menu.innerHTML = '';
   const data = await getInitialData();
-  const allThemes = { ...(data.builtInThemes || {}), ...(data.customThemes || {}) };
+  const allThemes: Record<string, ThemeInfo> = {
+    ...(data.builtInThemes as Record<string, ThemeInfo> || {}),
+    ...(data.customThemes as Record<string, ThemeInfo> || {})
+  };
   Object.entries(allThemes).forEach(([key, opt]) => {
     const btn = document.createElement('button');
     btn.className = 'hermes-button';

@@ -4,9 +4,9 @@ const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 module.exports = {
   mode: 'production',
   entry: {
-    background: './src/background.js',
-    content: './src/content.js',
-    options: './src/options.tsx'
+    background: './src/react/background.ts',
+    content: './src/react/content.tsx',
+    options: './src/react/options.tsx'
   },
   output: {
     filename: '[name].js',
@@ -14,7 +14,13 @@ module.exports = {
     clean: true
   },
   resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx']
+    extensions: ['.ts', '.tsx', '.js', '.jsx'],
+    alias: {
+      '@hermes/core': path.resolve(__dirname, '../packages/core/src')
+    },
+    extensionAlias: {
+      '.js': ['.ts', '.js']
+    }
   },
   module: {
     rules: [
@@ -47,7 +53,7 @@ module.exports = {
           loader: 'babel-loader',
           options: {
             presets: [
-              ['@babel/preset-env', { 
+              ['@babel/preset-env', {
                 targets: 'chrome 88',
                 modules: false,
                 useBuiltIns: 'usage',
@@ -60,6 +66,10 @@ module.exports = {
             ]
           }
         }
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader']
       }
     ]
   },
