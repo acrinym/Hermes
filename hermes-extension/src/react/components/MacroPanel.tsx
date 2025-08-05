@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/components/MacroPanel.tsx
+// src/react/components/MacroPanel.tsx
 
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';

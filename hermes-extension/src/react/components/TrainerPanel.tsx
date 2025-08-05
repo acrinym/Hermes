@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/components/TrainerPanel.tsx
+// src/react/components/TrainerPanel.tsx
 
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';

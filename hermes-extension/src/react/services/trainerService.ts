@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/services/trainerService.ts
+// src/react/services/trainerService.ts
 
 import { fillForm, ProfileData, SkippedField } from '@hermes/core';
 import { saveDataToBackground } from './storageService';

@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/components/SettingsPanel.tsx
+// src/react/components/SettingsPanel.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';

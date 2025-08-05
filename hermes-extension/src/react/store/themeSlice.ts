@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/store/themeSlice.ts
+// src/react/store/themeSlice.ts
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { saveDataToBackground, getInitialData } from '../services/storageService';

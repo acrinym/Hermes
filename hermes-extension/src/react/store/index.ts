@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/store/index.ts
+// src/react/store/index.ts
 
 import { configureStore } from '@reduxjs/toolkit';
 import settingsReducer from './settingsSlice';

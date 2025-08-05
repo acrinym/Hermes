@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/content.tsx
+// src/react/content.tsx
 
 import React from 'react';
 import { createRoot } from 'react-dom/client';

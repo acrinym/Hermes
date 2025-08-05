@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/services/storageService.ts
+// src/react/services/storageService.ts
 
 export function saveDataToBackground(key: string, data: any): Promise<boolean> {
   return new Promise((resolve, reject) => {

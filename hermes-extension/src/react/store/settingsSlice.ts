@@ -1,4 +1,4 @@
-// hermes-react-refactor/src/store/settingsSlice.ts
+// src/react/store/settingsSlice.ts
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { defaultSettings } from '../config/defaultSettings';
