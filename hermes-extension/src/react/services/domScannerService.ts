@@ -6,7 +6,7 @@ export interface SiteConfig {
   lastUpdated: string;
 }
 
-declare const chrome: any;
+import { browserApi } from '../utils/browserApi';
 
 function getSelector(el: Element): string {
   if ((el as HTMLElement).id) {
@@ -55,10 +55,10 @@ export function scanDOM(): SiteConfig {
 
 export async function ensureSiteConfig() {
   const site = location.hostname.toLowerCase();
-  const existing = await chrome.runtime.sendMessage({ type: 'GET_SITE_CONFIG', payload: { site } });
+  const existing = await browserApi.runtime.sendMessage({ type: 'GET_SITE_CONFIG', payload: { site } });
   if (existing && existing.success) return;
   const config = scanDOM();
-  const result = await chrome.runtime.sendMessage({ type: 'SAVE_SITE_CONFIG', payload: { site, config } });
+  const result = await browserApi.runtime.sendMessage({ type: 'SAVE_SITE_CONFIG', payload: { site, config } });
   if (result && result.success) {
     alert(`Hermes: Config saved for ${site}`);
   }

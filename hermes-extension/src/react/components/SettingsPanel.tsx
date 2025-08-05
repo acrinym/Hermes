@@ -1,12 +1,14 @@
 // src/react/components/SettingsPanel.tsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { saveSettings, updateSettings } from '../store/settingsSlice';
+import { saveSettings, updateSettings, loadSettings } from '../store/settingsSlice';
+import { loadMacros } from '../store/macrosSlice';
 import { ThemeSelector } from './ThemeSelector';
 import { AffirmationToggle } from './AffirmationToggle';
 import { defaultSettings } from '../config/defaultSettings';
+import { exportBackup, importBackup } from '../services/storageService';
 
 interface SettingsPanelProps {
   onClose: () => void;
@@ -21,6 +23,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const [recordMouse, setRecordMouse] = useState(false);
   const [relativeCoords, setRelativeCoords] = useState(false);
   const [similarity, setSimilarity] = useState(0.5);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setJsonText(JSON.stringify(settings, null, 2));
@@ -52,6 +55,34 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
     alert('Defaults loaded. Click "Save & Apply" to keep them.');
   };
 
+  const handleExport = async () => {
+    const data = await exportBackup();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hermes_backup.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportClick = () => {
+    fileRef.current?.click();
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      await importBackup(file);
+      dispatch(loadSettings());
+      dispatch(loadMacros());
+      alert('Backup restored!');
+    } catch (err: any) {
+      alert('Failed to restore backup: ' + err.message);
+    }
+  };
+
   return (
     <div className="modal-backdrop">
       <div className="modal-content" style={{ width: '750px' }}>
@@ -75,8 +106,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
         <div className="modal-buttons">
           <button onClick={handleSave}>Save & Apply</button>
           <button onClick={handleLoadDefaults}>Load Defaults</button>
+          <button onClick={handleExport}>Download Backup</button>
+          <button onClick={handleImportClick}>Restore Backup</button>
           <button onClick={onClose}>Close</button>
         </div>
+        <input ref={fileRef} type="file" accept="application/json" style={{ display: 'none' }} onChange={handleImport} />
       </div>
     </div>
   );
