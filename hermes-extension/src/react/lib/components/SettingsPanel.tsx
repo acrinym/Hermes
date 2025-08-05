@@ -1,12 +1,12 @@
-// src/react/components/SettingsPanel.tsx
+// src/react/lib/components/SettingsPanel.tsx
 
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../store';
-import { saveSettings, updateSettings } from '../store/settingsSlice';
+import { RootState, AppDispatch } from '../../store';
+import { saveSettings, updateSettings } from '../../store/settingsSlice';
 import { ThemeSelector } from './ThemeSelector';
 import { AffirmationToggle } from './AffirmationToggle';
-import { defaultSettings } from '../config/defaultSettings';
+import { defaultSettings } from '../../config/defaultSettings';
 
 interface SettingsPanelProps {
   onClose: () => void;
