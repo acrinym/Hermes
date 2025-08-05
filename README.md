@@ -242,8 +242,7 @@ the repo root.
 ```
 packages/
   core/        <- reusable form filler, macro engine and effects modules
-hermes-extension/       <- MV3 extension source
-hermes-extension/hermes-react-refactor/ <- React prototype
+hermes-extension/       <- MV3 extension source (React UI in src/react/)
 server/        <- Express API for macro automation
 ```
 
