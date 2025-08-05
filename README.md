@@ -1,8 +1,17 @@
 
-# Hermes System Chrome Extension (v3.8.0)
+# Hermes System Chrome Extension (v4.0.0)
 
 
 **Hermes System** brings advanced form automation and macro capabilities directly to Chrome as a Manifest V3 extension. The extension works on any site and requires no userscript manager.
+
+## v4.0.0 Highlights
+- Unified UI across extension components
+- Improved accessibility features
+- Voice input for hands-free commands
+- Enterprise connector support
+- Refreshed demo site
+
+See [CHANGELOG](CHANGELOG.md) for full release notes.
 
 - 🔁 **Form filler** with intelligent field detection
 - 📼 **Macro recorder** and playback engine
