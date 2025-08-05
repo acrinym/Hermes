@@ -1,10 +1,10 @@
-// src/react/components/TrainerPanel.tsx
+// src/react/lib/components/TrainerPanel.tsx
 
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { AppDispatch } from '../store';
+import { AppDispatch } from '../../store';
 import { SkippedField, ProfileData } from '@hermes/core';
-import { updateProfile, saveProfile } from '../store/profileSlice';
+import { updateProfile, saveProfile } from '../../store/profileSlice';
 
 interface TrainerPanelProps {
   skippedFields: SkippedField[];

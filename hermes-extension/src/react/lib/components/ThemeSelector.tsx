@@ -1,10 +1,10 @@
-// src/react/components/ThemeSelector.tsx
+// src/react/lib/components/ThemeSelector.tsx
 
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../store';
-import { setTheme, saveTheme } from '../store/themeSlice';
-import { getThemeOptions } from '../themes/theme';
+import { RootState, AppDispatch } from '../../store';
+import { setTheme, saveTheme } from '../../store/themeSlice';
+import { getThemeOptions } from '../../themes/theme';
 
 export const ThemeSelector: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();

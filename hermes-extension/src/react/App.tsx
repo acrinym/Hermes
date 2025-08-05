@@ -3,9 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from './store';
-import { SettingsPanel } from './components/SettingsPanel';
-import MacroPanel from './components/MacroPanel';
-import { TrainerPanel } from './components/TrainerPanel';
+import { MacroPanel, SettingsPanel, TrainerPanel } from './lib/components';
 import { useDraggable } from './hooks/useDraggable';
 import { macroEngine, fillForm } from '@hermes/core';
 import { startHeuristicTraining } from './services/trainerService';

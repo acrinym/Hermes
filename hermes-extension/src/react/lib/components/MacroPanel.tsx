@@ -1,18 +1,18 @@
-// src/react/components/MacroPanel.tsx
+// src/react/lib/components/MacroPanel.tsx
 
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '../store';
-import { deleteMacro, renameMacro, saveMacros } from '../store/macrosSlice';
-import { macroEngine } from '@hermes/core';
+import { RootState, AppDispatch } from '../../store';
+import { deleteMacro, renameMacro, saveMacros } from '../../store/macrosSlice';
 
 const MacroPanel: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { macros } = useSelector((state: RootState) => state.macros);
 
-  const handlePlay = (name: string) => {
+  const handlePlay = async (name: string) => {
     // Play the macro by name. The macro engine manages its own store so we
     // simply call play with the macro name. 🎬
+    const { macroEngine } = await import('@hermes/core');
     macroEngine.play(name);
   };
 

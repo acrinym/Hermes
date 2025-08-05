@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAffirmationState, setAffirmations } from '../services/affirmationService';
+import { getAffirmationState, setAffirmations } from '../../services/affirmationService';
 
 export const AffirmationToggle: React.FC = () => {
   const [enabled, setEnabled] = useState(false);
