@@ -1,6 +1,6 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
-import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe, getRoot } from './localCore.ts';
+import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe, getRoot, showAffirmation, hideAffirmation, toggleAffirmations } from './localCore.ts';
 import { getSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
@@ -196,6 +196,9 @@ export async function initUI() {
 
   // Tasks
   tasksBtn = createButton(t('TASKS'), () => lazyLoadTasks().then(m => m.toggleTasks(true)));
+
+  // Affirmations
+  createButton('🙌 Affirmations', () => showAffirmation());
 
   // Pomodoro timer
   timerBtn = createButton(t('TIMER'), () => lazyLoadTimer().then(m => m(true)));
