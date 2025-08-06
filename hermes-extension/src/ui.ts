@@ -1,6 +1,7 @@
 // === Hermes UI Core - Merged ShadowDOM Edition ===
 
 import { macroEngine, fillForm, getInitialData, saveDataToBackground, startSnowflakes, startLasers, startCube, stopEffects, setEffect, startLasersV14, startStrobeV14, startConfetti, startBubbles, startStrobe, getRoot, showAffirmation, hideAffirmation, toggleAffirmations } from './localCore.ts';
+import { Z_INDEX } from './constants';
 import { getSettings } from './settings.ts';
 import { applyTheme } from './theme.ts';
 import { loadSettings, toggleSettingsPanel } from './settings.ts';
@@ -16,7 +17,7 @@ import { initNarrator } from './narrator.tsx';
 // Lazy load heavy features
 const lazyLoadTrainer = () => import('./trainer.ts').then(m => m.runHeuristicTrainerSession);
 const lazyLoadHelp = () => import('./help.ts').then(m => m.showHelp);
-const lazyLoadDebug = () => import('./debug.ts').then(m => ({
+const lazyLoadDebug = () => import('./localCore.ts').then(m => ({
   setupDebugControls: m.setupDebugControls,
   toggleLogViewer: m.toggleLogViewer,
   addDebugLog: m.addDebugLog,
@@ -104,17 +105,17 @@ export async function initUI() {
   // ----- Panel Menus -----
   macroMenu = document.createElement('div');
   macroMenu.className = 'hermes-submenu';
-  macroMenu.style.cssText = 'display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:2147483647;';
+  macroMenu.style.cssText = `display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:${Z_INDEX.MAXIMUM};`;
   container.appendChild(macroMenu);
 
   themeMenu = document.createElement('div');
   themeMenu.className = 'hermes-submenu';
-  themeMenu.style.cssText = 'display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:2147483647;';
+  themeMenu.style.cssText = `display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:${Z_INDEX.MAXIMUM};`;
   container.appendChild(themeMenu);
 
   effectsMenu = document.createElement('div');
   effectsMenu.className = 'hermes-submenu';
-  effectsMenu.style.cssText = 'display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:2147483647;';
+  effectsMenu.style.cssText = `display:none;position:absolute;background:var(--hermes-bg);border:1px solid #999;padding:4px;z-index:${Z_INDEX.MAXIMUM};`;
   container.appendChild(effectsMenu);
 
   // Helper
@@ -212,11 +213,8 @@ export async function initUI() {
   // Backend Configuration
   createButton('BACKEND', () => {
     import('./backendSetup.ts').then(m => m.setupBackendWithAutoDetection().then(success => {
-      if (success) {
-        console.log('✅ Backend configured successfully');
-      } else {
-        console.log('⚠️ Backend configuration failed, check server is running');
-      }
+      // Backend configuration result handled silently for production
+      // Debug logging can be enabled via debug utility if needed
     }));
   });
 

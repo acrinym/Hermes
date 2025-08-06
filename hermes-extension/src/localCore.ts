@@ -1,6 +1,9 @@
 // Local core functionality - optimized for the extension
 // This avoids dependencies on the external core package
 
+import { debug } from './debug';
+import { Z_INDEX, ANIMATION, STORAGE_KEYS, MESSAGE_TYPES, ERROR_MESSAGES, THREE_JS, EFFECT_MODES } from './constants';
+
 export interface ProfileData {
   [key: string]: string;
 }
@@ -248,19 +251,19 @@ export async function fillForm(profile: ProfileData, settings: FormFillSettings)
 export function saveDataToBackground(storageKey: string, data: any): Promise<boolean> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
-      { type: 'SAVE_HERMES_DATA', payload: { key: storageKey, value: data } },
+      { type: MESSAGE_TYPES.SAVE_HERMES_DATA, payload: { key: storageKey, value: data } },
       (response: any) => {
         if (chrome.runtime.lastError) {
-          console.error(`Hermes CS: Error saving ${storageKey}:`, chrome.runtime.lastError.message);
+          debug.error(`${ERROR_MESSAGES.STORAGE_SAVE_FAILED} ${storageKey}:`, chrome.runtime.lastError.message);
           reject(chrome.runtime.lastError.message);
           return;
         }
         if (response && response.success) {
-          console.log(`Hermes CS: Data for ${storageKey} saved via background.`);
+          debug.info(`Data for ${storageKey} saved via background.`);
           resolve(true);
         } else {
           const errorMsg = response ? response.error : `Unknown error saving ${storageKey}`;
-          console.error(`Hermes CS: Error saving ${storageKey} via background:`, errorMsg);
+          debug.error(`${ERROR_MESSAGES.STORAGE_SAVE_FAILED} ${storageKey} via background:`, errorMsg);
           reject(errorMsg);
         }
       }
@@ -270,7 +273,7 @@ export function saveDataToBackground(storageKey: string, data: any): Promise<boo
 
 export function getInitialData(): Promise<any> {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'GET_HERMES_INITIAL_DATA' }, resolve);
+    chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_HERMES_INITIAL_DATA }, resolve);
   });
 }
 
@@ -313,7 +316,7 @@ let mode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe
 function initCanvas() {
   if (!canvas) {
     canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2147483640';
+    canvas.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:${Z_INDEX.EFFECTS}`;
     
     const root = getRoot();
     if (root instanceof ShadowRoot) {
@@ -717,51 +720,64 @@ function loadThree(callback: () => void) {
     callback(); 
     return; 
   }
-  if (threeLoaded) { 
-    const id = setInterval(() => { 
-      if ((window as any).THREE) { 
-        clearInterval(id); 
-        callback(); 
-      } 
-    }, 50); 
-    return; 
+  if (threeLoaded) {
+    const id = setInterval(() => {
+      if ((window as any).THREE) {
+        clearInterval(id);
+        callback();
+      }
+    }, 50);
+    return;
   }
   threeLoaded = true;
   const script = document.createElement('script');
-  script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
-  script.onload = () => callback();
+  script.src = THREE_JS.CDN_URL;
+  
+  // Add timeout for loading
+  const timeout = setTimeout(() => {
+    debug.warn(ERROR_MESSAGES.THREE_JS_LOAD_FAILED);
+    startLasers();
+  }, THREE_JS.THREE_JS_TIMEOUT);
+  
+  script.onload = () => {
+    clearTimeout(timeout);
+    callback();
+  };
+  
   script.onerror = () => {
-    console.warn('Hermes: Failed to load Three.js, falling back to laser effect');
+    clearTimeout(timeout);
+    debug.warn(ERROR_MESSAGES.THREE_JS_LOAD_FAILED);
     startLasers();
   };
+  
   document.head.appendChild(script);
 }
 
 function initCube() {
   if (!(window as any).THREE || cubeRenderer) return;
-  
+
   try {
     const THREE = (window as any).THREE;
-    cubeRenderer = new THREE.WebGLRenderer({ alpha: true });
+    cubeRenderer = new THREE.WebGLRenderer({ alpha: THREE_JS.RENDERER_ALPHA });
     cubeRenderer.setSize(window.innerWidth, window.innerHeight);
-    cubeRenderer.domElement.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483639;';
-    
+    cubeRenderer.domElement.style.cssText = `position:fixed;top:0;left:0;pointer-events:none;z-index:${Z_INDEX.UI};`;
+
     cubeScene = new THREE.Scene();
-    cubeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    cubeCamera.position.z = 5;
-    
+    cubeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);      
+    cubeCamera.position.z = THREE_JS.CAMERA_POSITION_Z;
+
     const geometry = new THREE.BoxGeometry();
     const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
     cubeMesh = new THREE.Mesh(geometry, material);
     cubeScene.add(cubeMesh);
-    
+
     const root = getRoot();
     if (root instanceof ShadowRoot) {
       root.appendChild(cubeRenderer.domElement);
     } else {
       document.body.appendChild(cubeRenderer.domElement);
     }
-    
+
     // Handle window resize
     const handleResize = () => {
       if (!cubeRenderer || !cubeCamera) return;
@@ -771,17 +787,17 @@ function initCube() {
     };
     window.addEventListener('resize', handleResize);
   } catch (error) {
-    console.warn('Hermes: Error initializing cube effect:', error);
+    debug.warn(ERROR_MESSAGES.CUBE_INIT_FAILED, error);
     // Fallback to lasers if Three.js fails
     startLasers();
   }
 }
 
 function animateCube() {
-  if (!cubeRenderer || !cubeMesh || mode !== 'cube') return;
-  
-  cubeMesh.rotation.x += 0.01;
-  cubeMesh.rotation.y += 0.01;
+  if (!cubeRenderer || !cubeMesh || mode !== EFFECT_MODES.CUBE) return;
+
+  cubeMesh.rotation.x += THREE_JS.CUBE_ROTATION_SPEED;
+  cubeMesh.rotation.y += THREE_JS.CUBE_ROTATION_SPEED;
   cubeRenderer.render(cubeScene, cubeCamera);
   animationFrameId = requestAnimationFrame(animateCube);
 }
@@ -797,13 +813,13 @@ export function startCube() {
     initCube();
     if (cubeRenderer) {
       cubeRenderer.domElement.style.display = 'block';
-      mode = 'cube';
+      mode = EFFECT_MODES.CUBE;
       // Hide the 2D canvas when cube is active
       if (canvas) canvas.style.display = 'none';
       animateCube();
     } else {
       // Fallback to lasers if cube fails
-      console.warn('Hermes: Cube effect failed, using laser fallback');
+      debug.warn(ERROR_MESSAGES.CUBE_FALLBACK);
       startLasers();
     }
   });
@@ -878,18 +894,18 @@ export class MacroEngine {
   startRecording() {
     this.recording = true;
     this.events = [];
-    console.log('Hermes: Started recording macro');
+    debug.info('Started recording macro');
   }
 
   stopRecording() {
     this.recording = false;
-    console.log('Hermes: Stopped recording macro');
+    debug.info('Stopped recording macro');
   }
 
   play(name: string, instant = false) {
     const macro = this.macros[name];
     if (macro) {
-      console.log(`Hermes: Playing macro ${name} (instant: ${instant})`);
+      debug.info(`Playing macro ${name} (instant: ${instant})`);
       // Enhanced playback with proper event simulation
       this.executeMacro(macro, instant);
     }
@@ -898,7 +914,7 @@ export class MacroEngine {
   private async executeMacro(macro: any[], instant: boolean) {
     for (const event of macro) {
       if (!instant) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, ANIMATION.MACRO_DELAY));
       }
 
       if (event.type === 'wait') {
@@ -1125,11 +1141,11 @@ export function showAffirmation() {
       font-size: 14px;
       font-weight: 500;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      z-index: 2147483646;
+      z-index: ${Z_INDEX.OVERLAY};
       pointer-events: none;
       opacity: 0;
       transform: translateY(20px);
-      transition: all 0.3s ease;
+      transition: all ${ANIMATION.TRANSITION_DURATION}ms ease;
       max-width: 250px;
       text-align: center;
     `;
@@ -1153,16 +1169,16 @@ export function showAffirmation() {
     affirmOverlay!.style.transform = 'translateY(0)';
   }, 10);
   
-  // Auto-hide after 4 seconds
+  // Auto-hide after configured duration
   setTimeout(() => {
     if (affirmOverlay) {
       affirmOverlay.style.opacity = '0';
       affirmOverlay.style.transform = 'translateY(20px)';
       setTimeout(() => {
         if (affirmOverlay) affirmOverlay.style.display = 'none';
-      }, 300);
+      }, ANIMATION.TRANSITION_DURATION);
     }
-  }, 4000);
+  }, ANIMATION.AFFIRMATION_DURATION);
 }
 
 export function hideAffirmation() {
@@ -1171,17 +1187,17 @@ export function hideAffirmation() {
     affirmOverlay.style.transform = 'translateY(20px)';
     setTimeout(() => {
       if (affirmOverlay) affirmOverlay.style.display = 'none';
-    }, 300);
+    }, ANIMATION.TRANSITION_DURATION);
   }
 }
 
 export function toggleAffirmations(enabled: boolean) {
   if (enabled) {
     showAffirmation();
-    // Show affirmations every 10 minutes
+    // Show affirmations at configured interval
     setInterval(() => {
       showAffirmation();
-    }, 600000);
+    }, ANIMATION.AFFIRMATION_INTERVAL);
   } else {
     hideAffirmation();
   }

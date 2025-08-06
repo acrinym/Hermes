@@ -1,11 +1,13 @@
 // src/react/background.ts
 
+import { STORAGE_KEYS, MESSAGE_TYPES } from '../constants';
+
 // --- GitHub configuration for remote site configs ---
 // These values can be stored in chrome.storage under the keys below or
 // provided as environment variables at build time.
-const GITHUB_RAW_BASE_KEY = 'github_raw_base';
-const GITHUB_API_BASE_KEY = 'github_api_base';
-const GITHUB_TOKEN_KEY = 'github_token';
+const GITHUB_RAW_BASE_KEY = STORAGE_KEYS.GITHUB_RAW_BASE;
+const GITHUB_API_BASE_KEY = STORAGE_KEYS.GITHUB_API_BASE;
+const GITHUB_TOKEN_KEY = STORAGE_KEYS.GITHUB_TOKEN;
 
 let GITHUB_RAW_BASE = '';
 let GITHUB_API_BASE = '';
@@ -23,11 +25,12 @@ async function loadGithubSettings() {
   GITHUB_API_BASE = data[GITHUB_API_BASE_KEY] || process.env.GITHUB_API_BASE || '';
   GITHUB_TOKEN = data[GITHUB_TOKEN_KEY] || process.env.GITHUB_TOKEN || '';
   
-  console.log('Hermes BG: GitHub settings loaded', {
-    rawBase: GITHUB_RAW_BASE ? '✓' : '✗',
-    apiBase: GITHUB_API_BASE ? '✓' : '✗', 
-    token: GITHUB_TOKEN ? '✓' : '✗'
-  });
+  // Debug logging removed for production - use debug utility if needed
+  // console.log('Hermes BG: GitHub settings loaded', {
+  //   rawBase: GITHUB_RAW_BASE ? '✓' : '✗',
+  //   apiBase: GITHUB_API_BASE ? '✓' : '✗', 
+  //   token: GITHUB_TOKEN ? '✓' : '✗'
+  // });
 }
 
 // Initialize GitHub settings on startup
@@ -35,7 +38,7 @@ loadGithubSettings();
 
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'SAVE_HERMES_DATA') {
+  if (message.type === MESSAGE_TYPES.SAVE_HERMES_DATA) {
     chrome.storage.local.set({ [message.payload.key]: message.payload.value }, () => {
       if (chrome.runtime.lastError) {
         sendResponse({ success: false, error: chrome.runtime.lastError.message });
@@ -46,8 +49,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Indicates that the response is sent asynchronously
   }
 
-  if (message.type === 'GET_HERMES_INITIAL_DATA') {
-    const keys = ['hermes_settings_v1_ext', 'hermes_profile_ext', 'hermes_macros_ext', 'hermes_theme_ext'];
+  if (message.type === MESSAGE_TYPES.GET_HERMES_INITIAL_DATA) {
+    const keys = [STORAGE_KEYS.SETTINGS, STORAGE_KEYS.PROFILE, STORAGE_KEYS.MACROS, STORAGE_KEYS.THEME];
     chrome.storage.local.get(keys, (result) => {
       if (chrome.runtime.lastError) {
         sendResponse({ error: chrome.runtime.lastError.message });
@@ -63,7 +66,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Indicates that the response is sent asynchronously
   }
 
-  if (message.type === 'GET_GITHUB_CONFIG') {
+  if (message.type === MESSAGE_TYPES.GET_GITHUB_CONFIG) {
     sendResponse({
       rawBase: GITHUB_RAW_BASE,
       apiBase: GITHUB_API_BASE,
@@ -72,7 +75,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
-  if (message.type === 'UPDATE_GITHUB_CONFIG') {
+  if (message.type === MESSAGE_TYPES.UPDATE_GITHUB_CONFIG) {
     const { rawBase, apiBase, token } = message.payload;
     chrome.storage.local.set({
       [GITHUB_RAW_BASE_KEY]: rawBase || '',
