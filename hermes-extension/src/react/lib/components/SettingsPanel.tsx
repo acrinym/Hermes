@@ -16,7 +16,7 @@ interface SettingsPanelProps {
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const settings = useSelector((state: RootState) => state.settings);
+  const { settings } = useSelector((state: RootState) => state.settings);
   const [jsonText, setJsonText] = useState('');
   const [recordMouse, setRecordMouse] = useState(false);
   const [relativeCoords, setRelativeCoords] = useState(false);
@@ -25,9 +25,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onClose }) => {
 
   useEffect(() => {
     setJsonText(JSON.stringify(settings, null, 2));
-    setRecordMouse(settings.recordMouse === true);
-    setRelativeCoords(settings.relativeCoords === true);
-    setSimilarity(settings.similarity || 0.5);
+    setRecordMouse(settings.macro?.recordMouseMoves || false);
+    setRelativeCoords(settings.macro?.relativeCoordinates || false);
+    setSimilarity(settings.macro?.similarityThreshold || 0.5);
   }, [settings]);
 
   const handleSave = () => {

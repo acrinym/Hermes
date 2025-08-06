@@ -1,5 +1,5 @@
 export { AffirmationToggle } from './AffirmationToggle';
-export { MacroPanel } from './MacroPanel';
+export { default as MacroPanel } from './MacroPanel';
 export { SettingsPanel } from './SettingsPanel';
 export { ThemeSelector } from './ThemeSelector';
 export { TrainerPanel } from './TrainerPanel';
