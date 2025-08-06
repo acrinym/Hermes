@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AffirmationToggle } from './lib/components';
 import { themeOptions } from './themes/themeOptions';
-
-declare const chrome: any;
+import browser from './utils/browserApi';
 
 const THEME_KEY = 'hermes_theme_ext';
 const CUSTOM_THEMES_KEY = 'hermes_custom_themes_ext';
@@ -19,7 +18,7 @@ function OptionsApp() {
   const [current, setCurrent] = useState('dark');
 
   useEffect(() => {
-    chrome.storage.local.get([THEME_KEY, CUSTOM_THEMES_KEY, 'hermes_built_in_themes'], (data: any) => {
+    browser.storage.local.get([THEME_KEY, CUSTOM_THEMES_KEY, 'hermes_built_in_themes'], (data: any) => {
       const builtin = data.hermes_built_in_themes ? JSON.parse(data.hermes_built_in_themes) : {};
       const customThemes = data[CUSTOM_THEMES_KEY] ? JSON.parse(data[CUSTOM_THEMES_KEY]) : {};
       setBuiltIn(builtin);
@@ -30,11 +29,11 @@ function OptionsApp() {
 
   const saveTheme = (val: string) => {
     setCurrent(val);
-    chrome.storage.local.set({ [THEME_KEY]: val });
+    browser.storage.local.set({ [THEME_KEY]: val });
   };
 
   const exportThemes = () => {
-    chrome.storage.local.get([CUSTOM_THEMES_KEY], (data: any) => {
+    browser.storage.local.get([CUSTOM_THEMES_KEY], (data: any) => {
       const blob = new Blob([data[CUSTOM_THEMES_KEY] || '{}'], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -51,7 +50,7 @@ function OptionsApp() {
     reader.onload = () => {
       try {
         const obj = JSON.parse(reader.result as string);
-        chrome.storage.local.set({ [CUSTOM_THEMES_KEY]: JSON.stringify(obj) }, () => setCustom(obj));
+        browser.storage.local.set({ [CUSTOM_THEMES_KEY]: JSON.stringify(obj) }, () => setCustom(obj));
       } catch (e) {
         console.error('Invalid theme JSON', e);
       }

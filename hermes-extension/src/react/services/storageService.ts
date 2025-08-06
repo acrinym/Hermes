@@ -1,12 +1,14 @@
 // src/react/services/storageService.ts
 
+import browser from '../utils/browserApi';
+
 export function saveDataToBackground(key: string, data: any): Promise<boolean> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { type: 'SAVE_HERMES_DATA', payload: { key, value: data } },
       (response: any) => {
-        if (chrome.runtime.lastError) {
-          reject(chrome.runtime.lastError.message);
+        if (browser.runtime.lastError) {
+          reject(browser.runtime.lastError.message);
           return;
         }
         if (response && response.success) {
@@ -21,6 +23,6 @@ export function saveDataToBackground(key: string, data: any): Promise<boolean> {
 
 export function getInitialData(): Promise<any> {
   return new Promise(resolve => {
-    chrome.runtime.sendMessage({ type: 'GET_HERMES_INITIAL_DATA' }, resolve);
+    browser.runtime.sendMessage({ type: 'GET_HERMES_INITIAL_DATA' }, resolve);
   });
 }

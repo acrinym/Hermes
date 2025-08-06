@@ -1,4 +1,5 @@
 import { saveDataToBackground } from './storageService';
+import browser from '../utils/browserApi';
 
 const AFFIRM_KEY = 'hermes_affirmations_state_ext';
 let overlayEl: HTMLDivElement | null = null;
@@ -56,6 +57,6 @@ export function setAffirmations(enabled: boolean) {
 
 export function getAffirmationState(): Promise<boolean> {
   return new Promise(resolve => {
-    chrome.storage.local.get([AFFIRM_KEY], res => resolve(!!res[AFFIRM_KEY]));
+    browser.storage.local.get([AFFIRM_KEY], res => resolve(!!res[AFFIRM_KEY]));
   });
 }
