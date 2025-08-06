@@ -1,5 +1,38 @@
 // src/react/background.ts
 
+// --- GitHub configuration for remote site configs ---
+// These values can be stored in chrome.storage under the keys below or
+// provided as environment variables at build time.
+const GITHUB_RAW_BASE_KEY = 'github_raw_base';
+const GITHUB_API_BASE_KEY = 'github_api_base';
+const GITHUB_TOKEN_KEY = 'github_token';
+
+let GITHUB_RAW_BASE = '';
+let GITHUB_API_BASE = '';
+let GITHUB_TOKEN = '';
+
+async function loadGithubSettings() {
+  const data = await chrome.storage.local.get({
+    [GITHUB_RAW_BASE_KEY]: '',
+    [GITHUB_API_BASE_KEY]: '',
+    [GITHUB_TOKEN_KEY]: ''
+  });
+  
+  // Use chrome.storage values or fallback to environment variables
+  GITHUB_RAW_BASE = data[GITHUB_RAW_BASE_KEY] || process.env.GITHUB_RAW_BASE || '';
+  GITHUB_API_BASE = data[GITHUB_API_BASE_KEY] || process.env.GITHUB_API_BASE || '';
+  GITHUB_TOKEN = data[GITHUB_TOKEN_KEY] || process.env.GITHUB_TOKEN || '';
+  
+  console.log('Hermes BG: GitHub settings loaded', {
+    rawBase: GITHUB_RAW_BASE ? '✓' : '✗',
+    apiBase: GITHUB_API_BASE ? '✓' : '✗', 
+    token: GITHUB_TOKEN ? '✓' : '✗'
+  });
+}
+
+// Initialize GitHub settings on startup
+loadGithubSettings();
+
 // Listen for messages from content scripts
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SAVE_HERMES_DATA') {
@@ -28,6 +61,35 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     });
     return true; // Indicates that the response is sent asynchronously
+  }
+
+  if (message.type === 'GET_GITHUB_CONFIG') {
+    sendResponse({
+      rawBase: GITHUB_RAW_BASE,
+      apiBase: GITHUB_API_BASE,
+      token: GITHUB_TOKEN
+    });
+    return true;
+  }
+
+  if (message.type === 'UPDATE_GITHUB_CONFIG') {
+    const { rawBase, apiBase, token } = message.payload;
+    chrome.storage.local.set({
+      [GITHUB_RAW_BASE_KEY]: rawBase || '',
+      [GITHUB_API_BASE_KEY]: apiBase || '',
+      [GITHUB_TOKEN_KEY]: token || ''
+    }, () => {
+      if (chrome.runtime.lastError) {
+        sendResponse({ success: false, error: chrome.runtime.lastError.message });
+      } else {
+        // Update local variables
+        GITHUB_RAW_BASE = rawBase || '';
+        GITHUB_API_BASE = apiBase || '';
+        GITHUB_TOKEN = token || '';
+        sendResponse({ success: true });
+      }
+    });
+    return true;
   }
 });
 

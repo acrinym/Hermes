@@ -288,6 +288,7 @@ export function getRoot(): ShadowRoot | Document {
 // Advanced effects system
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
+let animationFrameId: number | null = null;
 let flakes: { x: number; y: number; r: number; s: number }[] = [];
 let lasers: { x: number; y: number; len: number; s: number }[] = [];
 let lasersV14: { x: number; y: number; len: number; s: number }[] = [];
@@ -296,6 +297,17 @@ let bubbles: { x: number; y: number; r: number; vx: number; vy: number }[] = [];
 let strobeState = { phase: 0, opacity: 0 };
 let strobeStateV14 = { phase: 0, opacity: 0 };
 let running = false;
+
+// Three.js cube effect variables
+let cubeRenderer: any = null;
+let cubeScene: any = null;
+let cubeCamera: any = null;
+let cubeMesh: any = null;
+let threeLoaded = false;
+
+// Affirmations overlay
+let affirmOverlay: HTMLElement | null = null;
+
 let mode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe' | 'laserV14' | 'strobeV14' = 'none';
 
 function initCanvas() {
@@ -411,6 +423,12 @@ export function stopEffects() {
   strobeState = { phase: 0, opacity: 0 };
   strobeStateV14 = { phase: 0, opacity: 0 };
   if (canvas) canvas.style.display = 'none';
+  // Stop cube effect
+  stopCubeEffect();
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
   mode = 'none';
 }
 
@@ -419,7 +437,7 @@ export function setEffect(newMode: 'none' | 'snow' | 'lasers' | 'cube' | 'confet
   if (newMode === 'snow') { startSnowflakes(); return; }
   if (newMode === 'lasers') { startLasers(); return; }
   if (newMode === 'laserV14') { startLasersV14(); return; }
-  if (newMode === 'cube') { startLasers(); return; } // Simplified cube effect
+  if (newMode === 'cube') { startCube(); return; }
   if (newMode === 'confetti') { startConfetti(); return; }
   if (newMode === 'bubbles') { startBubbles(); return; }
   if (newMode === 'strobe') { startStrobe(); return; }
@@ -693,10 +711,102 @@ export function setTranslationFunction(translator: (key: string) => string) {
   // Store translation function
 }
 
-// Cube effect (simplified)
+// Three.js Cube Effect Implementation
+function loadThree(callback: () => void) {
+  if ((window as any).THREE) { 
+    callback(); 
+    return; 
+  }
+  if (threeLoaded) { 
+    const id = setInterval(() => { 
+      if ((window as any).THREE) { 
+        clearInterval(id); 
+        callback(); 
+      } 
+    }, 50); 
+    return; 
+  }
+  threeLoaded = true;
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+  script.onload = () => callback();
+  script.onerror = () => {
+    console.warn('Hermes: Failed to load Three.js, falling back to laser effect');
+    startLasers();
+  };
+  document.head.appendChild(script);
+}
+
+function initCube() {
+  if (!(window as any).THREE || cubeRenderer) return;
+  
+  try {
+    const THREE = (window as any).THREE;
+    cubeRenderer = new THREE.WebGLRenderer({ alpha: true });
+    cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+    cubeRenderer.domElement.style.cssText = 'position:fixed;top:0;left:0;pointer-events:none;z-index:2147483639;';
+    
+    cubeScene = new THREE.Scene();
+    cubeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    cubeCamera.position.z = 5;
+    
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    cubeMesh = new THREE.Mesh(geometry, material);
+    cubeScene.add(cubeMesh);
+    
+    const root = getRoot();
+    if (root instanceof ShadowRoot) {
+      root.appendChild(cubeRenderer.domElement);
+    } else {
+      document.body.appendChild(cubeRenderer.domElement);
+    }
+    
+    // Handle window resize
+    const handleResize = () => {
+      if (!cubeRenderer || !cubeCamera) return;
+      cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+      cubeCamera.aspect = window.innerWidth / window.innerHeight;
+      cubeCamera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', handleResize);
+  } catch (error) {
+    console.warn('Hermes: Error initializing cube effect:', error);
+    // Fallback to lasers if Three.js fails
+    startLasers();
+  }
+}
+
+function animateCube() {
+  if (!cubeRenderer || !cubeMesh || mode !== 'cube') return;
+  
+  cubeMesh.rotation.x += 0.01;
+  cubeMesh.rotation.y += 0.01;
+  cubeRenderer.render(cubeScene, cubeCamera);
+  animationFrameId = requestAnimationFrame(animateCube);
+}
+
+function stopCubeEffect() {
+  if (cubeRenderer && cubeRenderer.domElement) {
+    cubeRenderer.domElement.style.display = 'none';
+  }
+}
+
 export function startCube() {
-  startLasers(); // Use lasers as cube effect for now
-  mode = 'cube';
+  loadThree(() => {
+    initCube();
+    if (cubeRenderer) {
+      cubeRenderer.domElement.style.display = 'block';
+      mode = 'cube';
+      // Hide the 2D canvas when cube is active
+      if (canvas) canvas.style.display = 'none';
+      animateCube();
+    } else {
+      // Fallback to lasers if cube fails
+      console.warn('Hermes: Cube effect failed, using laser fallback');
+      startLasers();
+    }
+  });
 }
 
 // Analysis sniffer
@@ -985,4 +1095,94 @@ function loop() {
   }
 
   if (running) requestAnimationFrame(loop);
+}
+
+// =================== Affirmations Overlay ===================
+const affirmationMessages = [
+  "You are doing great!",
+  "Keep up the excellent work!",
+  "You're making progress!",
+  "Stay focused and motivated!",
+  "Every step forward counts!",
+  "You've got this!",
+  "Believe in yourself!",
+  "Success is within reach!"
+];
+
+export function showAffirmation() {
+  if (!affirmOverlay) {
+    affirmOverlay = document.createElement('div');
+    affirmOverlay.id = 'hermes-affirm-overlay';
+    affirmOverlay.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: 2147483646;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      max-width: 250px;
+      text-align: center;
+    `;
+    
+    const root = getRoot();
+    if (root instanceof ShadowRoot) {
+      root.appendChild(affirmOverlay);
+    } else {
+      document.body.appendChild(affirmOverlay);
+    }
+  }
+  
+  // Random message
+  const message = affirmationMessages[Math.floor(Math.random() * affirmationMessages.length)];
+  affirmOverlay.textContent = message;
+  affirmOverlay.style.display = 'block';
+  
+  // Animate in
+  setTimeout(() => {
+    affirmOverlay!.style.opacity = '1';
+    affirmOverlay!.style.transform = 'translateY(0)';
+  }, 10);
+  
+  // Auto-hide after 4 seconds
+  setTimeout(() => {
+    if (affirmOverlay) {
+      affirmOverlay.style.opacity = '0';
+      affirmOverlay.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        if (affirmOverlay) affirmOverlay.style.display = 'none';
+      }, 300);
+    }
+  }, 4000);
+}
+
+export function hideAffirmation() {
+  if (affirmOverlay) {
+    affirmOverlay.style.opacity = '0';
+    affirmOverlay.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      if (affirmOverlay) affirmOverlay.style.display = 'none';
+    }, 300);
+  }
+}
+
+export function toggleAffirmations(enabled: boolean) {
+  if (enabled) {
+    showAffirmation();
+    // Show affirmations every 10 minutes
+    setInterval(() => {
+      showAffirmation();
+    }, 600000);
+  } else {
+    hideAffirmation();
+  }
 } 
