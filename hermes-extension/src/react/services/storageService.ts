@@ -31,17 +31,14 @@ export function getInitialData(): Promise<any> {
 
 /**
  * Exports specific user data (settings and macros) to a JSON file.
- * This combines the specific key targeting from 'main' with the download logic.
  */
 export function exportData(): void {
-  // Logic is from the 'main' branch, ensuring we only get specific keys
   browserApi.storage.local.get([SETTINGS_KEY, MACROS_KEY], (data: any) => {
     if (browserApi.runtime.lastError) {
       console.error(browserApi.runtime.lastError.message);
       return;
     }
 
-    // We structure the output object explicitly for safety
     const dataToExport = {
       [SETTINGS_KEY]: data[SETTINGS_KEY] || {},
       [MACROS_KEY]: data[MACROS_KEY] || {},
@@ -57,6 +54,42 @@ export function exportData(): void {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   });
+}
+
+/**
+ * Imports user data from a JSON file, only setting the recognized keys.
+ */
+export async function importData(files: FileList | null): Promise<void> {
+  if (!files || !files.length) {
+    console.log('No file selected for import.');
+    return;
+  }
+  
+  const file = files[0];
+  try {
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+
+    const dataToImport = {
+      [SETTINGS_KEY]: parsed[SETTINGS_KEY] || {},
+      [MACROS_KEY]: parsed[MACROS_KEY] || {},
+    };
+
+    await new Promise<void>((resolve, reject) => {
+      browserApi.storage.local.set(dataToImport, () => {
+        if (browserApi.runtime.lastError) {
+          reject(browserApi.runtime.lastError.message);
+        } else {
+          resolve();
+          alert('Data imported successfully! The page will now reload.');
+          window.location.reload();
+        }
+      });
+    });
+  } catch (err: any) {
+    console.error('Invalid backup JSON or import failed', err);
+    alert(`Error importing file: ${err.message}`);
+  }
 }
 
 /**

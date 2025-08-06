@@ -21,7 +21,7 @@ function OptionsApp() {
   const [current, setCurrent] = useState('dark');
 
   useEffect(() => {
-    // Using browserApi from the 'main' branch for cleaner API access
+    // Using browserApi for cleaner, consistent API access
     browserApi.storage.local.get([THEME_KEY, CUSTOM_THEMES_KEY, 'hermes_built_in_themes'], (data: any) => {
       const builtin = data.hermes_built_in_themes ? JSON.parse(data.hermes_built_in_themes) : {};
       const customThemes = data[CUSTOM_THEMES_KEY] ? JSON.parse(data[CUSTOM_THEMES_KEY]) : {};
@@ -67,22 +67,20 @@ function OptionsApp() {
   };
 
   const handleImportData = (files: FileList | null) => {
-    // This function comes from storageService and likely handles its own logic
+    // This function comes from storageService
     importData(files);
   };
 
-  const allThemes = { ...themeOptions, ...custom, ...builtIn } as Record<string, any>; // Used 'any' for ThemeInfo since it's not defined here
+  const allThemes = { ...themeOptions, ...custom, ...builtIn } as Record<string, any>;
 
   return (
     <div>
       <h1>Hermes Options</h1>
       
-      {/* --- UI from the 'main' branch --- */}
       <AffirmationToggle />
 
       <hr style={{ margin: '20px 0' }} />
 
-      {/* --- UI from the 'codex' branch --- */}
       <h2>Theme Management</h2>
       <label>
         Theme:
@@ -102,7 +100,6 @@ function OptionsApp() {
 
       <hr style={{ margin: '20px 0' }} />
 
-      {/* --- UI from the 'codex' branch --- */}
       <h2>Data Management</h2>
       <div>
         <button onClick={exportData} id="exportData">Export Data</button>

@@ -52,12 +52,15 @@ export function scanDOM(): SiteConfig {
 
 export async function ensureSiteConfig() {
   const site = location.hostname.toLowerCase();
+  // Using the consistent 'browserApi' from the 'main' branch
   const existing = await browserApi.runtime.sendMessage({ type: 'GET_SITE_CONFIG', payload: { site } });
   if (existing && existing.success) return;
 
   const config = scanDOM();
+  // Using the consistent 'browserApi' from the 'main' branch
   const result = await browserApi.runtime.sendMessage({ type: 'SAVE_SITE_CONFIG', payload: { site, config } });
   if (result && result.success) {
+    // Note: alert() can be disruptive. You might consider a more subtle notification system later.
     alert(`Hermes: Config saved for ${site}`);
   }
 }
