@@ -1,5 +1,5 @@
 import { getAssociatedLabelText } from './heuristics.ts';
-import { addDebugLog } from './debug.ts';
+import { debug } from './debug.ts';
 
 function getRobustSelector(el: Element): string {
   if (!el || !(el as HTMLElement).tagName) return '';
@@ -44,5 +44,5 @@ export function sniffForms(): void {
     };
   });
   console.log('Hermes Sniffer:', data);
-  addDebugLog('sniff', 'forms', data);
+  debug.log('sniff', 'forms', data);
 }

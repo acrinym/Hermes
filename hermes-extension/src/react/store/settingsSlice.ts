@@ -57,6 +57,11 @@ export const saveSettings = createAsyncThunk('settings/save', async (settings: a
   return settings;
 });
 
+export const saveScheduleSettings = createAsyncThunk('settings/saveSchedule', async (scheduleSettings: any) => {
+  await saveDataToBackground('hermes_schedule_settings_ext', scheduleSettings);
+  return scheduleSettings;
+});
+
 const settingsSlice = createSlice({
   name: 'settings',
   initialState,

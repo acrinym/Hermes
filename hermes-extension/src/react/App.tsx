@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from './store';
-import { MacroPanel, SettingsPanel, TrainerPanel } from './lib/components';
+import { MacroPanel, SettingsPanel, TrainerPanel, SchedulePanel, NotesPanel, TasksPanel, TimerPanel } from './lib/components';
 import { useDraggable } from './hooks/useDraggable';
 import { macroEngine, fillForm } from '@hermes/core';
 import { startHeuristicTraining } from './services/trainerService';
@@ -22,6 +22,10 @@ const App: React.FC = () => {
   const { position, isStacked } = useDraggable(appRef, headerRef);
   const [isSettingsVisible, setSettingsVisible] = useState(false);
   const [trainingSession, setTrainingSession] = useState<SkippedField[] | null>(null);
+  const [isScheduleVisible, setScheduleVisible] = useState(false);
+  const [isNotesVisible, setNotesVisible] = useState(false);
+  const [isTasksVisible, setTasksVisible] = useState(false);
+  const [isTimerVisible, setTimerVisible] = useState(false);
 
   const dispatch = useDispatch<AppDispatch>();
   const { recordingState } = useSelector((state: RootState) => state.macros);
@@ -92,6 +96,10 @@ const App: React.FC = () => {
         </button>
         <button onClick={handleTrain}>Train</button>
         <button onClick={() => setSettingsVisible(true)}>Settings</button>
+        <button onClick={() => setScheduleVisible(true)}>📅</button>
+        <button onClick={() => setNotesVisible(true)}>📝</button>
+        <button onClick={() => setTasksVisible(true)}>✅</button>
+        <button onClick={() => setTimerVisible(true)}>⏰</button>
       </div>
 
       {isSettingsVisible && <SettingsPanel onClose={() => setSettingsVisible(false)} />}
@@ -102,6 +110,10 @@ const App: React.FC = () => {
           onClose={() => setTrainingSession(null)} 
         />
       )}
+      {isScheduleVisible && <SchedulePanel onClose={() => setScheduleVisible(false)} />}
+      {isNotesVisible && <NotesPanel onClose={() => setNotesVisible(false)} />}
+      {isTasksVisible && <TasksPanel onClose={() => setTasksVisible(false)} />}
+      {isTimerVisible && <TimerPanel onClose={() => setTimerVisible(false)} />}
     </div>
   );
 };

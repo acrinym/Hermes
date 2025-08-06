@@ -2,7 +2,13 @@
   "manifest_version": 3,
   "name": "Hermes System Extension",
   "version": "4.0.0",
-  "description": "Advanced form filler, macro recorder, and heuristic trainer with comprehensive CSS variable theming, draggable UI, whitelist, bunchable layout, edge and corner snapping, effects, help panel, and detailed settings.",
+  "description": "Enterprise-grade form automation with macro scheduling, task management, quick notes, and productivity tools. Advanced form filler, macro recorder, and heuristic trainer with comprehensive theming, draggable UI, effects, and detailed settings.",
+  "icons": {
+    "16": "icon16.png",
+    "32": "icon32.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
   "permissions": [
     "storage",
     "tabs",
@@ -35,7 +41,13 @@
     }
   },
   "action": {
-    "default_title": "Hermes System"
+    "default_title": "Hermes System",
+    "default_icon": {
+      "16": "icon16.png",
+      "32": "icon32.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   },
   "options_ui": {
     "page": "options.html",
