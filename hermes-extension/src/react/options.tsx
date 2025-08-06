@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AffirmationToggle } from './lib/components';
 import { themeOptions } from './themes/themeOptions';
+import { exportData, importData } from './services/storageService';
 
 declare const chrome: any;
 
@@ -59,6 +60,10 @@ function OptionsApp() {
     reader.readAsText(files[0]);
   };
 
+  const handleImportData = (files: FileList | null) => {
+    importData(files);
+  };
+
   const allThemes = { ...themeOptions, ...custom, ...builtIn } as Record<string, ThemeInfo>;
 
   return (
@@ -78,6 +83,11 @@ function OptionsApp() {
         <button onClick={exportThemes} id="exportThemes">Export Themes</button>
         <input id="importFile" type="file" accept="application/json" style={{ display: 'none' }} onChange={e => importThemes(e.target.files)} />
         <button onClick={() => document.getElementById('importFile')!.click()} id="importThemes">Import Themes</button>
+      </div>
+      <div>
+        <button onClick={exportData} id="exportData">Export Data</button>
+        <input id="importDataFile" type="file" accept="application/json" style={{ display: 'none' }} onChange={e => handleImportData(e.target.files)} />
+        <button onClick={() => document.getElementById('importDataFile')!.click()} id="importData">Import Data</button>
       </div>
       <AffirmationToggle />
     </div>

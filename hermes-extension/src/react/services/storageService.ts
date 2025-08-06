@@ -24,3 +24,29 @@ export function getInitialData(): Promise<any> {
     chrome.runtime.sendMessage({ type: 'GET_HERMES_INITIAL_DATA' }, resolve);
   });
 }
+
+export function exportData(): void {
+  chrome.storage.local.get(null, data => {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'hermes-data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+}
+
+export function importData(files: FileList | null): void {
+  if (!files || !files.length) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(reader.result as string);
+      chrome.storage.local.set(obj);
+    } catch (e) {
+      console.error('Invalid backup JSON', e);
+    }
+  };
+  reader.readAsText(files[0]);
+}
