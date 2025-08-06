@@ -1,6 +1,9 @@
 // Local core functionality - optimized for the extension
 // This avoids dependencies on the external core package
 
+import { debug } from './debug';
+import { Z_INDEX, ANIMATION, STORAGE_KEYS, MESSAGE_TYPES, ERROR_MESSAGES, THREE_JS, EFFECT_MODES } from './constants';
+
 export interface ProfileData {
   [key: string]: string;
 }
@@ -248,19 +251,19 @@ export async function fillForm(profile: ProfileData, settings: FormFillSettings)
 export function saveDataToBackground(storageKey: string, data: any): Promise<boolean> {
   return new Promise((resolve, reject) => {
     chrome.runtime.sendMessage(
-      { type: 'SAVE_HERMES_DATA', payload: { key: storageKey, value: data } },
+      { type: MESSAGE_TYPES.SAVE_HERMES_DATA, payload: { key: storageKey, value: data } },
       (response: any) => {
         if (chrome.runtime.lastError) {
-          console.error(`Hermes CS: Error saving ${storageKey}:`, chrome.runtime.lastError.message);
+          debug.error(`${ERROR_MESSAGES.STORAGE_SAVE_FAILED} ${storageKey}:`, chrome.runtime.lastError.message);
           reject(chrome.runtime.lastError.message);
           return;
         }
         if (response && response.success) {
-          console.log(`Hermes CS: Data for ${storageKey} saved via background.`);
+          debug.info(`Data for ${storageKey} saved via background.`);
           resolve(true);
         } else {
           const errorMsg = response ? response.error : `Unknown error saving ${storageKey}`;
-          console.error(`Hermes CS: Error saving ${storageKey} via background:`, errorMsg);
+          debug.error(`${ERROR_MESSAGES.STORAGE_SAVE_FAILED} ${storageKey} via background:`, errorMsg);
           reject(errorMsg);
         }
       }
@@ -270,7 +273,7 @@ export function saveDataToBackground(storageKey: string, data: any): Promise<boo
 
 export function getInitialData(): Promise<any> {
   return new Promise((resolve) => {
-    chrome.runtime.sendMessage({ type: 'GET_HERMES_INITIAL_DATA' }, resolve);
+    chrome.runtime.sendMessage({ type: MESSAGE_TYPES.GET_HERMES_INITIAL_DATA }, resolve);
   });
 }
 
@@ -288,6 +291,7 @@ export function getRoot(): ShadowRoot | Document {
 // Advanced effects system
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
+let animationFrameId: number | null = null;
 let flakes: { x: number; y: number; r: number; s: number }[] = [];
 let lasers: { x: number; y: number; len: number; s: number }[] = [];
 let lasersV14: { x: number; y: number; len: number; s: number }[] = [];
@@ -296,12 +300,23 @@ let bubbles: { x: number; y: number; r: number; vx: number; vy: number }[] = [];
 let strobeState = { phase: 0, opacity: 0 };
 let strobeStateV14 = { phase: 0, opacity: 0 };
 let running = false;
+
+// Three.js cube effect variables
+let cubeRenderer: any = null;
+let cubeScene: any = null;
+let cubeCamera: any = null;
+let cubeMesh: any = null;
+let threeLoaded = false;
+
+// Affirmations overlay
+let affirmOverlay: HTMLElement | null = null;
+
 let mode: 'none' | 'snow' | 'lasers' | 'cube' | 'confetti' | 'bubbles' | 'strobe' | 'laserV14' | 'strobeV14' = 'none';
 
 function initCanvas() {
   if (!canvas) {
     canvas = document.createElement('canvas');
-    canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:2147483640';
+    canvas.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:${Z_INDEX.EFFECTS}`;
     
     const root = getRoot();
     if (root instanceof ShadowRoot) {
@@ -411,6 +426,12 @@ export function stopEffects() {
   strobeState = { phase: 0, opacity: 0 };
   strobeStateV14 = { phase: 0, opacity: 0 };
   if (canvas) canvas.style.display = 'none';
+  // Stop cube effect
+  stopCubeEffect();
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
   mode = 'none';
 }
 
@@ -419,7 +440,7 @@ export function setEffect(newMode: 'none' | 'snow' | 'lasers' | 'cube' | 'confet
   if (newMode === 'snow') { startSnowflakes(); return; }
   if (newMode === 'lasers') { startLasers(); return; }
   if (newMode === 'laserV14') { startLasersV14(); return; }
-  if (newMode === 'cube') { startLasers(); return; } // Simplified cube effect
+  if (newMode === 'cube') { startCube(); return; }
   if (newMode === 'confetti') { startConfetti(); return; }
   if (newMode === 'bubbles') { startBubbles(); return; }
   if (newMode === 'strobe') { startStrobe(); return; }
@@ -693,10 +714,115 @@ export function setTranslationFunction(translator: (key: string) => string) {
   // Store translation function
 }
 
-// Cube effect (simplified)
+// Three.js Cube Effect Implementation
+function loadThree(callback: () => void) {
+  if ((window as any).THREE) { 
+    callback(); 
+    return; 
+  }
+  if (threeLoaded) {
+    const id = setInterval(() => {
+      if ((window as any).THREE) {
+        clearInterval(id);
+        callback();
+      }
+    }, 50);
+    return;
+  }
+  threeLoaded = true;
+  const script = document.createElement('script');
+  script.src = THREE_JS.CDN_URL;
+  
+  // Add timeout for loading
+  const timeout = setTimeout(() => {
+    debug.warn(ERROR_MESSAGES.THREE_JS_LOAD_FAILED);
+    startLasers();
+  }, THREE_JS.THREE_JS_TIMEOUT);
+  
+  script.onload = () => {
+    clearTimeout(timeout);
+    callback();
+  };
+  
+  script.onerror = () => {
+    clearTimeout(timeout);
+    debug.warn(ERROR_MESSAGES.THREE_JS_LOAD_FAILED);
+    startLasers();
+  };
+  
+  document.head.appendChild(script);
+}
+
+function initCube() {
+  if (!(window as any).THREE || cubeRenderer) return;
+
+  try {
+    const THREE = (window as any).THREE;
+    cubeRenderer = new THREE.WebGLRenderer({ alpha: THREE_JS.RENDERER_ALPHA });
+    cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+    cubeRenderer.domElement.style.cssText = `position:fixed;top:0;left:0;pointer-events:none;z-index:${Z_INDEX.UI};`;
+
+    cubeScene = new THREE.Scene();
+    cubeCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);      
+    cubeCamera.position.z = THREE_JS.CAMERA_POSITION_Z;
+
+    const geometry = new THREE.BoxGeometry();
+    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+    cubeMesh = new THREE.Mesh(geometry, material);
+    cubeScene.add(cubeMesh);
+
+    const root = getRoot();
+    if (root instanceof ShadowRoot) {
+      root.appendChild(cubeRenderer.domElement);
+    } else {
+      document.body.appendChild(cubeRenderer.domElement);
+    }
+
+    // Handle window resize
+    const handleResize = () => {
+      if (!cubeRenderer || !cubeCamera) return;
+      cubeRenderer.setSize(window.innerWidth, window.innerHeight);
+      cubeCamera.aspect = window.innerWidth / window.innerHeight;
+      cubeCamera.updateProjectionMatrix();
+    };
+    window.addEventListener('resize', handleResize);
+  } catch (error) {
+    debug.warn(ERROR_MESSAGES.CUBE_INIT_FAILED, error);
+    // Fallback to lasers if Three.js fails
+    startLasers();
+  }
+}
+
+function animateCube() {
+  if (!cubeRenderer || !cubeMesh || mode !== EFFECT_MODES.CUBE) return;
+
+  cubeMesh.rotation.x += THREE_JS.CUBE_ROTATION_SPEED;
+  cubeMesh.rotation.y += THREE_JS.CUBE_ROTATION_SPEED;
+  cubeRenderer.render(cubeScene, cubeCamera);
+  animationFrameId = requestAnimationFrame(animateCube);
+}
+
+function stopCubeEffect() {
+  if (cubeRenderer && cubeRenderer.domElement) {
+    cubeRenderer.domElement.style.display = 'none';
+  }
+}
+
 export function startCube() {
-  startLasers(); // Use lasers as cube effect for now
-  mode = 'cube';
+  loadThree(() => {
+    initCube();
+    if (cubeRenderer) {
+      cubeRenderer.domElement.style.display = 'block';
+      mode = EFFECT_MODES.CUBE;
+      // Hide the 2D canvas when cube is active
+      if (canvas) canvas.style.display = 'none';
+      animateCube();
+    } else {
+      // Fallback to lasers if cube fails
+      debug.warn(ERROR_MESSAGES.CUBE_FALLBACK);
+      startLasers();
+    }
+  });
 }
 
 // Analysis sniffer
@@ -768,18 +894,18 @@ export class MacroEngine {
   startRecording() {
     this.recording = true;
     this.events = [];
-    console.log('Hermes: Started recording macro');
+    debug.info('Started recording macro');
   }
 
   stopRecording() {
     this.recording = false;
-    console.log('Hermes: Stopped recording macro');
+    debug.info('Stopped recording macro');
   }
 
   play(name: string, instant = false) {
     const macro = this.macros[name];
     if (macro) {
-      console.log(`Hermes: Playing macro ${name} (instant: ${instant})`);
+      debug.info(`Playing macro ${name} (instant: ${instant})`);
       // Enhanced playback with proper event simulation
       this.executeMacro(macro, instant);
     }
@@ -788,7 +914,7 @@ export class MacroEngine {
   private async executeMacro(macro: any[], instant: boolean) {
     for (const event of macro) {
       if (!instant) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, ANIMATION.MACRO_DELAY));
       }
 
       if (event.type === 'wait') {
@@ -985,4 +1111,94 @@ function loop() {
   }
 
   if (running) requestAnimationFrame(loop);
+}
+
+// =================== Affirmations Overlay ===================
+const affirmationMessages = [
+  "You are doing great!",
+  "Keep up the excellent work!",
+  "You're making progress!",
+  "Stay focused and motivated!",
+  "Every step forward counts!",
+  "You've got this!",
+  "Believe in yourself!",
+  "Success is within reach!"
+];
+
+export function showAffirmation() {
+  if (!affirmOverlay) {
+    affirmOverlay = document.createElement('div');
+    affirmOverlay.id = 'hermes-affirm-overlay';
+    affirmOverlay.style.cssText = `
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border-radius: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      z-index: ${Z_INDEX.OVERLAY};
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all ${ANIMATION.TRANSITION_DURATION}ms ease;
+      max-width: 250px;
+      text-align: center;
+    `;
+    
+    const root = getRoot();
+    if (root instanceof ShadowRoot) {
+      root.appendChild(affirmOverlay);
+    } else {
+      document.body.appendChild(affirmOverlay);
+    }
+  }
+  
+  // Random message
+  const message = affirmationMessages[Math.floor(Math.random() * affirmationMessages.length)];
+  affirmOverlay.textContent = message;
+  affirmOverlay.style.display = 'block';
+  
+  // Animate in
+  setTimeout(() => {
+    affirmOverlay!.style.opacity = '1';
+    affirmOverlay!.style.transform = 'translateY(0)';
+  }, 10);
+  
+  // Auto-hide after configured duration
+  setTimeout(() => {
+    if (affirmOverlay) {
+      affirmOverlay.style.opacity = '0';
+      affirmOverlay.style.transform = 'translateY(20px)';
+      setTimeout(() => {
+        if (affirmOverlay) affirmOverlay.style.display = 'none';
+      }, ANIMATION.TRANSITION_DURATION);
+    }
+  }, ANIMATION.AFFIRMATION_DURATION);
+}
+
+export function hideAffirmation() {
+  if (affirmOverlay) {
+    affirmOverlay.style.opacity = '0';
+    affirmOverlay.style.transform = 'translateY(20px)';
+    setTimeout(() => {
+      if (affirmOverlay) affirmOverlay.style.display = 'none';
+    }, ANIMATION.TRANSITION_DURATION);
+  }
+}
+
+export function toggleAffirmations(enabled: boolean) {
+  if (enabled) {
+    showAffirmation();
+    // Show affirmations at configured interval
+    setInterval(() => {
+      showAffirmation();
+    }, ANIMATION.AFFIRMATION_INTERVAL);
+  } else {
+    hideAffirmation();
+  }
 } 
