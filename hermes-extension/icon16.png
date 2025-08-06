@@ -1,0 +1,26 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg16" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="8" cy="8" r="7.5" fill="url(#bg16)"/>
+  
+  <!-- Simplified Hermes staff -->
+  <g transform="translate(8, 8)">
+    <!-- Staff -->
+    <rect x="-0.5" y="-6" width="1" height="12" fill="#ffffff" opacity="0.9"/>
+    
+    <!-- Wings -->
+    <path d="M -3 -2.5 Q -4.5 -1.5 -4 0 Q -4.5 1.5 -3 2.5 L -2 1.5 Q -2.5 0.5 -2 0 Q -2.5 -0.5 -2 -1.5 Z" 
+          fill="#ffffff" opacity="0.8"/>
+    <path d="M 3 -2.5 Q 4.5 -1.5 4 0 Q 4.5 1.5 3 2.5 L 2 1.5 Q 2.5 0.5 2 0 Q 2.5 -0.5 2 -1.5 Z" 
+          fill="#ffffff" opacity="0.8"/>
+    
+    <!-- Top sphere -->
+    <circle cx="0" cy="-6" r="1.5" fill="#ffffff" opacity="0.9"/>
+  </g>
+</svg> 
