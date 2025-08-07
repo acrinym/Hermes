@@ -7,7 +7,8 @@
     "prebuild": "npm install",
     "build": "webpack --mode=production",
     "dev": "NODE_ENV=development webpack --watch",
-    "test": "jest"
+    "test": "jest",
+    "package": "node scripts/build-extension.js"
   },
   "keywords": [],
   "author": "",
