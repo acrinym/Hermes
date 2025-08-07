@@ -48,8 +48,9 @@ See [CHANGELOG](CHANGELOG.md) for full release notes.
 ### Installation
 1. Run `./setup.sh` to install server and extension dependencies.
 2. Build the extension: `cd hermes-extension && npm run build`.
-3. From inside `hermes-extension/`, run `npm run dev` to watch and rebuild files during development.
-4. Load the `hermes-extension` folder in Chrome as an unpacked extension.
+3. Package the extension: `cd hermes-extension && npm run package` to produce a ready-to-install ZIP.
+4. From inside `hermes-extension/`, run `npm run dev` to watch and rebuild files during development.
+5. Load the `hermes-extension` folder in Chrome as an unpacked extension.
 
 `npm run dev` automatically rebuilds the React UI as you edit files. Run `npm run build` again for a one-off rebuild if the watcher is stopped.
 
@@ -369,8 +370,9 @@ PRs are welcome. For suggestions or issues, please use the Issues tab.
 1. `cd hermes-extension`
 2. (optional) Run `npm install` to install dev dependencies. The build script will install them automatically if missing.
 3. From inside `hermes-extension/`, run `npm run build` to bundle `src/` into a `dist/` folder. This `dist/` directory is excluded from version control via `.gitignore`.
-4. For live-reloading builds during development, run `npm run dev` instead. 🎉
-5. Load the `hermes-extension` directory in Chrome as an unpacked extension.
+4. Run `npm run package` to produce a ready-to-install ZIP.
+5. For live-reloading builds during development, run `npm run dev` instead. 🎉
+6. Load the `hermes-extension` directory in Chrome as an unpacked extension.
 
 > **Author:** Justin
 
