@@ -1,18 +1,37 @@
 
 # Hermes System Chrome Extension (v4.0.0)
 
-
 **Hermes System** brings advanced form automation and macro capabilities directly to Chrome as a Manifest V3 extension. The extension works on any site and requires no userscript manager.
 
-## v4.0.0 Highlights
-- Unified UI across extension components
-- Extension UI now powered by React (source in `hermes-extension/src/react`)
-- Improved accessibility features
-- Voice input for hands-free commands
-- Enterprise connector support
-- Refreshed demo site
+## 🚀 v4.0.0 Enterprise Release
 
-See [CHANGELOG](CHANGELOG.md) for full release notes.
+**Hermes 4.0.0** introduces powerful enterprise-grade features for government, call centers, and business automation:
+
+### 🏢 **Enterprise Features**
+- **📅 Macro Scheduling** - Schedule macros to run at specific times with recurrence (once/daily/weekly/monthly)
+- **📝 Quick Notes Panel** - Persistent notes for call center agents and customer interactions
+- **✅ Task Management** - Simple task list with checkboxes for workflow management
+- **⏰ Pomodoro Timer** - Productivity timer with customizable work/break intervals
+- **🔄 Automated Execution** - Background scheduler service for reliable macro execution
+- **🌐 Cross-Browser Compatibility** - Unified browser API wrapper for Chrome/Firefox/Edge
+
+### 🎯 **Enhanced UI**
+- **React-Powered Interface** - Modern, responsive UI with drag-and-drop functionality
+- **Emoji Quick Access** - Intuitive buttons (📅 📝 ✅ ⏰) for enterprise features
+- **Modal Panels** - Focused interaction windows for each feature
+- **Persistent Storage** - Local storage for notes, tasks, and settings
+- **Theme Integration** - All new features follow existing theme system
+
+### 🔧 **Technical Improvements**
+- **TypeScript Strict Mode** - Enhanced type safety and error handling
+- **Debug Logging** - Centralized debug utility with configurable levels
+- **Constants Management** - Replaced magic numbers with named constants
+- **Error Boundaries** - Robust error handling for async operations
+- **Import Standardization** - Absolute paths and proper module structure
+
+---
+
+## 🌟 Core Features
 
 - 🔁 **Form filler** with intelligent field detection
 - 📼 **Macro recorder** and playback engine
@@ -23,13 +42,6 @@ See [CHANGELOG](CHANGELOG.md) for full release notes.
 - ❓ **Help panel** and detailed **settings editor**
 - 📤 **Profile import/export** via JSON
 - 🔍 **Debug toolkit** with logs and mutation detection
-- ⏰ **Macro scheduling UI**
-- 🗒️ **Task list panel** for quick to-dos
-- ⏲️ **Pomodoro timer** to stay focused
-- 📝 **Scratch pad** for notes and Drive backups
-- ✂️ **Snippet library** for reusable text
-- 🙌 **Affirmation overlay** for positive motivation
-- 🕵️ **Form sniffer** to log page fields
 - 📌 **Dockable toolbar** for top or bottom placement
 - ⌨️ **Configurable hotkeys for recording and playback**
 - 🔎 **Macro search/filter**
@@ -54,10 +66,20 @@ See [CHANGELOG](CHANGELOG.md) for full release notes.
 
 `npm run dev` automatically rebuilds the React UI as you edit files. Run `npm run build` again for a one-off rebuild if the watcher is stopped.
 
+### Enterprise Setup
+1. **Load Extension** - Install as unpacked extension in Chrome/Firefox
+2. **Access Features** - Click Hermes icon to open main UI
+3. **Use Enterprise Tools**:
+   - **📅 Schedule** - Schedule macros for automation
+   - **📝 Notes** - Quick notes for customer interactions
+   - **✅ Tasks** - Task management for workflows
+   - **⏰ Timer** - Pomodoro timer for productivity
+
 ### Highlights
 - Form filling, macro recording and heuristic training.
 - Voice commands and hotkeys for hands-free control.
 - High-contrast themes and other accessibility aids.
+- **Enterprise-grade scheduling and productivity tools.**
 
 ### Enterprise Configuration
 By default the extension connects to `http://localhost:3000` using:
@@ -94,7 +116,7 @@ Enable high-contrast themes, enlarge widgets and use voice or keyboard controls 
 - Add wait-for-element or network-idle steps
 - Search macros by name
 - Trigger recording or playback via hotkeys
-- Schedule macros from the built-in UI
+- **Schedule macros from the built-in UI**
 
 ### 🧠 Heuristic Trainer
 - Tracks skipped or unmapped fields
@@ -139,11 +161,13 @@ Enable high-contrast themes, enlarge widgets and use voice or keyboard controls 
 - Manual or periodic cloud sync of profiles and macros
 - Interface localized based on browser language
 
-### 📈 Productivity Tools
+### 📈 **Enterprise Productivity Tools**
+- **📅 Macro Scheduling** - Schedule macros with recurrence options
+- **📝 Quick Notes** - Persistent notes for customer interactions
+- **✅ Task Management** - Simple task list with checkboxes
+- **⏰ Pomodoro Timer** - Productivity timer with customizable intervals
 - Scratch pad for notes and Drive backups
 - Snippet library for reusable text
-- Task list manager
-- Pomodoro timer with alerts
 - Optional affirmation overlay
 
 ---
@@ -161,6 +185,11 @@ Hermes stores its data in `chrome.storage.local` using these keys:
 - `hermes_theme_ext`
 - `hermes_whitelist_ext`
 - `hermes_settings_v1_ext`
+- `hermes_schedule_settings_ext` - **NEW: Macro scheduling settings**
+- `hermes_scheduled_macros` - **NEW: Scheduled macro data**
+- `hermes_notes` - **NEW: Quick notes data**
+- `hermes_tasks` - **NEW: Task list data**
+- `hermes_pomodoro_settings` - **NEW: Timer settings**
 
 ---
 
@@ -304,9 +333,23 @@ curl -X POST http://localhost:3000/api/remedy/incident \
 ```
 
 
-## ⏰ Macro Scheduling
+## ⏰ **Enterprise Macro Scheduling**
 
-Hermes lets you trigger macros at a future date or on a repeating schedule.
+Hermes 4.0.0 introduces powerful macro scheduling capabilities:
+
+### **Built-in Scheduler**
+- **Schedule Panel** - Access via 📅 button in main UI
+- **Recurrence Options** - Once, Daily, Weekly, Monthly
+- **Visual Management** - View and remove scheduled macros
+- **Background Execution** - Automated macro execution service
+
+### **Scheduling Features**
+1. **Select Macros** – Choose from your saved macros
+2. **Set Date/Time** – Pick exact execution time
+3. **Choose Recurrence** – One-time or repeating schedules
+4. **Background Service** - Runs automatically without user interaction
+
+### **API Integration**
 Start the server and visit [http://localhost:3000/schedule](http://localhost:3000/schedule) to use the visual scheduler.
 The page lists available macros with checkboxes and provides date and time pickers alongside simple recurrence options.
 
@@ -373,6 +416,7 @@ PRs are welcome. For suggestions or issues, please use the Issues tab.
 4. Run `npm run package` to produce a ready-to-install ZIP.
 5. For live-reloading builds during development, run `npm run dev` instead. 🎉
 6. Load the `hermes-extension` directory in Chrome as an unpacked extension.
+7. For Firefox, run `npm run build` then use `about:debugging` to load the folder as a temporary add-on.
 
 > **Author:** Justin
 
@@ -387,6 +431,9 @@ Proprietary License — all rights reserved. Contact the author for permissions.
 ## 🌐 Coming Soon
 
 - AI-assisted field mapping suggestions
+- **Enhanced enterprise features**
+- **Advanced scheduling capabilities**
+- **Team collaboration tools**
 
 See also the [ROADMAP](ROADMAP.md) for planned milestones.
 
@@ -394,6 +441,6 @@ For a full list of ideas and potential enhancements, see [TODO.md](TODO.md).
 
 ---
 
-> "Hermes doesn't just fill forms—it learns them."
+> "Hermes doesn't just fill forms—it learns them and automates them."
 
 ✨ *For questions, customization help, or collaboration: contact Justin directly.*
